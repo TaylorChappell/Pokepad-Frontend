@@ -61,7 +61,7 @@ export function GymsPage() {
             <Badge label={champion.badge} color={champion.color} size={72} />
           </div>
           {champion.coin.pokemonId > 0 ? (
-            <PokemonArt id={champion.coin.pokemonId} />
+            <PokemonArt id={champion.coin.pokemonId} animated={false} />
           ) : (
             <Avatar profile={champion.coin.trainer || state.profile} size={150} />
           )}
@@ -177,7 +177,7 @@ export function GymDetailPage({ id }: { id: string }) {
           </span>
         </div>
         {gym.coin.pokemonId > 0 ? (
-          <PokemonArt id={gym.coin.pokemonId} />
+          <PokemonArt id={gym.coin.pokemonId} animated={false} />
         ) : (
           <Avatar profile={gym.coin.trainer || state.profile} size={150} />
         )}

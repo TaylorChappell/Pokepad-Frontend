@@ -1,5 +1,6 @@
 import type { Coin, Gym, AppSnapshot, Profile, OwnedPokemon } from '../types';
 import { pokemonById } from './pokemon';
+import { getPokemonStats } from './stats';
 export const COINS: Coin[] = [
   {
     id: 'poke',
@@ -239,7 +240,7 @@ export function createInitialState(now = Date.now()): AppSnapshot {
     level: number,
     backing: number,
     originCoin: string,
-    rarity: string,
+    _legacyRarity: string,
     moves: string[],
     rareCandy = 420,
   ): OwnedPokemon => ({
@@ -248,7 +249,9 @@ export function createInitialState(now = Date.now()): AppSnapshot {
     level,
     backing,
     originCoin,
-    rarity,
+    rarity: '',
+    shiny: false,
+    health: getPokemonStats({ speciesId, level }).hp,
     moves,
     rareCandy,
     evolutionReserve: pokemonById(speciesId).evolvesTo.length
@@ -263,7 +266,19 @@ export function createInitialState(now = Date.now()): AppSnapshot {
       moveOffers: [{ id: 'partner-ember-9', move: 'Ember', level: 9, status: 'pending' as const }],
       starter: true,
     },
-    p('charizard', 6, 36, 0.42, 'char', 'Epic', ['Flamethrower', 'Slash', 'Fly', 'Fire Spin'], 720),
+    {
+      ...p(
+        'charizard',
+        6,
+        36,
+        1.26,
+        'char',
+        '',
+        ['Flamethrower', 'Slash', 'Fly', 'Fire Spin'],
+        720,
+      ),
+      shiny: true,
+    },
     p('gengar', 94, 28, 0.28, 'geng', 'Epic', ['Lick', 'Hypnosis', 'Night Shade', 'Dream Eater']),
     p('blastoise', 9, 28, 0.22, 'squirt', 'Rare', ['Water Gun', 'Bite', 'Surf', 'Ice Beam']),
     p(
@@ -321,7 +336,6 @@ export function createInitialState(now = Date.now()): AppSnapshot {
       readyAt: now - 180000,
       initialDuration: 86400000,
       walkedKm: 2.4,
-      outcomeSpeciesId: 93,
       backing: 0.18,
       evolutionReserve: 0.09,
     },
@@ -334,7 +348,6 @@ export function createInitialState(now = Date.now()): AppSnapshot {
       readyAt: now + 7200000,
       initialDuration: 21600000,
       walkedKm: 1.8,
-      outcomeSpeciesId: 1,
       backing: 0.05,
       evolutionReserve: 0.025,
     },
@@ -347,7 +360,6 @@ export function createInitialState(now = Date.now()): AppSnapshot {
       readyAt: now + 36000000,
       initialDuration: 86400000,
       walkedKm: 3.2,
-      outcomeSpeciesId: 131,
       backing: 0.2,
       evolutionReserve: 0,
     },
@@ -360,7 +372,6 @@ export function createInitialState(now = Date.now()): AppSnapshot {
       readyAt: now + 216000000,
       initialDuration: 259200000,
       walkedKm: 0.6,
-      outcomeSpeciesId: 149,
       backing: 0.42,
       evolutionReserve: 0,
     },
@@ -373,7 +384,6 @@ export function createInitialState(now = Date.now()): AppSnapshot {
       readyAt: now - 600000,
       initialDuration: 0,
       walkedKm: 0,
-      outcomeSpeciesId: 25,
       backing: 0.08,
       evolutionReserve: 0.04,
     },
@@ -386,7 +396,6 @@ export function createInitialState(now = Date.now()): AppSnapshot {
       readyAt: now - 3600000,
       initialDuration: 0,
       walkedKm: 0,
-      outcomeSpeciesId: 133,
       backing: 0.12,
       evolutionReserve: 0.06,
     },

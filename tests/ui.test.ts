@@ -4,6 +4,8 @@ import { JSDOM } from 'jsdom';
 import React, { act } from 'react';
 import { createInitialState } from '../src/data/demo';
 import { STORAGE_KEY } from '../src/state/model';
+import { pokemonById } from '../src/data/pokemon';
+import { getPokemonHealth } from '../src/data/stats';
 import type { AppSnapshot } from '../src/types';
 
 async function mountApp(path = '/discover', prepare?: (state: AppSnapshot) => void) {
@@ -88,6 +90,13 @@ async function mountApp(path = '/discover', prepare?: (state: AppSnapshot) => vo
     wait: async (ms: number) => {
       await act(async () => new Promise((resolve) => setTimeout(resolve, ms)));
     },
+    until: async (predicate: () => boolean, message: string, timeout = 2000) => {
+      const deadline = Date.now() + timeout;
+      while (!predicate() && Date.now() < deadline) {
+        await act(async () => new Promise((resolve) => setTimeout(resolve, 30)));
+      }
+      assert.ok(predicate(), message);
+    },
     close: async () => {
       await act(async () => root.unmount());
       dom.window.close();
@@ -102,7 +111,10 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     assert.match(app.text(), /A launchpad for Pokémon trainers/);
     assert.equal(document.querySelectorAll('.coin-card').length, 8);
     assert.equal(app.saved().profile.artStyle, 'pixel');
-    assert.ok(document.querySelector('.equipped-mini .sprite-art[aria-label="Charmander"]'));
+    assert.ok(document.querySelector('.equipped-mini'));
+    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
+    assert.equal(document.querySelector('.sidebar a[href="#/settings"]'), null);
+    assert.doesNotMatch(document.querySelector('.sidebar')?.textContent || '', /Frontend preview/);
     assert.ok(document.querySelector('.trainer-avatar.pixel-avatar'));
     await act(async () =>
       document.querySelector<HTMLInputElement>('.global-search input')!.focus(),
@@ -149,18 +161,24 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     await fill('#display-name', 'Kanto Taylor');
     await click(document.querySelector('.character-options>button:nth-child(3)'));
     await click(document.querySelector('.art-style-options>button:nth-child(2)'));
-    await click(document.querySelector('.settings-save>button'));
+    await app.until(
+      () =>
+        app.saved().profile.displayName === 'Kanto Taylor' &&
+        app.saved().profile.artStyle === 'drawn' &&
+        app.saved().profile.character === 'misty',
+      'Appearance and name are saved without a submit button',
+    );
     assert.equal(app.saved().profile.displayName, 'Kanto Taylor');
     assert.equal(app.saved().profile.character, 'misty');
     assert.equal(app.saved().profile.artStyle, 'drawn');
     assert.match(document.querySelector('.account-name')?.textContent || '', /Kanto Taylor/);
-    assert.ok(document.querySelector('.equipped-mini img.drawn-art[alt="Charmander"]'));
+    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
     // The little interactive sidebar companion stays a game sprite in either art setting.
     assert.ok(document.querySelector('.buddy-pet .sprite-art'));
     await click(document.querySelector('.art-style-options>button:first-child'));
-    await click(document.querySelector('.settings-save>button'));
+    await app.until(() => app.saved().profile.artStyle === 'pixel', 'Art preference auto-saves');
     assert.equal(app.saved().profile.artStyle, 'pixel');
-    assert.ok(document.querySelector('.equipped-mini .sprite-art'));
+    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
   } finally {
     await app.close();
   }
@@ -219,19 +237,52 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
       /A little gift from|Reserved redemption value/,
     );
     await click(document.querySelector('button[aria-label="Hatch Rare egg"]'));
-    await app.wait(150);
-    assert.ok(document.querySelector('.opening-scene.revealed'));
-    assert.match(document.querySelector('.opening-scene')?.textContent || '', /Haunter/);
-    await click(document.querySelector('.reveal-actions button:first-child'));
+    await app.until(
+      () => !!document.querySelector('.reveal-v3.is-revealed'),
+      'Egg reveal completes',
+    );
+    const hatched = app.saved().pokemon.find((p) => p.id === 'hatched-egg-ready')!;
+    assert.ok(hatched, 'The actual drawn Pokémon is added to inventory');
+    assert.ok(
+      document
+        .querySelector('.reveal-v3')
+        ?.textContent?.includes(pokemonById(hatched.speciesId).name),
+    );
+    assert.equal(
+      app.saved().rewards.find((r) => r.id === 'egg-ready')?.outcomeSpeciesId,
+      hatched.speciesId,
+    );
+    await click(document.querySelector('.reveal-v3-actions button:first-child'));
     await go('/pokemon');
     assert.equal(app.saved().profile.equippedId, 'hatched-egg-ready');
-    assert.ok(document.querySelector('.equipped-mini .pokemon-art[aria-label="Haunter"]'));
+    assert.ok(document.querySelector('.equipped-mini'));
+    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
     await go('/rewards?tab=packs');
+    assert.equal(
+      document.querySelector('.pack-art .pokemon-art'),
+      null,
+      'Sealed packs do not reveal a species',
+    );
+    const beforePack = new Set(app.saved().pokemon.map((p) => p.id));
     await click(document.querySelector('button[aria-label="Open Standard pack"]'));
-    await app.wait(150);
-    assert.match(document.querySelector('.opening-scene')?.textContent || '', /Pikachu/);
+    await app.until(
+      () => !!document.querySelector('.reveal-v3.is-revealed'),
+      'Pack reveal completes',
+    );
+    const unpacked = app.saved().pokemon.find((p) => !beforePack.has(p.id))!;
+    assert.ok(unpacked);
+    assert.ok(
+      document
+        .querySelector('.reveal-v3')
+        ?.textContent?.includes(pokemonById(unpacked.speciesId).name),
+    );
+    assert.equal(
+      document.querySelector('.reveal-v3 .rarity-badge'),
+      null,
+      'Owned Pokémon do not inherit pack rarity labels',
+    );
     await click(document.querySelector('button[aria-label="Close dialog"]'));
-    assert.equal(document.querySelectorAll('.reward-card').length, 1);
+    assert.equal(document.querySelectorAll('.reward-v3-card').length, 1);
     await go('/battles');
     await click(document.querySelector('.arena-hero .button'));
     await click(document.querySelector('.team-select-card'));
@@ -327,25 +378,28 @@ test('declined moves stay dismissed on return and evolution is unavailable witho
   }
 });
 
-test('coin drafts use an owned Pokémon with a separate uploaded image and validated social links', async () => {
+test('the launch wizard validates steps and keeps the chosen Pokémon, image, and links when going back', async () => {
   const app = await mountApp('/create', (state) => {
     state.pokemon.find((p) => p.id === 'gengar')!.listed = 0.4;
   });
   const { document, click, fill } = app;
   const originalImage = globalThis.Image;
   try {
-    const choices = [...document.querySelectorAll('.owned-pokemon-selector button')];
-    assert.equal(choices.length, app.initial.pokemon.length - 1);
-    assert.ok(!choices.some((button) => button.textContent?.includes('Gengar')));
-    await click(choices.find((button) => button.textContent?.includes('Eevee'))!);
-    await fill('#coin-name', 'Moonstone Club');
+    assert.equal(document.querySelectorAll('.wizard-step').length, 1);
+    assert.equal(document.querySelector('.owned-pokemon-selector'), null);
+    assert.equal(app.button('Next: Pokémon').disabled, true);
+    await fill('#coin-name', 'Mo');
     await fill('#coin-ticker', 'MOON');
-    await fill('#coin-social-x', 'javascript:alert(1)');
-    assert.equal(app.button('Create coin draft').disabled, true);
-    assert.equal(document.querySelector('#coin-social-x')?.getAttribute('aria-invalid'), 'true');
-    await fill('#coin-social-x', 'https://x.com/moonstone');
-    await fill('#coin-social-website', 'https://moonstone.example/');
-    // JSDOM has no image decoder. Stub only that browser boundary; FileReader and form state remain real.
+    assert.equal(
+      app.button('Next: Pokémon').disabled,
+      true,
+      'A name shorter than three characters cannot advance',
+    );
+    await fill('#coin-name', 'Moonstone Club');
+    await fill('#coin-ticker', 'POKE');
+    assert.equal(app.button('Next: Pokémon').disabled, true, 'Existing tickers cannot advance');
+    await fill('#coin-ticker', 'MOON');
+    // Stub image decoding only. FileReader and wizard state are exercised normally.
     Object.defineProperty(globalThis, 'Image', {
       configurable: true,
       value: class {
@@ -374,13 +428,63 @@ test('coin drafts use an owned Pokémon with a separate uploaded image and valid
         ?.getAttribute('src')
         ?.startsWith('data:image/png;base64,'),
     );
-    assert.equal(app.button('Create coin draft').disabled, false);
+    await click(app.button('Next: Pokémon'));
+    assert.equal(
+      document.querySelector('#coin-name'),
+      null,
+      'The previous step is not displayed below the current step',
+    );
+    const choices = [...document.querySelectorAll('.owned-pokemon-selector button')];
+    assert.equal(choices.length, app.initial.pokemon.length - 1);
+    assert.ok(!choices.some((button) => button.textContent?.includes('Gengar')));
+    await click(choices.find((button) => button.textContent?.includes('Eevee'))!);
+    await click(app.button('Back'));
+    assert.equal(document.querySelector<HTMLInputElement>('#coin-name')?.value, 'Moonstone Club');
+    assert.equal(document.querySelector<HTMLInputElement>('#coin-ticker')?.value, 'MOON');
+    assert.ok(document.querySelector('img[alt="Your coin image"]'));
+    await click(app.button('Next: Pokémon'));
+    assert.match(
+      document.querySelector('.owned-pokemon-selector [aria-pressed="true"]')?.textContent || '',
+      /Eevee/,
+    );
+    await click(app.button('Next: Rewards'));
+    const rewardModes = document.querySelector('[role="group"][aria-label="Reward mode"]')!;
+    assert.equal(rewardModes.querySelectorAll('button[aria-pressed]').length, 3);
+    await click(
+      [...rewardModes.querySelectorAll('button')].find(
+        (button) => button.querySelector('strong')?.textContent === 'Packs',
+      )!,
+    );
+    assert.match(rewardModes.querySelector('[aria-pressed="true"]')?.textContent || '', /Packs/);
+    await click(app.button('Next: Links'));
+    await fill('#coin-social-x', 'javascript:alert(1)');
+    assert.equal(app.button('Review coin').disabled, true);
+    assert.equal(document.querySelector('#coin-social-x')?.getAttribute('aria-invalid'), 'true');
+    await fill('#coin-social-x', 'https://x.com/moonstone');
+    await fill('#coin-social-website', 'https://moonstone.example/');
+    await click(app.button('Review coin'));
+    assert.match(
+      document.querySelector('.wizard-review-identity')?.textContent || '',
+      /Moonstone Club/,
+    );
+    assert.match(document.querySelector('.wizard-review-list')?.textContent || '', /Eevee/);
+    await click(app.button('Back'));
+    assert.equal(
+      document.querySelector<HTMLInputElement>('#coin-social-x')?.value,
+      'https://x.com/moonstone',
+    );
+    await click(app.button('Review coin'));
     await click(app.button('Create coin draft'));
     const saved = app.saved();
     const coin = saved.coins.find((coin) => coin.ticker === 'MOON')!;
     assert.ok(coin);
     assert.equal(coin.launchKind, 'pokemon');
     assert.equal(coin.launchPokemonId, 'eevee');
+    assert.equal(
+      coin.mode,
+      'Packs',
+      'The reward choice persists through the remaining wizard steps',
+    );
     assert.equal(coin.pokemonId, 133);
     assert.ok(coin.image?.startsWith('data:image/png;base64,'));
     assert.deepEqual(coin.socials, {
@@ -390,7 +494,7 @@ test('coin drafts use an owned Pokémon with a separate uploaded image and valid
     assert.equal(
       saved.pokemon.length,
       app.initial.pokemon.length,
-      'The launch Pokémon is still owned',
+      'The launch Pokémon stays owned',
     );
   } finally {
     Object.defineProperty(globalThis, 'Image', {
@@ -402,19 +506,23 @@ test('coin drafts use an owned Pokémon with a separate uploaded image and valid
   }
 });
 
-test('an empty inventory creates a trainer coin without a Pokémon selection', async () => {
+test('the launch wizard supports a trainer coin when the inventory is empty', async () => {
   const app = await mountApp('/create', (state) => {
     state.pokemon = [];
     state.profile.equippedId = null;
   });
   try {
+    await app.fill('#coin-name', 'Trainer Club');
+    await app.fill('#coin-ticker', 'TRAIN');
+    await app.click(app.button('Next: Pokémon'));
     assert.equal(app.document.querySelector('.owned-pokemon-selector'), null);
     assert.match(
       app.document.querySelector('main')?.textContent || '',
       /coin will launch as your trainer/,
     );
-    await app.fill('#coin-name', 'Trainer Club');
-    await app.fill('#coin-ticker', 'TRAIN');
+    await app.click(app.button('Next: Rewards'));
+    await app.click(app.button('Next: Links'));
+    await app.click(app.button('Review coin'));
     await app.click(app.button('Create coin draft'));
     const coin = app.saved().coins.find((coin) => coin.ticker === 'TRAIN')!;
     assert.equal(coin.launchKind, 'trainer');
@@ -423,6 +531,80 @@ test('an empty inventory creates a trainer coin without a Pokémon selection', a
       character: app.initial.profile.character,
       accessoryColor: app.initial.profile.accessoryColor,
     });
+  } finally {
+    await app.close();
+  }
+});
+
+test('Pokémon summary exposes current HP and stats without individual reward-tier labels', async () => {
+  const app = await mountApp('/pokemon/partner', (state) => {
+    const partner = state.pokemon.find((p) => p.id === 'partner')!;
+    partner.health = 12;
+    partner.rarity = 'Rare';
+    partner.shiny = true;
+  });
+  try {
+    const partner = app.saved().pokemon.find((p) => p.id === 'partner')!;
+    const hp = getPokemonHealth(partner);
+    const meter = app.document.querySelector('[role="meter"][aria-label="Health"]');
+    assert.ok(meter);
+    assert.equal(Number(meter.getAttribute('aria-valuenow')), 12);
+    assert.equal(Number(meter.getAttribute('aria-valuemax')), hp.max);
+    assert.ok(app.document.querySelector('.summary-stats'));
+    assert.doesNotMatch(
+      app.document.querySelector('main')?.textContent || '',
+      /\bStandard\b|\bShiny\b/,
+    );
+    assert.equal(app.document.querySelector('main .rarity-badge'), null);
+    assert.ok(app.document.querySelector('main .pokemon-art'));
+  } finally {
+    await app.close();
+  }
+});
+
+test('trainer edits auto-save the latest rapid choices and a name survives leaving the editor', async () => {
+  const app = await mountApp('/settings');
+  const { document, click, fill, go } = app;
+  try {
+    assert.equal(document.querySelector('.settings-save'), null);
+    await fill('#display-name', 'Taylor');
+    await fill('#display-name', 'Taylor Kanto');
+    await click(document.querySelector('.character-options>button:first-child'));
+    await click(document.querySelector('.character-options>button:nth-child(2)'));
+    const colour = document.querySelector<HTMLButtonElement>(
+      '.colour-options>button:nth-child(4)',
+    )!;
+    await click(colour);
+    await click(document.querySelector('.art-style-options>button:nth-child(2)'));
+    await app.until(
+      () =>
+        app.saved().profile.displayName === 'Taylor Kanto' &&
+        app.saved().profile.character === 'leaf' &&
+        app.saved().profile.artStyle === 'drawn',
+      'The latest edits all auto-save',
+    );
+    assert.equal(app.saved().profile.accessoryColor, '#aa80d2');
+    assert.match(
+      document.querySelector('.autosave-status')?.textContent || '',
+      /All changes saved/,
+    );
+    await fill('#display-name', 'Trainer Taylor');
+    await go('/pokemon');
+    await app.until(
+      () => app.saved().profile.displayName === 'Trainer Taylor',
+      'Navigating away flushes a name in the debounce window',
+    );
+    await go('/settings');
+    assert.equal(
+      document.querySelector<HTMLInputElement>('#display-name')?.value,
+      'Trainer Taylor',
+    );
+    assert.equal(
+      document
+        .querySelector('.character-options>button:nth-child(2)')
+        ?.getAttribute('aria-pressed'),
+      'true',
+    );
   } finally {
     await app.close();
   }

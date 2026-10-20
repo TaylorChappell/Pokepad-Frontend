@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { collectionValue, profileName, shortWallet } from '../state/model';
 import { ACCENT_COLORS, CHARACTERS, GYMS } from '../data/demo';
@@ -141,7 +141,7 @@ export function PortfolioPage() {
             const p = state.pokemon.find((p) => p.id === state.profile.equippedId);
             return p ? (
               <div className="partner-summary">
-                <PokemonArt id={p.speciesId} />
+                <PokemonArt id={p.speciesId} shiny={p.shiny} />
                 <div>
                   <h2>{pokemonById(p.speciesId).name}</h2>
                   <p>Rare Candy from holding active coins.</p>
@@ -233,7 +233,7 @@ export function ProfilePage() {
           </div>
           {partner ? (
             <div className="profile-partner">
-              <PokemonArt id={partner.speciesId} />
+              <PokemonArt id={partner.speciesId} shiny={partner.shiny} />
               <div>
                 <h2>{pokemonById(partner.speciesId).name}</h2>
                 <div className="type-row">
@@ -330,53 +330,107 @@ export function ActivityPage() {
   );
 }
 
+const editableProfile = (profile: Profile) => ({
+  displayName: profile.displayName.trim(),
+  character: profile.character,
+  accessoryColor: profile.accessoryColor,
+  artStyle: profile.artStyle,
+  reducedMotion: profile.reducedMotion,
+  rewardNotifications: profile.rewardNotifications,
+  evolutionNotifications: profile.evolutionNotifications,
+});
+
 export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
-  const { state, act, toast, busy, mode } = useApp(),
-    [tab, setTab] = useState(initial),
-    [draft, setDraft] = useState<Profile>(state.profile),
-    [reset, setReset] = useState(false);
+  const { state, act, toast, busy, mode } = useApp();
+  const [tab, setTab] = useState(initial);
+  const [draft, setDraft] = useState<Profile>(state.profile);
+  const [reset, setReset] = useState(false);
+  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [saveDelay, setSaveDelay] = useState(0);
+  const [revision, setRevision] = useState(0);
+  const latestAct = useRef(act);
+  const latestDraft = useRef(draft);
+  const latestProfile = useRef(state.profile);
+  const failedPatch = useRef('');
+  latestAct.current = act;
+  latestDraft.current = draft;
+  latestProfile.current = state.profile;
   useEffect(() => setTab(initial), [initial]);
-  const save = async () => {
-    if (
-      await act({
-        type: 'profile.update',
-        patch: {
-          displayName: draft.displayName,
-          character: draft.character,
-          accessoryColor: draft.accessoryColor,
-          artStyle: draft.artStyle,
-          reducedMotion: draft.reducedMotion,
-          rewardNotifications: draft.rewardNotifications,
-          evolutionNotifications: draft.evolutionNotifications,
-        },
-      })
-    )
-      toast('Settings saved.');
+  const update = (patch: Partial<Profile>, delayed = false) => {
+    failedPatch.current = '';
+    setDraft((previous) => ({ ...previous, ...patch }));
+    setSaveDelay(delayed ? 550 : 0);
+    setSaveState('saving');
+    setRevision((value) => value + 1);
   };
-  const toggle = (field: 'rewardNotifications' | 'evolutionNotifications' | 'reducedMotion') =>
-    setDraft({ ...draft, [field]: !draft[field] });
+  useEffect(() => {
+    const patch = editableProfile(draft);
+    const serialized = JSON.stringify(patch);
+    if (serialized === JSON.stringify(editableProfile(state.profile))) {
+      setSaveState('saved');
+      return;
+    }
+    if (busy || failedPatch.current === serialized) return;
+    const timer = window.setTimeout(async () => {
+      setSaveState('saving');
+      const saved = await latestAct.current({ type: 'profile.update', patch });
+      if (!saved) {
+        failedPatch.current = serialized;
+        setSaveState('error');
+      } else if (
+        JSON.stringify(editableProfile(latestDraft.current)) ===
+        JSON.stringify(editableProfile(saved.profile))
+      ) {
+        setSaveState('saved');
+      }
+    }, saveDelay);
+    return () => window.clearTimeout(timer);
+  }, [draft, state.profile, busy, saveDelay, revision]);
+  // Preserve a name still inside the debounce window when navigating away.
+  useEffect(
+    () => () => {
+      const patch = editableProfile(latestDraft.current);
+      if (JSON.stringify(patch) !== JSON.stringify(editableProfile(latestProfile.current))) {
+        void latestAct.current({ type: 'profile.update', patch });
+      }
+    },
+    [],
+  );
+  const retry = () => {
+    failedPatch.current = '';
+    setSaveState('saving');
+    setRevision((value) => value + 1);
+  };
+  const saveStatus = (
+    <span className={'autosave-status ' + saveState} role="status" aria-live="polite">
+      <span className="autosave-indicator" aria-hidden="true" />
+      {saveState === 'saving'
+        ? 'Saving…'
+        : saveState === 'error'
+          ? 'Could not save'
+          : 'All changes saved'}
+      {saveState === 'error' && <button onClick={retry}>Retry</button>}
+    </span>
+  );
   return (
-    <>
-      <PageHeading
-        eyebrow="MAKE YOURSELF AT HOME"
-        title="Settings"
-        description="A trainer profile that feels a little more like you."
-      />
+    <div className="account-settings">
+      <PageHeading title="Settings">{saveStatus}</PageHeading>
       <div className="settings-layout">
         <nav className="settings-nav" aria-label="Settings sections">
           {[
             { id: 'profile', name: 'Trainer profile', icon: 'Users' as const },
-            { id: 'notifications', name: 'Notifications', icon: 'Bell' as const },
-            { id: 'wallet', name: 'Wallet & connection', icon: 'Wallet' as const },
-            { id: 'help', name: 'How it works', icon: 'HelpCircle' as const },
-          ].map((t) => (
+            { id: 'notifications', name: 'Preferences', icon: 'Bell' as const },
+            { id: 'wallet', name: 'Wallet', icon: 'Wallet' as const },
+            { id: 'help', name: 'Trainer handbook', icon: 'HelpCircle' as const },
+          ].map((item) => (
             <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={tab === t.id ? 'active' : ''}
+              key={item.id}
+              onClick={() => setTab(item.id)}
+              className={tab === item.id ? 'active' : ''}
+              aria-current={tab === item.id ? 'page' : undefined}
             >
-              <Icon name={t.icon} />
-              {t.name}
+              <Icon name={item.icon} size={19} />
+              <span>{item.name}</span>
               <Icon name="ChevronRight" size={14} />
             </button>
           ))}
@@ -384,18 +438,29 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
         <div className="panel settings-content">
           {tab === 'profile' && (
             <>
-              <h2>Trainer appearance</h2>
-
-              <div className="avatar-editor">
-                <Avatar profile={draft} size={132} />
+              <div className="settings-section-heading">
                 <div>
-                  <h3>Your trainer sprite</h3>
-                  <p>Your trainer and accessory colour are randomly chosen on your first visit.</p>
+                  <h2>Make it your trainer.</h2>
+                  <p>Choose a face, pick a colour, and you’re ready.</p>
+                </div>
+              </div>
+              <div className="avatar-editor">
+                <div
+                  className="avatar-preview-frame"
+                  style={{ '--trainer-accent': draft.accessoryColor } as CSSProperties}
+                >
+                  <Avatar profile={draft} size={132} />
+                  <span className="avatar-preview-label">TRAINER CARD</span>
+                </div>
+                <div>
+                  <h3>{draft.displayName.trim() || shortWallet(state.profile.wallet)}</h3>
+                  <p>
+                    {draft.character[0].toUpperCase() + draft.character.slice(1)} · Kanto trainer
+                  </p>
                   <button
-                    className="text-link"
+                    className="button secondary randomise-trainer"
                     onClick={() =>
-                      setDraft({
-                        ...draft,
+                      update({
                         character: CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)],
                         accessoryColor:
                           ACCENT_COLORS[Math.floor(Math.random() * ACCENT_COLORS.length)],
@@ -407,83 +472,107 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                   </button>
                 </div>
               </div>
-              <label className="field-label">Trainer</label>
-              <div className="character-options">
-                {CHARACTERS.map((c) => (
+              <div className="editor-label-row">
+                <h3>Trainer</h3>
+                <span>Choose your look</span>
+              </div>
+              <div className="character-options" role="group" aria-label="Trainer appearance">
+                {CHARACTERS.map((character) => (
                   <button
-                    className={draft.character === c ? 'selected' : ''}
-                    key={c}
-                    onClick={() => setDraft({ ...draft, character: c })}
+                    className={draft.character === character ? 'selected' : ''}
+                    key={character}
+                    aria-pressed={draft.character === character}
+                    onClick={() => update({ character })}
                   >
-                    <Avatar profile={{ ...draft, character: c }} size={66} />
-                    <span>{c[0].toUpperCase() + c.slice(1)}</span>
-                    {draft.character === c && <Icon name="CheckCircle2" size={16} />}
+                    <Avatar profile={{ ...draft, character }} size={76} />
+                    <span>{character[0].toUpperCase() + character.slice(1)}</span>
+                    {draft.character === character && (
+                      <span className="trainer-selected-check">
+                        <Icon name="Check" size={12} />
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
-              <label className="field-label">Accessory colour</label>
-              <div className="colour-options">
-                {ACCENT_COLORS.map((c) => (
+              <div className="editor-label-row">
+                <h3>Accessory colour</h3>
+              </div>
+              <div className="colour-options" role="group" aria-label="Accessory colour">
+                {ACCENT_COLORS.map((colour, index) => (
                   <button
-                    key={c}
-                    className={draft.accessoryColor === c ? 'selected' : ''}
-                    aria-label={'Choose accessory colour ' + c}
-                    style={{ background: c }}
-                    onClick={() => setDraft({ ...draft, accessoryColor: c })}
+                    key={colour}
+                    className={draft.accessoryColor === colour ? 'selected' : ''}
+                    aria-label={
+                      'Choose accessory colour ' +
+                      ['Coral', 'Ocean', 'Leaf', 'Lilac', 'Golden', 'Rose'][index]
+                    }
+                    aria-pressed={draft.accessoryColor === colour}
+                    style={{ background: colour }}
+                    onClick={() => update({ accessoryColor: colour })}
                   >
-                    {draft.accessoryColor === c && <Icon name="Check" size={18} />}
+                    {draft.accessoryColor === colour && <Icon name="Check" size={19} />}
                   </button>
                 ))}
+              </div>
+              <div className="editor-display-name">
+                <label className="field-label" htmlFor="display-name">
+                  Display name
+                </label>
+                <input
+                  className="text-input"
+                  id="display-name"
+                  maxLength={24}
+                  value={draft.displayName}
+                  placeholder={shortWallet(state.profile.wallet)}
+                  onChange={(e) => update({ displayName: e.target.value }, true)}
+                  onBlur={() => {
+                    setSaveDelay(0);
+                    setRevision((value) => value + 1);
+                  }}
+                />
+                <p className="field-help">
+                  <span>Leave blank to use your wallet address.</span>
+                  <span>{draft.displayName.length}/24</span>
+                </p>
               </div>
               <div className="art-setting">
-                <h3>Pokémon artwork</h3>
-                <p>Pixel sprites are the default. Switch to illustrations at any time.</p>
+                <div className="editor-label-row">
+                  <h3>Pokémon artwork</h3>
+                  <span>Your choice, everywhere</span>
+                </div>
                 <div className="art-style-options">
                   {(['pixel', 'drawn'] as const).map((style) => (
                     <button
                       type="button"
                       className={draft.artStyle === style ? 'selected' : ''}
                       key={style}
-                      onClick={() => setDraft({ ...draft, artStyle: style })}
+                      onClick={() => update({ artStyle: style })}
                       aria-pressed={draft.artStyle === style}
                     >
-                      <PokemonArt id={6} styleOverride={style} />
+                      <PokemonArt id={6} animated={false} styleOverride={style} />
                       <span className="art-style-copy">
-                        <strong>{style === 'pixel' ? 'Pixel sprites' : 'Drawn artwork'}</strong>
+                        <strong>{style === 'pixel' ? 'Game sprites' : 'Illustrations'}</strong>
                         <small>
-                          {style === 'pixel' ? 'Animated game sprites' : 'Official illustrations'}
+                          {style === 'pixel'
+                            ? 'Classic pixels, full of character'
+                            : 'Official Pokémon artwork'}
                         </small>
+                      </span>
+                      <span className="art-choice-check">
+                        {draft.artStyle === style && <Icon name="Check" size={14} />}
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
-              <label className="field-label" htmlFor="display-name">
-                Display name
-              </label>
-              <input
-                className="text-input"
-                id="display-name"
-                maxLength={24}
-                value={draft.displayName}
-                placeholder={shortWallet(state.profile.wallet)}
-                onChange={(e) => setDraft({ ...draft, displayName: e.target.value })}
-              />
-              <p className="field-help">
-                Leave this blank to use your short wallet address. {draft.displayName.length}/24
-              </p>
-              <div className="settings-save">
-                <Button disabled={busy} onClick={save}>
-                  <Icon name="Check" size={16} />
-                  Save changes
-                </Button>
-              </div>
             </>
           )}
           {tab === 'notifications' && (
             <>
-              <h2>Notifications</h2>
-              <p className="muted">Choose which updates appear in the notification bell.</p>
+              <div className="settings-section-heading">
+                <h2>Just the updates you want.</h2>
+                <p>These preferences save as soon as you change them.</p>
+              </div>
               {[
                 {
                   key: 'rewardNotifications' as const,
@@ -493,41 +582,38 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                 {
                   key: 'evolutionNotifications' as const,
                   title: 'Evolution updates',
-                  description: 'Notify me when my Pokémon can evolve.',
+                  description: 'See when your Pokémon is ready to evolve.',
                 },
                 {
                   key: 'reducedMotion' as const,
                   title: 'Reduce motion',
-                  description: 'Shorter reward reveals and fewer decorative animations.',
+                  description: 'Still artwork, shorter reveals, and less movement.',
                 },
-              ].map((t) => (
-                <div className="toggle-row" key={t.key}>
+              ].map((item) => (
+                <div className="toggle-row" key={item.key}>
                   <div>
-                    <strong>{t.title}</strong>
-                    <p>{t.description}</p>
+                    <strong>{item.title}</strong>
+                    <p>{item.description}</p>
                   </div>
                   <button
-                    className={'toggle ' + (draft[t.key] ? 'on' : '')}
+                    className={'toggle ' + (draft[item.key] ? 'on' : '')}
                     role="switch"
-                    aria-checked={draft[t.key]}
-                    aria-label={t.title}
-                    onClick={() => toggle(t.key)}
+                    aria-checked={draft[item.key]}
+                    aria-label={item.title}
+                    onClick={() => update({ [item.key]: !draft[item.key] })}
                   >
                     <span />
                   </button>
                 </div>
               ))}
-              <div className="settings-save">
-                <Button disabled={busy} onClick={save}>
-                  Save preferences
-                </Button>
-              </div>
             </>
           )}
           {tab === 'wallet' && (
             <>
-              <h2>Wallet</h2>
-              <p className="muted">Account and connection details.</p>
+              <div className="settings-section-heading">
+                <h2>Your wallet</h2>
+                <p>Account and connection details.</p>
+              </div>
               <div className="wallet-card">
                 <Icon name="Wallet" size={28} />
                 <span className="status-tag">
@@ -574,7 +660,7 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
         </div>
       </div>
       {reset && (
-        <Modal title="Reset the preview?" onClose={() => setReset(false)}>
+        <Modal title="Reset demo data?" onClose={() => setReset(false)}>
           <div className="modal-body">
             <p>
               This clears your changes in this browser and restores the sample Pokémon, coins, and
@@ -587,10 +673,14 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
               <Button
                 disabled={busy}
                 onClick={async () => {
-                  if (await act({ type: 'demo.reset' })) {
+                  const next = await act({ type: 'demo.reset' });
+                  if (next) {
+                    latestDraft.current = next.profile;
+                    latestProfile.current = next.profile;
+                    setDraft(next.profile);
                     setReset(false);
                     navigate('/discover');
-                    toast('Preview reset.');
+                    toast('Demo reset.');
                   }
                 }}
               >
@@ -600,7 +690,7 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
           </div>
         </Modal>
       )}
-    </>
+    </div>
   );
 }
 

@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Button, Icon, PageHeading, PokepadLogo } from '../components/UI';
-import { PixelWorld } from '../components/PixelWorld';
+import {
+  Button,
+  Icon,
+  PageHeading,
+  PokepadLogo,
+  PokemonArt,
+  EggArt,
+  PackArt,
+  RareCandyIcon,
+} from '../components/UI';
 const pages = [
   {
     title: 'Choose a coin. Start collecting.',
@@ -43,16 +51,58 @@ export function GuideManual({ embedded = false }: { embedded?: boolean }) {
     <div className={'trainer-manual ' + (embedded ? 'embedded' : '')}>
       <div className="manual-binding">
         <PokepadLogo size={22} />
-        <strong>POKéPAD / TRAINER HANDBOOK</strong>
-        <span>GEN I</span>
+        <strong>Your trainer handbook</strong>
+        <span>{page + 1} of 3</span>
       </div>
       <div key={page} className="manual-leaf">
         <div className="manual-picture">
-          <PixelWorld variant={entry.variant} />
-          <span className="manual-figure">FIELD NOTES / {String(page + 1).padStart(2, '0')}</span>
+          <div className={'handbook-art handbook-' + entry.variant}>
+            <div className="handbook-art-orbit" aria-hidden="true" />
+            {page === 0 ? (
+              <>
+                <PokemonArt
+                  id={25}
+                  animated={false}
+                  styleOverride="drawn"
+                  className="handbook-pikachu"
+                />
+                <div className="handbook-token">
+                  <PokepadLogo size={44} />
+                  <strong>POKE</strong>
+                </div>
+                <span className="handbook-art-label">Find a community you like.</span>
+              </>
+            ) : page === 1 ? (
+              <>
+                <EggArt tier="Rare" />
+                <PackArt tier="Rare" />
+                <span className="handbook-art-label">A surprise in every reward.</span>
+              </>
+            ) : (
+              <>
+                <PokemonArt
+                  id={4}
+                  animated={false}
+                  styleOverride="drawn"
+                  className="handbook-before"
+                />
+                <span className="handbook-evolve-arrow">
+                  <RareCandyIcon size={40} />
+                  <Icon name="ArrowRight" size={28} />
+                </span>
+                <PokemonArt
+                  id={5}
+                  animated={false}
+                  styleOverride="drawn"
+                  className="handbook-after"
+                />
+                <span className="handbook-art-label">Grow together.</span>
+              </>
+            )}
+          </div>
         </div>
         <div className="manual-writing">
-          <span className="manual-page-number">0{page + 1}</span>
+          <span className="manual-section-tag">{['Collect', 'Discover', 'Train'][page]}</span>
           <h2>{entry.title}</h2>
           <p>{entry.text}</p>
           <aside>{entry.note}</aside>

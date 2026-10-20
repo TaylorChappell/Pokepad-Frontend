@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { moveByName } from '../data/moves';
+import { getPokemonHealth, getPokemonStats } from '../data/stats';
 import {
   Avatar,
   Button,
@@ -38,12 +39,22 @@ export function BattlesPage() {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
   const available = state.pokemon.filter(
-      (p) => !p.listed && !p.locked && (format !== 'Pokémon' || !p.starter),
+      (p) =>
+        !p.listed &&
+        !p.locked &&
+        getPokemonHealth(p).current > 0 &&
+        (format !== 'Pokémon' || !p.starter),
     ),
     chosen = team.map((id) => state.pokemon.find((p) => p.id === id)!).filter(Boolean),
     opponents = [9, 94, 149].slice(0, chosen.length),
     current = chosen[active],
-    opponent = opponents[enemy];
+    opponent = opponents[enemy],
+    maxHp = chosen.map((p) => getPokemonStats(p).hp),
+    enemyMaxHp = opponents.map(
+      (speciesId, i) => getPokemonStats({ speciesId, level: chosen[i].level }).hp,
+    ),
+    ownPercent = current ? (hp[active] / maxHp[active]) * 100 : 0,
+    enemyPercent = opponent ? (enemyHp[enemy] / enemyMaxHp[enemy]) * 100 : 0;
   const chooseFormat = (f: Format) => {
     setFormat(f);
     setTeam([]);
@@ -52,8 +63,8 @@ export function BattlesPage() {
   const start = () => {
     setReview(false);
     setPhase('battle');
-    setHp(chosen.map(() => 100));
-    setEnemyHp(chosen.map(() => 100));
+    setHp(chosen.map((p) => getPokemonHealth(p).current));
+    setEnemyHp(enemyMaxHp);
     setPp(chosen.map((p) => p.moves.map((m) => moveByName(m).pp)));
     setActive(0);
     setEnemy(0);
@@ -70,7 +81,13 @@ export function BattlesPage() {
       ownName = pokemonById(current.speciesId).name,
       enemyName = pokemonById(opponent).name;
     setPp((p) => p.map((v, i) => (i === active ? v.map((x, j) => (j === index ? x - 1 : x)) : v)));
-    const damage = m.power ? Math.min(65, Math.round(m.power * 0.43) + 9) : 0,
+    // Keep the simplified practice pacing while displaying real species/level HP.
+    const damage = m.power
+        ? Math.max(
+            1,
+            Math.round((Math.min(65, Math.round(m.power * 0.43) + 9) * enemyMaxHp[enemy]) / 100),
+          )
+        : 0,
       nextEnemy = enemyHp.map((h, i) => (i === enemy ? Math.max(0, h - damage) : h));
     setEnemyHp(nextEnemy);
     setLog(
@@ -99,7 +116,10 @@ export function BattlesPage() {
         setBusy(false);
         return;
       }
-      const retaliation = m.power ? 17 + (turn % 3) * 4 : 9,
+      const retaliation = Math.max(
+          1,
+          Math.round(((m.power ? 17 + (turn % 3) * 4 : 9) * maxHp[active]) / 100),
+        ),
         nextHp = hp.map((h, i) => (i === active ? Math.max(0, h - retaliation) : h));
       setAttack('enemy');
       setHp(nextHp);
@@ -142,7 +162,7 @@ export function BattlesPage() {
           <div className="result-team">
             {chosen.map((p) => (
               <div key={p.id}>
-                <PokemonArt id={p.speciesId} />
+                <PokemonArt id={p.speciesId} shiny={p.shiny} />
                 <strong>{pokemonById(p.speciesId).name}</strong>
                 <small>Lv. {p.level}</small>
               </div>
@@ -235,22 +255,22 @@ export function BattlesPage() {
             <div className="hp-card">
               <div>
                 <strong>{pokemonById(opponent).name}</strong>
-                <span>Lv. {current.level}</span>
+                <span>Lv. {chosen[enemy].level}</span>
               </div>
               <div className="hp-bar">
                 <small>HP</small>
-                <Progress
-                  value={enemyHp[enemy]}
-                  color={enemyHp[enemy] > 35 ? '#68b687' : '#e8ad57'}
-                />
+                <Progress value={enemyPercent} color={enemyPercent > 35 ? '#68b687' : '#e8ad57'} />
               </div>
+              <small className="hp-number">
+                {enemyHp[enemy]} / {enemyMaxHp[enemy]}
+              </small>
             </div>
             <div className="battle-platform" />
             <PokemonArt id={opponent} />
           </div>
           <div className="combatant player-combatant">
             <div className="battle-platform" />
-            <PokemonArt id={current.speciesId} />
+            <PokemonArt id={current.speciesId} shiny={current.shiny} />
             <div className="hp-card">
               <div>
                 <strong>{pokemonById(current.speciesId).name}</strong>
@@ -258,9 +278,11 @@ export function BattlesPage() {
               </div>
               <div className="hp-bar">
                 <small>HP</small>
-                <Progress value={hp[active]} color={hp[active] > 35 ? '#68b687' : '#e8ad57'} />
+                <Progress value={ownPercent} color={ownPercent > 35 ? '#68b687' : '#e8ad57'} />
               </div>
-              <small className="hp-number">{hp[active]} / 100</small>
+              <small className="hp-number">
+                {hp[active]} / {maxHp[active]}
+              </small>
             </div>
           </div>
           <div className="battle-grass grass-left" />
@@ -318,11 +340,11 @@ export function BattlesPage() {
                     setLog('Go, ' + pokemonById(p.speciesId).name + '!');
                   }}
                 >
-                  <PokemonArt id={p.speciesId} />
+                  <PokemonArt id={p.speciesId} shiny={p.shiny} />
                   <span>
                     <strong>{pokemonById(p.speciesId).name}</strong>
                     <small>
-                      {hp[i]} / 100 HP {i === active ? '· On the field' : ''}
+                      {hp[i]} / {maxHp[i]} HP {i === active ? '· On the field' : ''}
                     </small>
                   </span>
                   <Icon name="ArrowRight" />
@@ -353,7 +375,7 @@ export function BattlesPage() {
                 <div key={i} className={chosen[i] ? 'filled' : ''}>
                   {chosen[i] ? (
                     <>
-                      <PokemonArt id={chosen[i].speciesId} />
+                      <PokemonArt id={chosen[i].speciesId} shiny={chosen[i].shiny} />
                       <strong>{pokemonById(chosen[i].speciesId).name}</strong>
                       <button
                         aria-label={'Remove ' + pokemonById(chosen[i].speciesId).name}
@@ -393,8 +415,11 @@ export function BattlesPage() {
                       <Icon name="Check" size={14} />
                     </span>
                   )}
-                  <PokemonArt id={p.speciesId} />
+                  <PokemonArt id={p.speciesId} shiny={p.shiny} />
                   <strong>{pokemonById(p.speciesId).name}</strong>
+                  <small>
+                    {getPokemonHealth(p).current} / {getPokemonHealth(p).max} HP
+                  </small>
                   <div className="type-row">
                     {pokemonById(p.speciesId).types.map((t) => (
                       <TypeChip key={t} type={t} />
@@ -484,7 +509,7 @@ export function BattlesPage() {
               <div className="review-team">
                 {chosen.map((p) => (
                   <div key={p.id}>
-                    <PokemonArt id={p.speciesId} />
+                    <PokemonArt id={p.speciesId} shiny={p.shiny} />
                     <strong>{pokemonById(p.speciesId).name}</strong>
                   </div>
                 ))}
@@ -602,9 +627,11 @@ export function BattlesPage() {
         <div className="party-bench-roster">
           {available.slice(0, 6).map((p) => (
             <a href={'#/pokemon/' + p.id} key={p.id}>
-              <PokemonArt id={p.speciesId} />
+              <PokemonArt id={p.speciesId} shiny={p.shiny} />
               <strong>{pokemonById(p.speciesId).name}</strong>
-              <span>Lv. {p.level}</span>
+              <span>
+                Lv. {p.level} · {getPokemonHealth(p).current}/{getPokemonHealth(p).max} HP
+              </span>
             </a>
           ))}
         </div>

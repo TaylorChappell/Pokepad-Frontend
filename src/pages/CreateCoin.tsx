@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Avatar, Button, EggArt, PackArt, PokemonArt, TypeChip } from '../components/UI';
+import { Avatar, Button, EggArt, Icon, PackArt, PokemonArt, TypeChip } from '../components/UI';
 import { pokemonById } from '../data/pokemon';
 import { useApp } from '../state/AppContext';
 import { profileName } from '../state/model';
@@ -30,6 +30,7 @@ export function CreateCoinPage() {
     () => state.pokemon.filter((p) => !p.listed && !p.locked),
     [state.pokemon],
   );
+  const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [ticker, setTicker] = useState('');
   const [description, setDescription] = useState('');
@@ -48,6 +49,7 @@ export function CreateCoinPage() {
   });
   const [pokemonFilter, setPokemonFilter] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
+  const stepTitle = useRef<HTMLHeadingElement>(null);
   const imageRequest = useRef(0);
 
   useEffect(() => {
@@ -74,7 +76,8 @@ export function CreateCoinPage() {
     !duplicateTicker &&
     !invalidSocial &&
     (trainerLaunch || !!selected) &&
-    !imageLoading;
+    !imageLoading &&
+    !imageError;
   const shownPokemon = eligible.filter((p) =>
     pokemonById(p.speciesId).name.toLowerCase().includes(pokemonFilter.trim().toLowerCase()),
   );
@@ -124,6 +127,10 @@ export function CreateCoinPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (step < 4) {
+      if (stepValid[step]) setStep(step + 1);
+      return;
+    }
     if (!canCreate || busy) return;
     const next = await act({
       type: 'coin.create',
@@ -145,353 +152,475 @@ export function CreateCoinPage() {
     }
   };
 
+  const steps = ['Details', 'Pokémon', 'Rewards', 'Links', 'Review'];
+  const stepValid = [
+    name.trim().length >= 3 &&
+      /^[A-Z0-9]{2,10}$/.test(ticker) &&
+      !duplicateTicker &&
+      !imageLoading &&
+      !imageError,
+    trainerLaunch || !!selected,
+    true,
+    !invalidSocial,
+    canCreate,
+  ];
+  useEffect(() => {
+    stepTitle.current?.focus();
+  }, [step]);
+  const nextLabels = ['Next: Pokémon', 'Next: Rewards', 'Next: Links', 'Review coin'];
+  const partnerArt = selected ? (
+    <PokemonArt id={selected.speciesId} shiny={selected.shiny} animated={false} eager />
+  ) : (
+    <Avatar profile={state.profile} size={144} />
+  );
+
   return (
     <div className="creation-desk">
-      <div className="creation-heading">
+      <header className="creation-heading">
         <div>
-          <h1>Create coin</h1>
-          <p>Set up your coin, choose its Pokémon, and decide how holders earn rewards.</p>
+          <h1>Create a coin</h1>
+          <p>Your community starts here. Make it yours, one step at a time.</p>
         </div>
-        <span className="creation-draft-stamp">DRAFT</span>
-      </div>
-
+        <span className="creation-draft-stamp">Coin studio</span>
+      </header>
+      <nav className="wizard-progress" aria-label="Launch steps">
+        {steps.map((label, index) => (
+          <button
+            key={label}
+            type="button"
+            aria-current={step === index ? 'step' : undefined}
+            className={step === index ? 'current' : step > index ? 'complete' : ''}
+            disabled={index > step}
+            onClick={() => setStep(index)}
+          >
+            <span>{index < step ? <Icon name="Check" size={16} /> : index + 1}</span>
+            <strong>{label}</strong>
+          </button>
+        ))}
+      </nav>
       <div className="creation-layout">
-        <form className="creation-form" onSubmit={submit}>
-          <section className="creation-section creation-identity">
+        <form className="creation-form" onSubmit={submit} noValidate>
+          <section
+            className="creation-section wizard-step"
+            key={step}
+            aria-labelledby="wizard-step-title"
+          >
             <div className="creation-section-label">
-              <h2>Coin details</h2>
-              <span>Visible on your coin page</span>
-            </div>
-            <div className="creation-identity-fields">
-              <div className="coin-image-field">
-                <label className="creation-label" htmlFor="coin-image">
-                  Coin image
-                </label>
-                <input
-                  ref={fileInput}
-                  id="coin-image"
-                  tabIndex={-1}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  className="creation-file-input"
-                  onChange={(event) => readImage(event.target.files?.[0])}
-                  aria-describedby="coin-image-help"
-                />
-                <button
-                  className={'coin-image-upload ' + (coinImage ? 'has-image' : '')}
-                  type="button"
-                  onClick={() => fileInput.current?.click()}
-                  disabled={imageLoading}
-                  aria-label={coinImage ? 'Change coin image' : 'Upload coin image'}
-                >
-                  {coinImage ? (
-                    <img src={coinImage} alt="Your coin image" />
-                  ) : (
-                    <>
-                      <span className="pixel-upload-mark" aria-hidden="true" />
-                      <strong>{imageLoading ? 'Loading…' : 'Upload image'}</strong>
-                    </>
-                  )}
-                  {coinImage && <span className="image-change-label">CHANGE</span>}
-                </button>
-                <span id="coin-image-help" className="creation-field-note">
-                  Square image · up to 2 MB
+              <div>
+                <span className="wizard-step-kicker">
+                  Step {step + 1} of {steps.length}
                 </span>
-                {coinImage && (
-                  <button
-                    className="creation-text-button"
-                    type="button"
-                    onClick={() => setCoinImage('')}
-                  >
-                    Remove image
-                  </button>
-                )}
+                <h2 id="wizard-step-title" ref={stepTitle} tabIndex={-1}>
+                  {
+                    [
+                      'Give it an identity',
+                      'Choose your launch Pokémon',
+                      'Choose holder rewards',
+                      'Connect your community',
+                      'Ready for your first holders?',
+                    ][step]
+                  }
+                </h2>
               </div>
-              <div className="coin-name-fields">
-                <label className="creation-label" htmlFor="coin-name">
-                  Name
-                </label>
-                <input
-                  id="coin-name"
-                  className="creation-input"
-                  value={name}
-                  maxLength={32}
-                  minLength={3}
-                  required
-                  placeholder="Your coin name"
-                  onChange={(event) => setName(event.target.value)}
-                />
-                <label className="creation-label" htmlFor="coin-ticker">
-                  Ticker
-                </label>
-                <div className="creation-ticker-field">
-                  <span aria-hidden="true">$</span>
-                  <input
-                    id="coin-ticker"
-                    value={ticker}
-                    maxLength={10}
-                    required
-                    placeholder="TICKER"
-                    pattern="[A-Z0-9]{2,10}"
-                    onChange={(event) =>
-                      setTicker(event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
-                    }
-                    aria-invalid={duplicateTicker}
-                    aria-describedby={duplicateTicker ? 'ticker-error' : undefined}
-                  />
+            </div>
+            {step === 0 && (
+              <>
+                <div className="creation-identity-fields">
+                  <div className="coin-image-field">
+                    <label className="creation-label" htmlFor="coin-image">
+                      Coin image <small>optional</small>
+                    </label>
+                    <input
+                      ref={fileInput}
+                      id="coin-image"
+                      tabIndex={-1}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="creation-file-input"
+                      onChange={(e) => readImage(e.target.files?.[0])}
+                      aria-describedby="coin-image-help"
+                    />
+                    <button
+                      className={'coin-image-upload ' + (coinImage ? 'has-image' : '')}
+                      type="button"
+                      onClick={() => fileInput.current?.click()}
+                      disabled={imageLoading}
+                      aria-label={coinImage ? 'Change coin image' : 'Upload coin image'}
+                    >
+                      {coinImage ? (
+                        <img src={coinImage} alt="Your coin image" />
+                      ) : (
+                        <>
+                          <Icon name="Plus" size={28} />
+                          <strong>{imageLoading ? 'Loading…' : 'Upload image'}</strong>
+                        </>
+                      )}
+                      {coinImage && <span className="image-change-label">Change image</span>}
+                    </button>
+                    <span id="coin-image-help" className="creation-field-note">
+                      PNG, JPG, WebP or GIF · up to 2 MB
+                    </span>
+                    {coinImage && (
+                      <button
+                        className="creation-text-button"
+                        type="button"
+                        onClick={() => {
+                          setCoinImage('');
+                          setImageError('');
+                        }}
+                      >
+                        Remove image
+                      </button>
+                    )}
+                  </div>
+                  <div className="coin-name-fields">
+                    <label className="creation-label" htmlFor="coin-name">
+                      Coin name
+                    </label>
+                    <input
+                      id="coin-name"
+                      className="creation-input"
+                      value={name}
+                      maxLength={32}
+                      minLength={3}
+                      required
+                      placeholder="e.g. Moonstone Club"
+                      onChange={(e) => setName(e.target.value)}
+                    />
+                    <span className="creation-field-note">3–32 characters</span>
+                    <label className="creation-label" htmlFor="coin-ticker">
+                      Ticker
+                    </label>
+                    <div className="creation-ticker-field">
+                      <span aria-hidden="true">$</span>
+                      <input
+                        id="coin-ticker"
+                        value={ticker}
+                        maxLength={10}
+                        required
+                        placeholder="MOON"
+                        pattern="[A-Z0-9]{2,10}"
+                        onChange={(e) =>
+                          setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
+                        }
+                        aria-invalid={duplicateTicker}
+                        aria-describedby={duplicateTicker ? 'ticker-error' : 'ticker-help'}
+                      />
+                    </div>
+                    {duplicateTicker ? (
+                      <p id="ticker-error" className="creation-error">
+                        That ticker is already in use.
+                      </p>
+                    ) : (
+                      <span id="ticker-help" className="creation-field-note">
+                        2–10 letters or numbers
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {duplicateTicker && (
-                  <p id="ticker-error" className="creation-error">
-                    That ticker is already in use.
+                {imageError && (
+                  <p className="creation-error" role="alert">
+                    {imageError}{' '}
+                    <button
+                      type="button"
+                      className="creation-text-button"
+                      onClick={() => {
+                        setCoinImage('');
+                        setImageError('');
+                      }}
+                    >
+                      Continue without an image
+                    </button>
                   </p>
                 )}
-              </div>
-            </div>
-            {imageError && (
-              <p className="creation-error" role="alert">
-                {imageError}
-              </p>
+                <label className="creation-label" htmlFor="coin-description">
+                  Description <small>optional</small>
+                </label>
+                <textarea
+                  id="coin-description"
+                  className="creation-input"
+                  rows={3}
+                  maxLength={280}
+                  placeholder="What brings your community together?"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+                <div className="creation-field-footer">
+                  <span>Your coin image is separate from your Pokémon.</span>
+                  <span>{description.length}/280</span>
+                </div>
+              </>
             )}
-            <label className="creation-label" htmlFor="coin-description">
-              Description
-            </label>
-            <textarea
-              id="coin-description"
-              className="creation-input"
-              rows={3}
-              maxLength={280}
-              placeholder="Tell holders what your coin is about."
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-            <div className="creation-field-footer">
-              <span>Your coin image and launch Pokémon are separate.</span>
-              <span>{description.length}/280</span>
-            </div>
-          </section>
-
-          <section className="creation-section">
-            <div className="creation-section-label">
-              <h2>Launch Pokémon</h2>
-              <span>{trainerLaunch ? 'Trainer launch' : eligible.length + ' available'}</span>
-            </div>
-            {trainerLaunch ? (
-              <div className="trainer-launch-panel">
-                <Avatar profile={state.profile} size={72} />
-                <div>
-                  <strong>{profileName(state)}</strong>
-                  <p>Your inventory is empty, so this coin will launch as your trainer.</p>
-                </div>
-              </div>
-            ) : eligible.length === 0 ? (
-              <div className="creation-unavailable">
-                <strong>No Pokémon available</strong>
-                <p>
-                  Your Pokémon are listed or locked. Unlist one or finish its battle to use it for
-                  this coin.
-                </p>
-                <a href="#/pokemon">Open inventory →</a>
-              </div>
-            ) : (
+            {step === 1 && (
               <>
-                <p className="creation-section-note">
-                  Choose a Pokémon from your inventory. You keep ownership.
-                </p>
-                {eligible.length > 8 && (
-                  <input
-                    aria-label="Find a launch Pokémon"
-                    className="creation-input pokemon-selector-search"
-                    placeholder="Find a Pokémon…"
-                    value={pokemonFilter}
-                    onChange={(event) => setPokemonFilter(event.target.value)}
-                  />
-                )}
-                <div
-                  className="owned-pokemon-selector"
-                  role="group"
-                  aria-label="Choose launch Pokémon"
-                >
-                  {shownPokemon.map((pokemon) => {
-                    const species = pokemonById(pokemon.speciesId);
-                    return (
-                      <button
-                        className={selectedId === pokemon.id ? 'chosen' : ''}
-                        key={pokemon.id}
-                        type="button"
-                        onClick={() => setSelectedId(pokemon.id)}
-                        aria-pressed={selectedId === pokemon.id}
-                      >
-                        <span className="launch-selection-cursor" aria-hidden="true">
-                          {selectedId === pokemon.id ? '▶' : ''}
-                        </span>
-                        <PokemonArt id={pokemon.speciesId} />
-                        <strong>{species.name}</strong>
-                        <small>Lv. {pokemon.level}</small>
-                      </button>
-                    );
-                  })}
-                </div>
-                {!shownPokemon.length && (
-                  <p className="creation-empty-search">No matching Pokémon in your inventory.</p>
+                {trainerLaunch ? (
+                  <div className="trainer-launch-panel">
+                    <Avatar profile={state.profile} size={112} />
+                    <div>
+                      <strong>{profileName(state)}</strong>
+                      <p>Your inventory is empty, so this coin will launch as your trainer.</p>
+                      <span className="creation-field-note">
+                        Collect a Pokémon any time to start building your team.
+                      </span>
+                    </div>
+                  </div>
+                ) : eligible.length === 0 ? (
+                  <div className="creation-unavailable">
+                    <strong>No Pokémon available</strong>
+                    <p>
+                      Your Pokémon are listed or locked. Unlist one or finish its battle to use it
+                      for this coin.
+                    </p>
+                    <a href="#/pokemon">Open inventory →</a>
+                  </div>
+                ) : (
+                  <>
+                    <p className="creation-section-note">
+                      Choose one of your Pokémon to represent the coin. It stays in your inventory.
+                    </p>
+                    {eligible.length > 8 && (
+                      <input
+                        aria-label="Find a launch Pokémon"
+                        className="creation-input pokemon-selector-search"
+                        placeholder="Find a Pokémon…"
+                        value={pokemonFilter}
+                        onChange={(e) => setPokemonFilter(e.target.value)}
+                      />
+                    )}
+                    <div
+                      className="owned-pokemon-selector"
+                      role="group"
+                      aria-label="Choose launch Pokémon"
+                    >
+                      {shownPokemon.map((pokemon) => (
+                        <button
+                          className={selectedId === pokemon.id ? 'chosen' : ''}
+                          key={pokemon.id}
+                          type="button"
+                          onClick={() => setSelectedId(pokemon.id)}
+                          aria-pressed={selectedId === pokemon.id}
+                        >
+                          {selectedId === pokemon.id && (
+                            <span className="launch-selection-cursor">
+                              <Icon name="Check" size={14} />
+                            </span>
+                          )}
+                          <PokemonArt
+                            id={pokemon.speciesId}
+                            shiny={pokemon.shiny}
+                            animated={false}
+                          />
+                          <strong>{pokemonById(pokemon.speciesId).name}</strong>
+                          <small>Lv. {pokemon.level}</small>
+                        </button>
+                      ))}
+                    </div>
+                    {!shownPokemon.length && (
+                      <p className="creation-empty-search">
+                        No matching Pokémon in your inventory.
+                      </p>
+                    )}
+                  </>
                 )}
               </>
             )}
-          </section>
-
-          <section className="creation-section">
-            <div className="creation-section-label">
-              <h2>Holder rewards</h2>
-              <span>Choose one mode</span>
-            </div>
-            <div className="creation-reward-options" role="radiogroup" aria-label="Reward mode">
-              {(['Eggs', 'Packs', 'Mixed'] as RewardMode[]).map((rewardMode) => (
-                <button
-                  type="button"
-                  key={rewardMode}
-                  className={mode === rewardMode ? 'selected' : ''}
-                  role="radio"
-                  aria-checked={mode === rewardMode}
-                  onClick={() => setMode(rewardMode)}
-                >
-                  <span className="creation-mode-art">
-                    {rewardMode === 'Packs' ? (
-                      <PackArt />
-                    ) : (
-                      <EggArt tier={rewardMode === 'Mixed' ? 'Rare' : 'Standard'} />
-                    )}
+            {step === 2 && (
+              <>
+                <p className="creation-section-note">
+                  Every mode can reveal different Pokémon. Choose the pace your holders will enjoy.
+                </p>
+                <div className="creation-reward-options" role="group" aria-label="Reward mode">
+                  {(['Eggs', 'Packs', 'Mixed'] as RewardMode[]).map((rewardMode) => (
+                    <button
+                      type="button"
+                      key={rewardMode}
+                      className={mode === rewardMode ? 'selected' : ''}
+                      aria-pressed={mode === rewardMode}
+                      onClick={() => setMode(rewardMode)}
+                    >
+                      <span className="creation-mode-art">
+                        {rewardMode === 'Packs' ? (
+                          <PackArt />
+                        ) : (
+                          <EggArt tier={rewardMode === 'Mixed' ? 'Rare' : 'Standard'} />
+                        )}
+                      </span>
+                      <span>
+                        <strong>{rewardMode === 'Mixed' ? 'Eggs + packs' : rewardMode}</strong>
+                        <small>
+                          {rewardMode === 'Eggs'
+                            ? 'Hatch over time. Walk to speed things up. Better odds of rare discoveries.'
+                            : rewardMode === 'Packs'
+                              ? 'Open instantly. A quick reveal with a chance of something special.'
+                              : 'A little of both: instant pack reveals and eggs worth waiting for.'}
+                        </small>
+                      </span>
+                      <span className="creation-radio" aria-hidden="true">
+                        {mode === rewardMode && <Icon name="Check" size={14} />}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="creation-fee-split">
+                  <span>
+                    <strong>50%</strong>Creator
                   </span>
                   <span>
-                    <strong>{rewardMode}</strong>
-                    <small>
-                      {rewardMode === 'Eggs'
-                        ? 'Timed hatching. Better chances of rare Pokémon.'
-                        : rewardMode === 'Packs'
-                          ? 'Open immediately. Lower chances of rare Pokémon.'
-                          : 'Holders receive both eggs and packs.'}
-                    </small>
+                    <strong>50%</strong>Holder rewards
                   </span>
-                  <span className="creation-radio" aria-hidden="true">
-                    {mode === rewardMode ? '●' : ''}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <div className="creation-fee-split">
-              <span>
-                <strong>50%</strong> Creator
-              </span>
-              <span>
-                <strong>50%</strong> Holder rewards
-              </span>
-            </div>
-            <p className="creation-section-note">
-              Rewards are funded from collected creator fees. They pause when the reward pool needs
-              more funds.
-            </p>
-          </section>
-
-          <details className="creation-section creation-socials" open={invalidSocial || undefined}>
-            <summary>
-              <h2>Social links</h2>
-              <span>
-                Optional <b aria-hidden="true">+</b>
-              </span>
-            </summary>
-            <div className="creation-social-fields">
-              {SOCIAL_FIELDS.map(({ key, label, placeholder }) => (
-                <div key={key}>
-                  <label className="creation-label" htmlFor={'coin-social-' + key}>
-                    {label}
-                  </label>
-                  <input
-                    id={'coin-social-' + key}
-                    className="creation-input"
-                    type="url"
-                    placeholder={placeholder}
-                    value={socials[key]}
-                    maxLength={300}
-                    onChange={(event) => setSocials({ ...socials, [key]: event.target.value })}
-                    aria-invalid={!validSocial(socials[key])}
-                    aria-describedby={
-                      !validSocial(socials[key]) ? 'social-error-' + key : undefined
-                    }
-                  />
-                  {!validSocial(socials[key]) && (
-                    <p id={'social-error-' + key} className="creation-error">
-                      Enter a full http:// or https:// link.
-                    </p>
-                  )}
                 </div>
-              ))}
-            </div>
-          </details>
-
-          <div className="creation-submit">
-            <p>Frontend preview. This saves a draft; it does not deploy a token.</p>
-            <Button type="submit" disabled={!canCreate || busy}>
-              {busy ? 'Saving…' : 'Create coin draft'}
+                <p className="creation-section-note">
+                  Collected creator fees fund every reward and evolution. Rewards wait when the pool
+                  needs more funds.
+                </p>
+              </>
+            )}
+            {step === 3 && (
+              <>
+                <p className="creation-section-note">
+                  Help holders find you. All links are optional — you can continue without them.
+                </p>
+                <div className="creation-social-fields">
+                  {SOCIAL_FIELDS.map(({ key, label, placeholder }) => (
+                    <div key={key}>
+                      <label className="creation-label" htmlFor={'coin-social-' + key}>
+                        {label}
+                      </label>
+                      <input
+                        id={'coin-social-' + key}
+                        className="creation-input"
+                        type="url"
+                        placeholder={placeholder}
+                        value={socials[key]}
+                        maxLength={300}
+                        onChange={(e) => setSocials({ ...socials, [key]: e.target.value })}
+                        aria-invalid={!validSocial(socials[key])}
+                        aria-describedby={
+                          !validSocial(socials[key]) ? 'social-error-' + key : undefined
+                        }
+                      />
+                      {!validSocial(socials[key]) && (
+                        <p id={'social-error-' + key} className="creation-error">
+                          Enter a full http:// or https:// link.
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {step === 4 && (
+              <>
+                <div className="wizard-review-identity">
+                  <div className="wizard-review-image">
+                    {coinImage ? <img src={coinImage} alt="Coin preview" /> : partnerArt}
+                  </div>
+                  <div>
+                    <h3>{name}</h3>
+                    <strong>${ticker}</strong>
+                    <p>{description || 'No description added.'}</p>
+                  </div>
+                  <button type="button" onClick={() => setStep(0)}>
+                    Edit
+                  </button>
+                </div>
+                <dl className="wizard-review-list">
+                  <div>
+                    <dt>Launched with</dt>
+                    <dd>
+                      {selectedSpecies?.name || profileName(state)}
+                      <button type="button" onClick={() => setStep(1)}>
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Holder rewards</dt>
+                    <dd>
+                      {mode === 'Mixed' ? 'Eggs + packs' : mode}
+                      <button type="button" onClick={() => setStep(2)}>
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Creator fees</dt>
+                    <dd>50% creator · 50% rewards</dd>
+                  </div>
+                  <div>
+                    <dt>Community links</dt>
+                    <dd>
+                      {SOCIAL_FIELDS.filter(({ key }) => socials[key].trim())
+                        .map(({ label }) => label)
+                        .join(', ') || 'None added'}
+                      <button type="button" onClick={() => setStep(3)}>
+                        Edit
+                      </button>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Gym badge</dt>
+                    <dd>${ticker}</dd>
+                  </div>
+                </dl>
+                <div className="wizard-launch-note">
+                  <Icon name="Info" size={20} />
+                  <span>
+                    <strong>Save your coin draft</strong>This version saves your setup on this
+                    browser. A token launch and wallet confirmation will be available when the
+                    backend is connected.
+                  </span>
+                </div>
+              </>
+            )}
+          </section>
+          <footer className="wizard-footer">
+            {step > 0 ? (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setStep(step - 1)}
+                disabled={busy}
+              >
+                <Icon name="ArrowLeft" size={16} />
+                Back
+              </Button>
+            ) : (
+              <a href="#/discover" className="wizard-cancel">
+                Cancel
+              </a>
+            )}
+            <span>
+              {step + 1} / {steps.length}
+            </span>
+            <Button type="submit" disabled={!stepValid[step] || busy}>
+              {busy ? 'Saving…' : step < 4 ? nextLabels[step] : 'Create coin draft'}
+              <Icon name={step === 4 ? 'Check' : 'ArrowRight'} size={16} />
             </Button>
-          </div>
+          </footer>
         </form>
-
         <aside className="creation-preview" aria-label="Live coin preview">
           <div className="creation-preview-header">
-            <strong>COIN PREVIEW</strong>
-            <span>● ● ●</span>
+            <strong>Your coin</strong>
+            <span>Live preview</span>
           </div>
-          <div className="creation-preview-scene">
-            <div className="creation-scene-cloud cloud-left" />
-            <div className="creation-scene-cloud cloud-right" />
-            <div className="creation-scene-ground" />
-            <div className="creation-scene-path" />
-            <div className="creation-scene-grass grass-a" />
-            <div className="creation-scene-grass grass-b" />
-            <div className="creation-scene-partner">
-              {selected ? (
-                <PokemonArt id={selected.speciesId} eager />
-              ) : (
-                <Avatar profile={state.profile} size={115} />
-              )}
-            </div>
-            <div className="creation-scene-name">
-              {selectedSpecies?.name || profileName(state)}
-              {selected && <small>Lv. {selected.level}</small>}
-            </div>
-          </div>
+          <div className="creation-preview-stage">{partnerArt}</div>
           <div className="creation-preview-identity">
             <div className="creation-preview-image">
               {coinImage ? (
-                <img src={coinImage} alt="Coin preview" />
+                <img src={coinImage} alt="Coin image preview" />
               ) : (
-                <span>
-                  YOUR
-                  <br />
-                  IMAGE
-                </span>
+                <Icon name="Plus" size={24} />
               )}
             </div>
             <div>
               <h2>{name.trim() || 'Coin name'}</h2>
-              <span>{'$' + (ticker || 'TICKER')}</span>
+              <span>${ticker || 'TICKER'}</span>
             </div>
           </div>
           <p className="creation-preview-description">
-            {description.trim() || 'Your description will appear here.'}
+            {description.trim() || 'A new community, ready to grow.'}
           </p>
-          <div className="creation-preview-data">
-            <div>
-              <span>Launched with</span>
-              <strong>{selectedSpecies?.name || 'Trainer'}</strong>
-            </div>
-            <div>
-              <span>Holder rewards</span>
-              <strong>{mode}</strong>
-            </div>
-            <div>
-              <span>Reward pool</span>
-              <strong>0 SOL</strong>
-            </div>
-          </div>
           {selectedSpecies && (
             <div className="creation-preview-types">
               {selectedSpecies.types.map((type) => (
@@ -499,19 +628,9 @@ export function CreateCoinPage() {
               ))}
             </div>
           )}
-          <div className="creation-preview-links">
-            {SOCIAL_FIELDS.filter(({ key }) => socials[key].trim()).map(({ key, label }) =>
-              validSocial(socials[key]) ? (
-                <a key={key} href={socials[key].trim()} target="_blank" rel="noopener noreferrer">
-                  {label} ↗
-                </a>
-              ) : (
-                <span key={key}>{label}</span>
-              ),
-            )}
-          </div>
           <div className="creation-preview-footer">
-            Your gym badge will use <strong>{ticker || 'TICKER'}</strong>.
+            <span>Holder rewards</span>
+            <strong>{mode === 'Mixed' ? 'Eggs + packs' : mode}</strong>
           </div>
         </aside>
       </div>

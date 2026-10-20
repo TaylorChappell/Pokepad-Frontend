@@ -1,7 +1,9 @@
-import type { Action, AppSnapshot, Activity, OwnedPokemon, CoinSocials } from '../types';
+import type { Action, AppSnapshot, Activity, OwnedPokemon, CoinSocials, Reward } from '../types';
 import { createInitialState, ACCENT_COLORS, CHARACTERS } from '../data/demo';
 import { pokemonById } from '../data/pokemon';
 import { MOVE_OPTIONS } from '../data/moves';
+import { drawReward } from '../data/rewardPools';
+import { getPokemonHealth, getPokemonStats } from '../data/stats';
 export const EVOLUTION_CANDY = 1000;
 export const WALK_BOOST_MS_PER_KM = 2 * 60 * 60 * 1000;
 export const STORAGE_KEY = 'pokepad.frontend.v1';
@@ -16,6 +18,11 @@ export function profileName(s: AppSnapshot) {
 }
 export function collectionValue(s: AppSnapshot) {
   return fromLamports(s.pokemon.reduce((sum, p) => sum + lamports(p.backing), 0));
+}
+/** Existing reward reserves plus the origin coin's available, unallocated reward funds. */
+export function rewardBudget(s: AppSnapshot, r: Reward) {
+  const vault = s.coins.find((coin) => coin.id === r.originCoin)?.vault || 0;
+  return fromLamports(lamports(r.backing) + lamports(r.evolutionReserve) + lamports(vault));
 }
 export function pendingMove(p: OwnedPokemon) {
   return p.moveOffers.find(
@@ -132,7 +139,18 @@ export function applyAction(
     if (!r) throw new Error('We could not find this reward.');
     if (r.openedAt) throw new Error('This reward has already been opened.');
     if (r.readyAt > now) throw new Error('This egg is still incubating.');
-    if (!r.outcomeSpeciesId) throw new Error('The reward outcome has not been supplied.');
+    // Demo only: draw from the currently funded table. The live API owns this operation.
+    const budget = rewardBudget(s, r);
+    const result = drawReward(r.tier, r.kind, budget, randomIndex);
+    const coin = s.coins.find((coin) => coin.id === r.originCoin);
+    if (!coin) throw new Error('This reward’s funding pool is unavailable.');
+    coin.vault = fromLamports(
+      lamports(budget) - lamports(result.backing) - lamports(result.evolutionReserve),
+    );
+    r.outcomeSpeciesId = result.speciesId;
+    r.shiny = result.shiny;
+    r.backing = result.backing;
+    r.evolutionReserve = result.evolutionReserve;
     r.openedAt = now;
     const id = 'hatched-' + r.id,
       species = pokemonById(r.outcomeSpeciesId);
@@ -145,7 +163,9 @@ export function applyAction(
       evolutionReserve: r.evolutionReserve,
       moveOffers: [],
       originCoin: r.originCoin,
-      rarity: r.tier,
+      rarity: '',
+      shiny: result.shiny,
+      health: getPokemonStats({ speciesId: species.id, level: 5 }).hp,
       moves: (MOVE_OPTIONS[species.id] || ['Tackle', 'Growl']).slice(0, 4),
       acquiredAt: now,
     });
@@ -154,7 +174,7 @@ export function applyAction(
       if (n.id === 'ready-' + r.id || n.id === 'pack-' + r.id) n.read = true;
     });
     activity({
-      title: species.name + ' hatched!',
+      title: species.name + (r.kind === 'egg' ? ' hatched!' : ' joined your team!'),
       detail: r.tier + ' ' + r.kind + ' opened.',
       kind: 'reward',
       pokemonId: species.id,
@@ -174,6 +194,7 @@ export function applyAction(
     const index = options.length === 1 ? 0 : randomIndex(options.length);
     if (!Number.isInteger(index) || index < 0 || index >= options.length)
       throw new Error('The evolution result was invalid. Please retry.');
+    const previousHealth = getPokemonHealth(p);
     const target = options[index],
       coin = s.coins.find((c) => c.id === p.originCoin);
     if (status.fundingNeeded > 0 && coin)
@@ -183,6 +204,7 @@ export function applyAction(
     );
     p.backing = status.nextValue;
     p.speciesId = target;
+    p.health = Math.max(0, getPokemonStats(p).hp - (previousHealth.max - previousHealth.current));
     p.rareCandy -= EVOLUTION_CANDY;
     // A zero-value starter becomes an ordinary funded asset after its first funded evolution.
     if (p.starter && p.backing > 0) p.starter = false;
@@ -313,7 +335,9 @@ export function applyAction(
       evolutionReserve: 0,
       moveOffers: [],
       originCoin: main.id,
-      rarity: 'Starter',
+      rarity: '',
+      shiny: false,
+      health: getPokemonStats({ speciesId: action.speciesId, level: 5 }).hp,
       starter: true,
       moves: (MOVE_OPTIONS[action.speciesId] || ['Tackle', 'Growl']).slice(0, 2),
       acquiredAt: now,

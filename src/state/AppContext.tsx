@@ -17,7 +17,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [busy, setBusy] = useState(false),
     [now, setNow] = useState(Date.now());
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined),
-    inFlight = useRef(false);
+    inFlight = useRef(false),
+    actionQueue = useRef<Promise<unknown>>(Promise.resolve()),
+    pendingActions = useRef(0);
   const toast = (text: string) => {
     setMessage(text);
     clearTimeout(timer.current);
@@ -52,31 +54,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
         !state.notifications.some((n) => n.id === 'ready-' + r.id),
     );
     if (ready && state.profile.rewardNotifications && !inFlight.current) {
-      inFlight.current = true;
-      api
-        .dispatch({ type: 'sync' })
-        .then(setState)
-        .catch(() => {})
-        .finally(() => {
-          inFlight.current = false;
-        });
+      void act({ type: 'sync' });
     }
   }, [now, state]);
-  const act = async (action: Action) => {
-    if (inFlight.current) return null;
+  const act = (action: Action): Promise<AppSnapshot | null> => {
     inFlight.current = true;
+    pendingActions.current += 1;
     setBusy(true);
-    try {
-      const s = await api.dispatch(action);
-      setState(s);
-      return s;
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
-      return null;
-    } finally {
-      inFlight.current = false;
-      setBusy(false);
-    }
+    const result = actionQueue.current.then(async () => {
+      try {
+        const s = await api.dispatch(action);
+        setState(s);
+        return s;
+      } catch (e) {
+        toast(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+        return null;
+      } finally {
+        pendingActions.current -= 1;
+        inFlight.current = pendingActions.current > 0;
+        setBusy(inFlight.current);
+      }
+    });
+    actionQueue.current = result;
+    return result;
   };
   if (error)
     return (

@@ -61,7 +61,7 @@ export function SidebarBuddy({ path }: { path: string }) {
         onClick={() => react(name + ' liked that!', 'petted')}
         title={'Pet ' + name}
       >
-        <PokemonArt id={partner.speciesId} styleOverride="pixel" eager />
+        <PokemonArt id={partner.speciesId} shiny={partner.shiny} styleOverride="pixel" eager />
         {reaction === 'petted' && (
           <span className="pet-hearts" aria-hidden="true">
             <i />

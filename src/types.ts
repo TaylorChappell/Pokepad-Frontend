@@ -50,7 +50,11 @@ export interface OwnedPokemon {
   evolutionReserve: number;
   moveOffers: MoveOffer[];
   originCoin: string;
+  /** Legacy reward tier; retained for older APIs, never an individual Pokémon variant. */
   rarity: string;
+  shiny?: boolean;
+  /** Current HP. Missing on older saves means full health. */
+  health?: number;
   starter?: boolean;
   moves: string[];
   acquiredAt: number;
@@ -74,6 +78,7 @@ export interface Reward {
   walkedKm: number;
   openedAt?: number;
   outcomeSpeciesId?: number;
+  shiny?: boolean;
   backing: number;
   evolutionReserve: number;
 }

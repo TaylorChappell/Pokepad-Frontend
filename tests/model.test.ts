@@ -10,11 +10,14 @@ import {
   getEvolutionStatus,
   pendingMove,
   secureRandomIndex,
+  rewardBudget,
 } from '../src/state/model';
 import { migrateSnapshot } from '../src/services/api';
 import { gymRankings } from '../src/state/gyms';
 import { POKEMON } from '../src/data/pokemon';
 import { MOVES, MOVE_OPTIONS } from '../src/data/moves';
+import { rewardPool, pokemonRewardValue, LEGENDARY_IDS } from '../src/data/rewardPools';
+import { BASE_STATS, getPokemonStats, getPokemonHealth } from '../src/data/stats';
 import type { AppSnapshot, Action } from '../src/types';
 const now = Date.UTC(2026, 9, 20, 12);
 const totalFunded = (s: AppSnapshot) =>
@@ -26,22 +29,129 @@ const totalFunded = (s: AppSnapshot) =>
         .reduce((n, r) => n + r.backing + r.evolutionReserve, 0)) *
       1e9,
   );
-test('reward opening transfers its funded value and evolution budget exactly once', () => {
+test('reward opening draws and allocates funded value and evolution budget exactly once', () => {
   const initial = createInitialState(now),
     r = initial.rewards.find((r) => r.id === 'egg-ready')!;
-  const next = applyAction(initial, { type: 'reward.open', id: r.id }, now);
+  const next = applyAction(initial, { type: 'reward.open', id: r.id }, now, () => 0);
+  const resolved = next.rewards.find((reward) => reward.id === r.id)!;
   assert.equal(next.pokemon.length, initial.pokemon.length + 1);
-  assert.equal(next.pokemon.at(-1)?.backing, r.backing);
-  assert.equal(next.pokemon.at(-1)?.evolutionReserve, r.evolutionReserve);
+  assert.equal(next.pokemon.at(-1)?.backing, resolved.backing);
+  assert.equal(next.pokemon.at(-1)?.evolutionReserve, resolved.evolutionReserve);
   assert.equal(totalFunded(next), totalFunded(initial));
-  assert.ok(next.discovered.includes(r.outcomeSpeciesId!));
-  assert.deepEqual(next.coins, initial.coins);
+  assert.ok(next.discovered.includes(resolved.outcomeSpeciesId!));
+  assert.equal(
+    next.coins.find((c) => c.id === r.originCoin)!.vault,
+    rewardBudget(initial, r) - resolved.backing - resolved.evolutionReserve,
+  );
   assert.equal(initial.rewards.find((x) => x.id === r.id)?.openedAt, undefined);
   assert.throws(() => applyAction(next, { type: 'reward.open', id: r.id }, now), /already/);
   assert.throws(
     () => applyAction(initial, { type: 'reward.open', id: 'egg-standard' }, now),
     /still incubating/,
   );
+});
+test('both reward types include all Kanto species and funded legendary / shiny outcomes', () => {
+  for (const kind of ['egg', 'pack'] as const) {
+    for (const tier of ['Standard', 'Rare', 'Epic'] as const) {
+      const pool = rewardPool(tier, kind);
+      assert.equal(pool.length, 302);
+      assert.equal(new Set(pool.map((entry) => entry.speciesId)).size, 151);
+      assert.ok(Math.abs(pool.reduce((sum, entry) => sum + entry.chance, 0) - 1) < 1e-10);
+      for (const id of LEGENDARY_IDS) {
+        assert.ok(pool.some((entry) => entry.speciesId === id && !entry.shiny));
+        assert.ok(pool.some((entry) => entry.speciesId === id && entry.shiny));
+      }
+    }
+  }
+  const legendaryChance = (kind: 'egg' | 'pack', tier: 'Standard' | 'Epic') =>
+    rewardPool(tier, kind)
+      .filter((entry) => LEGENDARY_IDS.some((id) => id === entry.speciesId))
+      .reduce((sum, entry) => sum + entry.chance, 0);
+  assert.ok(legendaryChance('egg', 'Standard') > legendaryChance('pack', 'Standard'));
+  assert.ok(legendaryChance('egg', 'Epic') > legendaryChance('egg', 'Standard'));
+});
+test('pack outcomes vary, and each chosen shiny or legendary is fully funded', () => {
+  const outcomes: number[] = [];
+  for (const target of [
+    { id: 1, shiny: false },
+    { id: 25, shiny: false },
+    { id: 25, shiny: true },
+    { id: 150, shiny: false },
+  ]) {
+    const s = createInitialState(now),
+      reward = s.rewards.find((r) => r.id === 'pack-one')!;
+    const pool = rewardPool(reward.tier, reward.kind, rewardBudget(s, reward));
+    const index = pool.findIndex(
+      (entry) => entry.speciesId === target.id && entry.shiny === target.shiny,
+    );
+    assert.ok(index >= 0);
+    const roll = pool.slice(0, index).reduce((sum, entry) => sum + entry.weight, 0);
+    const next = applyAction(s, { type: 'reward.open', id: reward.id }, now, () => roll);
+    const p = next.pokemon.at(-1)!;
+    outcomes.push(p.speciesId);
+    assert.equal(p.speciesId, target.id);
+    assert.equal(p.shiny, target.shiny);
+    assert.equal(p.backing, pokemonRewardValue(target.id, target.shiny));
+    assert.equal(p.health, getPokemonStats(p).hp);
+    assert.equal(totalFunded(next), totalFunded(s));
+    assert.ok(next.coins.every((coin) => coin.vault >= 0));
+  }
+  assert.equal(new Set(outcomes).size, 3);
+  assert.equal(pokemonRewardValue(25, true), pokemonRewardValue(25) * 3);
+});
+test('funding filters odds before the draw and an empty pool cannot create rewards', () => {
+  const s = createInitialState(now),
+    reward = s.rewards.find((r) => r.id === 'pack-one')!;
+  reward.backing = 0.06;
+  reward.evolutionReserve = 0;
+  s.coins.find((coin) => coin.id === reward.originCoin)!.vault = 0;
+  const eligible = rewardPool(reward.tier, reward.kind, rewardBudget(s, reward));
+  assert.ok(
+    eligible.length > 0 &&
+      eligible.every(
+        (entry) => Math.round((entry.backing + entry.evolutionReserve) * 1e9) <= 60_000_000,
+      ),
+  );
+  assert.ok(eligible.every((entry) => !LEGENDARY_IDS.some((id) => id === entry.speciesId)));
+  const next = applyAction(s, { type: 'reward.open', id: reward.id }, now, (length) => length - 1);
+  assert.equal(totalFunded(next), totalFunded(s));
+  reward.backing = 0.001;
+  const before = structuredClone(s);
+  assert.throws(
+    () => applyAction(s, { type: 'reward.open', id: reward.id }, now),
+    /enough funding/,
+  );
+  assert.deepEqual(s, before);
+});
+test('migration removes old instance rarity without changing any funded value', () => {
+  const old = createInitialState(now);
+  old.pokemon[0].rarity = 'Rare';
+  delete old.pokemon[0].shiny;
+  delete old.pokemon[0].health;
+  old.rewards[0].outcomeSpeciesId = 25;
+  const migrated = migrateSnapshot(old)!;
+  assert.equal(migrated.pokemon[0].shiny, false);
+  assert.equal(migrated.pokemon[0].rarity, '');
+  assert.equal(migrated.pokemon[0].backing, old.pokemon[0].backing);
+  assert.equal(migrated.pokemon[0].health, getPokemonStats(migrated.pokemon[0]).hp);
+  assert.equal(migrated.rewards[0].outcomeSpeciesId, undefined);
+  assert.equal(totalFunded(migrated), totalFunded(old));
+});
+test('HP and battle stats derive from all 151 species bases and health clamps safely', () => {
+  assert.equal(Object.keys(BASE_STATS).length, 151);
+  const p = { speciesId: 25, level: 50 };
+  assert.deepEqual(getPokemonStats(p), {
+    hp: 110,
+    attack: 75,
+    defense: 60,
+    specialAttack: 70,
+    specialDefense: 70,
+    speed: 110,
+  });
+  assert.deepEqual(getPokemonHealth(p), { current: 110, max: 110, percent: 100 });
+  assert.equal(getPokemonHealth({ ...p, health: 55 }).percent, 50);
+  assert.equal(getPokemonHealth({ ...p, health: -5 }).current, 0);
+  assert.equal(getPokemonHealth({ ...p, health: 10000 }).current, 110);
 });
 test('walking preview reduces timers, adds a ready notification, and rejects invalid distances', () => {
   let s = createInitialState(now);

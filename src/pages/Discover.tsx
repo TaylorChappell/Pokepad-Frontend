@@ -2,7 +2,6 @@ import { useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { gymRankings } from '../state/gyms';
 import { POKEMON } from '../data/pokemon';
-import { PixelWorld } from '../components/PixelWorld';
 import { collectionValue } from '../state/model';
 import {
   Button,
@@ -53,7 +52,7 @@ export function CoinCard({ coin }: { coin: Coin }) {
         {coin.launchKind === 'trainer' && coin.trainer ? (
           <Avatar profile={coin.trainer} size={100} />
         ) : (
-          <PokemonArt id={coin.pokemonId} />
+          <PokemonArt id={coin.pokemonId} animated={false} />
         )}
       </div>
       <Sparkline seed={coin.pokemonId} negative={coin.change < 0} />
@@ -93,30 +92,16 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
     <>
       {!explore ? (
         <section className="discovery-intro">
-          <div className="route-window">
-            <div className="route-title">
-              <span>POKéPAD</span>
-              <span>KANTO REGION</span>
-            </div>
-            <PixelWorld pokemonId={best.pokemonId} />
-            <div className="town-label town-main">MAIN TOKEN / $POKE</div>
-            <a href={'#/gym/' + best.id} className="town-label town-gym">
-              #1 GYM / {best.ticker}
-            </a>
-          </div>
           <div className="intro-dialogue">
             <div className="intro-copy">
               <h1>A launchpad for Pokémon trainers.</h1>
+              <p>Create a coin. Find your people. Build your Pokémon collection.</p>
               <p>
-                Create a coin or hold one you like. Collect eggs and packs funded by its trading
-                fees, hatch Pokémon, and build your team.
-              </p>
-              <p>
-                Longer holds unlock better rewards. Walk to hatch sooner, train with Rare Candy, and
-                support your coin’s gym.
+                Hold community coins to receive eggs and packs funded by trading fees. Hatch your
+                next partner, train with Rare Candy, and take your team into battle.
               </p>
               <div className="intro-actions">
-                <a href="#/create" className="button primary">
+                <a href="#/create" className="button primary create-cta">
                   Create a coin
                   <Icon name="ArrowRight" size={16} />
                 </a>
@@ -137,6 +122,44 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
                 <Icon name="ArrowRight" size={14} />
               </a>
             </div>
+          </div>
+          <div
+            className="starter-showcase"
+            aria-label="Bulbasaur, Charmander, and Squirtle: your first Pokémon partners"
+          >
+            <div className="showcase-pokeball" aria-hidden="true" />
+            <div className="showcase-stars" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </div>
+            <PokemonArt
+              id={1}
+              animated={false}
+              eager
+              styleOverride="drawn"
+              className="showcase-bulbasaur"
+            />
+            <PokemonArt
+              id={4}
+              animated={false}
+              eager
+              styleOverride="drawn"
+              className="showcase-charmander"
+            />
+            <PokemonArt
+              id={7}
+              animated={false}
+              eager
+              styleOverride="drawn"
+              className="showcase-squirtle"
+            />
+            <a href="#/starter" className="showcase-caption">
+              <strong>Meet your first partner.</strong>
+              <span>
+                Hold POKE to choose a starter <Icon name="ArrowRight" size={16} />
+              </span>
+            </a>
           </div>
           <a className="gym-spotlight-ribbon" href={'#/gym/' + best.id}>
             <Badge label={best.ticker} size={43} />
@@ -346,7 +369,7 @@ export function CoinPage({ id }: { id: string }) {
             {coin.launchKind === 'trainer' && coin.trainer ? (
               <Avatar profile={coin.trainer} size={100} />
             ) : (
-              <PokemonArt id={coin.pokemonId} />
+              <PokemonArt id={coin.pokemonId} animated={false} />
             )}
           </div>
           <p className="coin-description">{coin.description}</p>

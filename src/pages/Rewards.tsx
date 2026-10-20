@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
-import { WALK_BOOST_MS_PER_KM } from '../state/model';
+import { rewardPool } from '../data/rewardPools';
+import { WALK_BOOST_MS_PER_KM, rewardBudget } from '../state/model';
 import {
   Button,
   Icon,
@@ -15,330 +16,380 @@ import {
   TypeChip,
   SolValue,
   EmptyState,
+  Pokeball,
 } from '../components/UI';
-import type { Reward } from '../types';
-import { duration, navigate, relativeTime, sol } from '../utils';
-import { PixelWorld } from '../components/PixelWorld';
+import type { AppSnapshot, Reward } from '../types';
+import { duration, navigate, relativeTime } from '../utils';
+
+const legendaryIds = [144, 145, 146, 150, 151];
 function SourceCoin({ id }: { id: string }) {
   const { state } = useApp(),
     coin = state.coins.find((c) => c.id === id);
   return coin ? (
     <span className="source-coin">
-      <CoinAvatar coin={coin} size={22} />
+      <CoinAvatar coin={coin} size={24} />
       {'$' + coin.ticker}
     </span>
   ) : null;
 }
+function TierBadge({ tier }: { tier: string }) {
+  return (
+    <span className={'reward-tier ' + tier.toLowerCase()}>
+      <Pokeball size={16} />
+      {tier}
+    </span>
+  );
+}
+function progressOf(reward: Reward, now: number) {
+  return reward.initialDuration
+    ? Math.max(0, Math.min(100, 100 - ((reward.readyAt - now) / reward.initialDuration) * 100))
+    : 100;
+}
+
 export function RewardOpening({ reward, onClose }: { reward: Reward; onClose: () => void }) {
-  const { state, act, busy } = useApp(),
-    [phase, setPhase] = useState('opening'),
-    [confirmed, setConfirmed] = useState(false),
-    started = useRef(false),
+  const { state, act, busy } = useApp();
+  const [phase, setPhase] = useState<'opening' | 'revealed'>('opening');
+  const [result, setResult] = useState<AppSnapshot | null>(null);
+  const openRequest = useRef<Promise<AppSnapshot | null> | null>(null),
     timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    act({ type: 'reward.open', id: reward.id }).then((result) => {
-      if (!result) {
+    let cancelled = false;
+    openRequest.current ??= act({ type: 'reward.open', id: reward.id });
+    openRequest.current.then((next) => {
+      if (cancelled) return;
+      if (!next) {
         onClose();
         return;
       }
-      setConfirmed(true);
+      setResult(next);
       timer.current = setTimeout(
         () => setPhase('revealed'),
-        state.profile.reducedMotion ? 80 : 2600,
+        next.profile.reducedMotion ? 80 : 2400,
       );
     });
     return () => {
+      cancelled = true;
       clearTimeout(timer.current);
     };
   }, []);
-  const resolvedReward = state.rewards.find((r) => r.id === reward.id) || reward;
-  const p = pokemonById(resolvedReward.outcomeSpeciesId || 1);
+  const resolvedReward = result?.rewards.find((r) => r.id === reward.id);
+  const owned = result?.pokemon.find((p) => p.id === 'hatched-' + reward.id);
+  const species = pokemonById(owned?.speciesId || resolvedReward?.outcomeSpeciesId || 1);
+  const revealed = phase === 'revealed' && !!owned;
   return (
     <Modal
       title={
-        phase === 'revealed'
-          ? p.name + (reward.kind === 'egg' ? ' hatched!' : ' joins your team!')
+        revealed
+          ? reward.kind === 'egg'
+            ? 'A new hatch!'
+            : 'Your pack reveal'
           : reward.kind === 'egg'
             ? 'Your egg is hatching…'
             : 'Opening your pack…'
       }
       onClose={onClose}
       wide
-      closeDisabled={phase !== 'revealed'}
+      closeDisabled={!revealed}
     >
       <div
         className={
-          'opening-scene ' +
-          phase +
-          ' ' +
-          reward.kind +
-          (state.profile.reducedMotion ? ' reduced' : '')
+          'reveal-v3 ' +
+          (revealed ? 'is-revealed' : 'is-opening') +
+          (state.profile.reducedMotion ? ' reduce-motion' : '')
         }
       >
-        <div className="opening-halo" />
-        <div className="opening-sparkles">
-          {Array.from({ length: 16 }, (_, i) => (
-            <span
-              key={i}
-              style={{ '--i': i, '--r': (i * 37) % 360, '--d': i * 0.07 + 's' } as CSSProperties}
-            >
-              <svg viewBox="0 0 12 12" shapeRendering="crispEdges" aria-hidden="true">
-                <path d="M5 0h2v3h2v2h3v2H9v2H7v3H5V9H3V7H0V5h3V3h2z" fill="currentColor" />
-              </svg>
-            </span>
-          ))}
+        <div className="reveal-v3-stage">
+          <div className="reveal-v3-aura" />
+          <div className="reveal-v3-stars" aria-hidden="true">
+            {Array.from({ length: 12 }, (_, i) => (
+              <span
+                key={i}
+                style={
+                  {
+                    '--angle': i * 30 + 'deg',
+                    '--delay': i * 0.17 + 's',
+                    '--distance': (i % 2 ? 115 : 140) + 'px',
+                  } as CSSProperties
+                }
+              >
+                <svg viewBox="0 0 12 12">
+                  <path
+                    d="M6 0 7.8 4.2 12 6 7.8 7.8 6 12 4.2 7.8 0 6 4.2 4.2Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+            ))}
+          </div>
+          <div className={'reveal-v3-object ' + (result ? 'is-confirmed' : '')}>
+            {revealed ? (
+              <PokemonArt id={species.id} shiny={owned?.shiny} eager />
+            ) : reward.kind === 'egg' ? (
+              <EggArt tier={reward.tier} />
+            ) : (
+              <PackArt tier={reward.tier} />
+            )}
+          </div>
+          {!revealed && result && <div className="reveal-v3-flash" />}
         </div>
-        {phase === 'opening' ? (
-          <>
-            <div className={'opening-object ' + (confirmed ? 'animate' : '')}>
-              {reward.kind === 'egg' ? (
-                <>
-                  <EggArt tier={reward.tier} />
-                  <svg className="egg-crack" viewBox="0 0 160 190">
-                    <path
-                      d="M52 70h20v20H60v16h30v18H78v12h30"
-                      stroke="#59647a"
-                      strokeWidth="3"
-                      fill="none"
-                    />
-                  </svg>
-                </>
-              ) : (
-                <PackArt tier={reward.tier} />
-              )}
-            </div>
-            <p className="opening-caption">
-              {confirmed
-                ? reward.kind === 'egg'
-                  ? 'What will hatch from the egg?'
-                  : 'Opening…'
-                : 'Getting your reward ready…'}
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="revealed-pokemon">
-              <PokemonArt id={p.id} eager />
-            </div>
-            <span className={'rarity-badge ' + reward.tier.toLowerCase()}>
-              <Icon name="Sparkles" size={13} />
-              {reward.tier}
-            </span>
-            <h2>
-              {p.name}
-              <span> #{String(p.id).padStart(3, '0')}</span>
-            </h2>
+        {revealed ? (
+          <div className="reveal-v3-details">
+            {legendaryIds.includes(species.id) && (
+              <span className="legendary-discovery">Legendary discovery</span>
+            )}
+            <h2>{species.name}</h2>
             <div className="type-row">
-              {p.types.map((t) => (
-                <TypeChip type={t} key={t} />
+              {species.types.map((type) => (
+                <TypeChip type={type} key={type} />
               ))}
             </div>
-            <div className="reveal-value">
-              <SolValue amount={resolvedReward.backing} />
+            <div className="reveal-v3-value">
+              <SolValue amount={owned.backing} />
             </div>
-            <div className="reveal-actions">
+            <div className="reveal-v3-source">
+              From <SourceCoin id={reward.originCoin} />
+            </div>
+            <div className="reveal-v3-actions">
               <Button
                 disabled={busy}
                 onClick={async () => {
-                  const s = await act({ type: 'pokemon.equip', id: 'hatched-' + reward.id });
-                  if (s) {
+                  const next = await act({ type: 'pokemon.equip', id: owned.id });
+                  if (next) {
                     onClose();
-                    navigate('/pokemon/hatched-' + reward.id);
+                    navigate('/pokemon/' + owned.id);
                   }
                 }}
               >
-                Equip Pokémon
-                <Icon name="Heart" size={16} />
+                Equip Pokémon <Icon name="Heart" size={17} />
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => {
                   onClose();
-                  navigate('/pokemon/hatched-' + reward.id);
+                  navigate('/pokemon/' + owned.id);
                 }}
               >
-                View Pokémon
+                View summary <Icon name="ArrowRight" size={16} />
               </Button>
             </div>
-            <small className="muted">Already added to your inventory and Pokédex.</small>
-          </>
+            <p className="reveal-v3-note">Added to your PC and Pokédex.</p>
+          </div>
+        ) : (
+          <div className="reveal-v3-wait" role="status">
+            <h3>
+              {result
+                ? reward.kind === 'egg'
+                  ? 'Something is moving…'
+                  : 'Who’s inside?'
+                : 'Getting your reward ready…'}
+            </h3>
+            <p>{result ? 'Your new Pokémon is almost here.' : 'Please keep this window open.'}</p>
+          </div>
         )}
       </div>
     </Modal>
   );
 }
+
 export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
-  const { state, now } = useApp(),
-    [tab, setTab] = useState(initialTab),
+  const { state, now, mode } = useApp();
+  const [tab, setTab] = useState(initialTab),
     [detail, setDetail] = useState<Reward | null>(null),
-    [opening, setOpening] = useState<Reward | null>(null);
+    [opening, setOpening] = useState<Reward | null>(null),
+    [poolFilter, setPoolFilter] = useState('all'),
+    [poolSearch, setPoolSearch] = useState(''),
+    [poolLimit, setPoolLimit] = useState(24);
   useEffect(() => {
     setTab(initialTab);
   }, [initialTab]);
-  const eggs = state.rewards.filter((r) => r.kind === 'egg' && !r.openedAt),
-    packs = state.rewards.filter((r) => r.kind === 'pack' && !r.openedAt),
-    ready = eggs.filter((r) => r.readyAt <= now).length;
+  const eggs = state.rewards
+    .filter((r) => r.kind === 'egg' && !r.openedAt)
+    .sort((a, b) => a.readyAt - b.readyAt);
+  const packs = state.rewards.filter((r) => r.kind === 'pack' && !r.openedAt);
+  const ready = eggs.filter((r) => r.readyAt <= now).length;
   const equipped = state.pokemon.find((p) => p.id === state.profile.equippedId);
+  const current = tab === 'packs' ? packs : eggs;
+  const selected = detail ? state.rewards.find((r) => r.id === detail.id) || detail : null;
+  const pool = selected
+    ? rewardPool(selected.tier, selected.kind, rewardBudget(state, selected))
+    : [];
+  const filteredPool = pool.filter(
+    (entry) =>
+      (poolFilter !== 'legendary' || legendaryIds.includes(entry.speciesId)) &&
+      pokemonById(entry.speciesId).name.toLowerCase().includes(poolSearch.toLowerCase().trim()),
+  );
+  const showDetail = (r: Reward) => {
+    setPoolFilter('all');
+    setPoolSearch('');
+    setPoolLimit(24);
+    setDetail(r);
+  };
   const open = (r: Reward) => {
     if (r.readyAt > now) {
-      setDetail(r);
+      showDetail(r);
       return;
     }
     setDetail(null);
     setOpening(r);
   };
-  const current = tab === 'packs' ? packs : eggs;
   return (
-    <>
+    <div className="rewards-v3">
       <PageHeading title="Rewards">
         <a href="#/walk" className="button secondary">
-          <Icon name="Footprints" size={17} />
+          <Icon name="Footprints" size={18} />
           Take a walk
         </a>
       </PageHeading>
-      <div className="reward-depot">
-        <div className="depot-sign">
-          <strong>DAY CARE</strong>
-          <span>Reward storage</span>
-        </div>
-        <div className="depot-count">
-          <EggArt />
+      <div className="rewards-v3-overview">
+        <p>Eggs hatch with time. Walking helps. Packs open immediately.</p>
+        <div>
           <span>
-            <strong>{eggs.length} eggs</strong>
-            <small>{ready} ready to hatch</small>
+            <strong>{ready}</strong> ready to hatch
           </span>
-        </div>
-        <div className="depot-count pack-count">
-          <PackArt />
           <span>
-            <strong>{packs.length} packs</strong>
-            <small>Open anytime</small>
+            <strong>{packs.length}</strong> unopened packs
           </span>
-        </div>
-        <div className="depot-distance">
-          <strong>
-            {state.walkKm.toFixed(1)} <small>km</small>
-          </strong>
-          <span>walked</span>
+          <span>
+            <strong>{state.walkKm.toFixed(1)}</strong> km walked
+          </span>
         </div>
       </div>
       <div className="rewards-toolbar">
-        <div className="tab-bar">
-          <button className={tab === 'eggs' ? 'active' : ''} onClick={() => setTab('eggs')}>
-            <Icon name="Egg" size={18} />
-            My eggs <span>{eggs.length}</span>
+        <div className="tab-bar" role="tablist" aria-label="Reward collection">
+          <button
+            role="tab"
+            aria-selected={tab === 'eggs'}
+            className={tab === 'eggs' ? 'active' : ''}
+            onClick={() => setTab('eggs')}
+          >
+            <Icon name="Egg" size={20} />
+            Eggs <span>{eggs.length}</span>
           </button>
-          <button className={tab === 'packs' ? 'active' : ''} onClick={() => setTab('packs')}>
-            <Icon name="Package" size={18} />
-            My packs <span>{packs.length}</span>
+          <button
+            role="tab"
+            aria-selected={tab === 'packs'}
+            className={tab === 'packs' ? 'active' : ''}
+            onClick={() => setTab('packs')}
+          >
+            <Icon name="Package" size={19} />
+            Packs <span>{packs.length}</span>
           </button>
-          <button className={tab === 'history' ? 'active' : ''} onClick={() => setTab('history')}>
-            <Icon name="Clock" size={17} />
+          <button
+            role="tab"
+            aria-selected={tab === 'history'}
+            className={tab === 'history' ? 'active' : ''}
+            onClick={() => setTab('history')}
+          >
+            <Icon name="Clock" size={18} />
             Opened
           </button>
         </div>
       </div>
       {tab !== 'history' ? (
         current.length ? (
-          <div className="rewards-grid">
-            {current.map((r, i) => {
+          <div className="reward-v3-grid">
+            {current.map((r) => {
               const isReady = r.readyAt <= now,
-                percent = r.initialDuration
-                  ? 100 - ((r.readyAt - now) / r.initialDuration) * 100
-                  : 100,
-                km = Math.max(0, (r.readyAt - now) / WALK_BOOST_MS_PER_KM);
+                remaining = Math.max(0, r.readyAt - now),
+                km = remaining / WALK_BOOST_MS_PER_KM;
               return (
-                <button
+                <article
                   key={r.id}
-                  className={'reward-card ' + r.tier.toLowerCase() + (isReady ? ' ready' : '')}
-                  onClick={() => open(r)}
-                  aria-label={
-                    isReady
-                      ? (r.kind === 'egg' ? 'Hatch ' : 'Open ') + r.tier + ' ' + r.kind
-                      : 'View ' + r.tier + ' egg'
+                  className={
+                    'reward-v3-card ' + r.tier.toLowerCase() + (isReady ? ' is-ready' : '')
                   }
                 >
-                  <div className="reward-card-top">
-                    <span className={'rarity-badge ' + r.tier.toLowerCase()}>{r.tier}</span>
-                    {isReady ? (
-                      <span className="ready-label">
-                        <span />
-                        Ready!
-                      </span>
-                    ) : (
-                      <span className="small muted">#{String(i + 1).padStart(2, '0')}</span>
-                    )}
-                  </div>
-                  <div className="reward-art-stage">
+                  <header>
+                    <TierBadge tier={r.tier} />
+                    <span className={'reward-v3-status ' + (isReady ? 'ready' : '')}>
+                      {isReady
+                        ? r.kind === 'egg'
+                          ? 'Ready to hatch'
+                          : 'Ready to open'
+                        : 'Incubating'}
+                    </span>
+                  </header>
+                  <button
+                    className={'reward-v3-art ' + r.kind}
+                    onClick={() => open(r)}
+                    aria-label={
+                      (isReady ? (r.kind === 'egg' ? 'Hatch ' : 'Open ') : 'View ') +
+                      r.tier +
+                      ' ' +
+                      r.kind
+                    }
+                  >
                     {r.kind === 'egg' ? <EggArt tier={r.tier} /> : <PackArt tier={r.tier} />}
-                  </div>
-                  <h3>
-                    {r.tier} {r.kind === 'egg' ? 'egg' : 'pack'}
-                  </h3>
-                  <div className="reward-origin">
-                    From <SourceCoin id={r.originCoin} />
-                  </div>
-                  {r.kind === 'egg' ? (
-                    <>
-                      <Progress
-                        value={percent}
-                        color={
-                          isReady
-                            ? '#75bc94'
-                            : r.tier === 'Epic'
-                              ? '#ad89ce'
-                              : r.tier === 'Rare'
-                                ? '#7abce5'
-                                : '#83b985'
-                        }
-                      />
-                      <div className="reward-time">
-                        <Icon name={isReady ? 'Sparkles' : 'Clock'} size={14} />
-                        {isReady ? 'Ready to hatch' : duration(r.readyAt - now) + ' remaining'}
-                      </div>
-                      {!isReady && (
-                        <div className="walk-equivalent">
-                          <Icon name="Footprints" size={14} />
-                          {km.toFixed(1)} km to hatch sooner
-                          <span className="tooltip">
-                            Walking accelerates the timer. You can also let it hatch with time.
+                  </button>
+                  <div className="reward-v3-info">
+                    <h2>
+                      {r.tier} {r.kind}
+                    </h2>
+                    <div className="reward-origin">
+                      From <SourceCoin id={r.originCoin} />
+                    </div>
+                    {r.kind === 'egg' ? (
+                      <div className="reward-v3-timer">
+                        <div>
+                          <span>
+                            <Icon name="Clock" size={16} />
+                            {isReady ? 'Your Pokémon is ready' : 'Time remaining'}
                           </span>
+                          <strong>{isReady ? 'Let’s hatch!' : duration(remaining)}</strong>
                         </div>
-                      )}
-                    </>
-                  ) : (
-                    <p className="pack-ready-copy">Open anytime</p>
-                  )}
-                  <span className={'reward-action ' + (isReady ? 'ready' : '')}>
-                    {r.kind === 'pack' ? 'Open pack' : isReady ? 'Hatch egg' : 'View egg'}
-                    <Icon name={isReady ? 'Sparkles' : 'ArrowRight'} size={16} />
-                  </span>
-                </button>
+                        <Progress value={progressOf(r, now)} />
+                        {!isReady && (
+                          <p>
+                            <Icon name="Footprints" size={16} />
+                            Walk {km.toFixed(1)} km to finish sooner
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="reward-v3-pack-copy">
+                        A surprise Pokémon from the funded reward pool.
+                        <br />
+                        Legendaries can appear in packs, too.
+                      </p>
+                    )}
+                    <button
+                      className={'reward-v3-open ' + (r.kind === 'pack' ? 'pack-button' : '')}
+                      onClick={() => open(r)}
+                    >
+                      <Pokeball size={22} />
+                      <span>
+                        {r.kind === 'pack' ? 'Open pack' : isReady ? 'Hatch egg' : 'View egg'}
+                      </span>
+                      <Icon name="ArrowRight" size={17} />
+                    </button>
+                    <button className="reward-v3-pool-link" onClick={() => showDetail(r)}>
+                      Possible Pokémon & odds <Icon name="ChevronRight" size={14} />
+                    </button>
+                  </div>
+                </article>
               );
             })}
           </div>
         ) : (
           <EmptyState
             icon={tab === 'eggs' ? 'Egg' : 'Package'}
-            title={tab === 'eggs' ? 'No eggs in storage' : 'No packs in storage'}
-            description="Keep holding active community coins to become eligible for new rewards."
+            title={tab === 'eggs' ? 'No eggs waiting' : 'No unopened packs'}
+            description="Hold active community coins to become eligible for rewards."
           >
             <a href="#/discover" className="button primary">
-              Explore coins
-              <Icon name="ArrowRight" />
+              Explore coins <Icon name="ArrowRight" />
             </a>
           </EmptyState>
         )
       ) : (
-        <div className="panel">
-          {state.rewards.filter((r) => r.openedAt).length ? (
+        <div className="reward-v3-history panel">
+          {state.rewards.some((r) => r.openedAt) ? (
             state.rewards
               .filter((r) => r.openedAt)
+              .sort((a, b) => b.openedAt! - a.openedAt!)
               .map((r) => (
                 <a className="opened-reward-row" href={'#/pokemon/hatched-' + r.id} key={r.id}>
-                  <PokemonArt id={r.outcomeSpeciesId || 1} />
+                  <PokemonArt id={r.outcomeSpeciesId || 1} shiny={r.shiny} animated={false} />
                   <span>
                     <strong>{pokemonById(r.outcomeSpeciesId || 1).name}</strong>
                     <small>{r.tier + ' ' + r.kind + ' · ' + relativeTime(r.openedAt!)}</small>
@@ -350,85 +401,155 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
               ))
           ) : (
             <EmptyState
-              title="No opened rewards yet"
-              description="Open a pack or hatch a ready egg. Your discoveries will appear here."
+              title="Your discoveries will appear here"
+              description="Open a pack or hatch a ready egg to meet your next Pokémon."
             />
           )}
         </div>
       )}
-      <div className="buddy-banner">
-        <PokemonArt id={equipped?.speciesId || 4} />
+      <div className="reward-v3-buddy">
+        <div className="reward-v3-buddy-art">
+          <PokemonArt id={equipped?.speciesId || 4} shiny={equipped?.shiny} />
+        </div>
         <div>
           <h3>Walk with {pokemonById(equipped?.speciesId || 4).name}</h3>
-          <p>Walking reduces the time remaining on your eggs.</p>
+          <p>Every kilometre takes two hours off your incubating eggs.</p>
         </div>
         <a href="#/walk" className="button secondary">
           <Icon name="Footprints" />
-          Go walking
-          <Icon name="ArrowRight" size={16} />
+          Go walking <Icon name="ArrowRight" size={16} />
         </a>
-        <span className="buddy-scenery" />
       </div>
-      {detail && (
-        <Modal title={detail.tier + ' egg'} onClose={() => setDetail(null)} wide>
-          <div className="egg-detail">
-            <div className="egg-detail-visual">
-              <EggArt tier={detail.tier} />
-              <span className={'rarity-badge ' + detail.tier.toLowerCase()}>{detail.tier}</span>
-              <h3>{duration(detail.readyAt - now)}</h3>
-              <Progress value={100 - ((detail.readyAt - now) / detail.initialDuration) * 100} />
-              <span className="muted small">
-                {Math.max(0, (detail.readyAt - now) / WALK_BOOST_MS_PER_KM).toFixed(1)} km of
-                walking would finish this timer sooner
-              </span>
-              <SourceCoin id={detail.originCoin} />
-              {detail.readyAt <= now ? (
-                <Button onClick={() => open(detail)}>
-                  Hatch my egg
-                  <Icon name="Sparkles" />
+      {selected && (
+        <Modal title={selected.tier + ' ' + selected.kind} onClose={() => setDetail(null)} wide>
+          <div className="reward-v3-detail">
+            <div className={'reward-v3-detail-art ' + selected.tier.toLowerCase()}>
+              <TierBadge tier={selected.tier} />
+              <div>
+                {selected.kind === 'egg' ? (
+                  <EggArt tier={selected.tier} />
+                ) : (
+                  <PackArt tier={selected.tier} />
+                )}
+              </div>
+              <p>
+                From <SourceCoin id={selected.originCoin} />
+              </p>
+              {selected.kind === 'egg' && (
+                <div className="reward-v3-detail-timer">
+                  <strong>
+                    {selected.readyAt <= now
+                      ? 'Ready to hatch'
+                      : duration(selected.readyAt - now) + ' remaining'}
+                  </strong>
+                  <Progress value={progressOf(selected, now)} />
+                  {selected.readyAt > now && (
+                    <span>
+                      Or walk{' '}
+                      {Math.max(0, (selected.readyAt - now) / WALK_BOOST_MS_PER_KM).toFixed(1)} km
+                      to finish sooner.
+                    </span>
+                  )}
+                </div>
+              )}
+              {selected.readyAt <= now ? (
+                <Button onClick={() => open(selected)} className="full-width">
+                  <Pokeball size={22} />
+                  {selected.kind === 'egg' ? 'Hatch egg' : 'Open pack'}
                 </Button>
               ) : (
-                <a className="button primary" href="#/walk" onClick={() => setDetail(null)}>
+                <a
+                  className="button primary full-width"
+                  href="#/walk"
+                  onClick={() => setDetail(null)}
+                >
                   <Icon name="Footprints" />
-                  Start a walking preview
+                  Go walking
                 </a>
               )}
             </div>
-            <div className="egg-odds">
-              <h3>Reward table</h3>
-              <p>Example reward table for this {detail.tier.toLowerCase()} egg.</p>
-              <div className="odds-table">
-                {(detail.tier === 'Epic'
-                  ? [6, 94, 149, 131]
-                  : detail.tier === 'Rare'
-                    ? [25, 93, 131, 133]
-                    : [1, 4, 7, 25]
-                ).map((id, i) => (
-                  <div key={id}>
-                    <PokemonArt id={id} />
-                    <strong>{pokemonById(id).name}</strong>
-                    <span>{[35, 30, 25, 10][i]}%</span>
-                  </div>
-                ))}
+            <div className="reward-v3-pool">
+              <h3>Who could you discover?</h3>
+              <p>Every opening is a fresh draw. Only rewards this coin can fund are included.</p>
+              <div className="reward-v3-pool-tabs">
+                <button
+                  className={poolFilter === 'all' ? 'active' : ''}
+                  onClick={() => {
+                    setPoolFilter('all');
+                    setPoolLimit(24);
+                  }}
+                >
+                  All Pokémon
+                </button>
+                <button
+                  className={poolFilter === 'legendary' ? 'active' : ''}
+                  onClick={() => {
+                    setPoolFilter('legendary');
+                    setPoolLimit(24);
+                  }}
+                >
+                  Legendaries
+                </button>
               </div>
-              <div className="notice">
-                <Icon name="Shield" />
-                <span>
-                  Your egg’s reward is already reserved. Its contents won’t change if you sell a
-                  coin.
-                </span>
+              <input
+                className="reward-v3-pool-search"
+                aria-label="Search possible Pokémon"
+                placeholder="Find a Pokémon…"
+                value={poolSearch}
+                onChange={(event) => {
+                  setPoolSearch(event.target.value);
+                  setPoolLimit(24);
+                }}
+              />
+              <div className="reward-v3-pool-list">
+                {filteredPool.length ? (
+                  filteredPool.slice(0, poolLimit).map((entry) => (
+                    <div
+                      className={'reward-v3-drop ' + (entry.shiny ? 'is-shiny' : '')}
+                      key={entry.speciesId + '-' + entry.shiny}
+                    >
+                      <PokemonArt id={entry.speciesId} shiny={entry.shiny} animated={false} />
+                      <div>
+                        <strong>{pokemonById(entry.speciesId).name}</strong>
+                        <SolValue amount={entry.backing} />
+                      </div>
+                      <span className="drop-chance">
+                        {entry.chance * 100 < 0.01 ? '<0.01' : (entry.chance * 100).toFixed(2)}%
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="reward-v3-no-drops">
+                    {poolSearch.trim()
+                      ? 'No Pokémon match your search.'
+                      : poolFilter === 'legendary'
+                        ? 'This pool needs more funding before a legendary can be drawn.'
+                        : 'The coin’s reward pool needs more funding before this reward can open.'}
+                  </p>
+                )}
               </div>
-              <small className="muted">
-                Preview odds and rewards are sample data. Live odds will come from the funded batch.
-              </small>
+              {filteredPool.length > poolLimit && (
+                <button
+                  className="reward-v3-pool-more"
+                  onClick={() => setPoolLimit((limit) => limit + 24)}
+                >
+                  Show more Pokémon <Icon name="ChevronDown" size={15} />
+                </button>
+              )}
+              <p className="reward-v3-odds-note">
+                {mode === 'demo' ? 'Demo odds shown for the current funded pool. ' : ''}Odds can
+                change as pool funding changes. Alternate-colour Pokémon have their own funded
+                value.
+              </p>
             </div>
           </div>
         </Modal>
       )}
       {opening && <RewardOpening reward={opening} onClose={() => setOpening(null)} />}
-    </>
+    </div>
   );
 }
+
 export function WalkPage() {
   const { state, act, mode, now } = useApp(),
     [walking, setWalking] = useState(false),
@@ -446,31 +567,25 @@ export function WalkPage() {
     return () => clearInterval(t);
   }, [walking, mode]);
   return (
-    <>
-      <PageHeading
-        eyebrow="BETTER WITH A BUDDY"
-        title={'Walk with ' + pokemonById(id).name}
-        description="Fresh air for you. A little boost for your eggs."
-      />
+    <div className="rewards-v3">
+      <PageHeading title={'Walk with ' + pokemonById(id).name} />
       <div className="walking-grid">
-        <div className="walking-map panel">
-          <div className="map-top">
-            <span className="status-tag green">
-              {walking ? 'Preview in progress' : 'Ready to walk'}
-            </span>
-            <span>
-              <Icon name="Footprints" size={15} />
-              {sessionKm.toFixed(1)} km
-            </span>
+        <div className={'walk-v3-showcase panel ' + (walking ? 'is-walking' : '')}>
+          <span className="status-tag green">
+            {walking ? 'Walking preview active' : 'Your walking partner'}
+          </span>
+          <div className="walk-v3-partner">
+            <PokemonArt id={id} shiny={equipped?.shiny} />
           </div>
-          <PixelWorld pokemonId={id} />
-          <div className={'walking-buddy ' + (walking ? 'walking' : '')}>
-            <PokemonArt id={id} />
-            <span>{pokemonById(id).name}</span>
-          </div>
-          <div className="map-message">
-            <Icon name="Heart" size={18} />
-            {walking ? 'Walking preview active' : 'Start a walking session to boost your eggs.'}
+          <h2>{pokemonById(id).name}</h2>
+          <p>A little movement brings your next hatch closer.</p>
+          <div className="walk-v3-eggs">
+            {active.slice(0, 3).map((r) => (
+              <div key={r.id}>
+                <EggArt tier={r.tier} />
+                <strong>{r.readyAt <= now ? 'Ready!' : duration(r.readyAt - now)}</strong>
+              </div>
+            ))}
           </div>
         </div>
         <div className="walking-sidebar">
@@ -512,25 +627,28 @@ export function WalkPage() {
             )}
             <div className="notice small">
               <Icon name="Info" />
-              This simulates walking for the frontend preview. It does not read GPS or verify real
-              movement.
+              This simulates walking. It does not read GPS or verify real movement.
             </div>
           </div>
           <div className="panel walk-eggs">
             <h3>Egg timers</h3>
-            {active.slice(0, 3).map((r) => (
-              <div key={r.id}>
-                <EggArt tier={r.tier} />
-                <span>
-                  <strong>{r.tier} egg</strong>
-                  <small>{duration(r.readyAt - now)}</small>
-                  <Progress value={100 - ((r.readyAt - now) / r.initialDuration) * 100} />
-                </span>
-              </div>
-            ))}
+            {active.length ? (
+              active.map((r) => (
+                <div key={r.id}>
+                  <EggArt tier={r.tier} />
+                  <span>
+                    <strong>{r.tier} egg</strong>
+                    <small>{r.readyAt <= now ? 'Ready to hatch' : duration(r.readyAt - now)}</small>
+                    <Progress value={progressOf(r, now)} />
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p>No eggs incubating right now.</p>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

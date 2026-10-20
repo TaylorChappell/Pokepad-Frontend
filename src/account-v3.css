@@ -1,0 +1,682 @@
+/* Trainer editor: immediate feedback and calm, legible account controls. */
+.account-settings {
+  max-width: 1150px;
+  margin: auto;
+  color: #23364d;
+}
+.account-settings .page-heading {
+  align-items: center;
+}
+.autosave-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #678374;
+  font-size: 12px;
+  font-weight: 800;
+  min-width: 136px;
+}
+.autosave-indicator {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7bb793;
+  flex-shrink: 0;
+}
+.autosave-status.saving {
+  color: #6b83a5;
+}
+.autosave-status.saving .autosave-indicator {
+  background: #7299cf;
+  animation: autosave-pulse 0.9s ease-in-out infinite alternate;
+}
+.autosave-status.error {
+  color: #b74d44;
+}
+.autosave-status.error .autosave-indicator {
+  background: #d27166;
+}
+.autosave-status button {
+  color: #a94c43;
+  text-decoration: underline;
+  font: inherit;
+  margin-left: 4px;
+}
+.account-settings .settings-layout {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 25px;
+  align-items: start;
+}
+.account-settings .settings-nav {
+  border: 0;
+  background: none;
+  box-shadow: none;
+  padding: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+.account-settings .settings-nav > button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #74859a;
+  padding: 14px;
+  font:
+    800 13px/1.5 Nunito,
+    sans-serif;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.account-settings .settings-nav > button > span {
+  flex: 1;
+}
+.account-settings .settings-nav > button > .pixel-icon:last-child {
+  width: 12px;
+  color: #a8b7c9;
+}
+.account-settings .settings-nav > button:hover {
+  background: #edf1f6;
+  color: #334d6c;
+}
+.account-settings .settings-nav > button.active {
+  background: #e8eff9;
+  color: #3c649a;
+  box-shadow: none;
+  border: 0;
+}
+.account-settings .settings-nav > button.active::before {
+  display: none;
+}
+.account-settings .settings-content {
+  padding: 30px;
+  border: 1px solid #dee5ed;
+  border-radius: 18px;
+  background: #fffefa;
+  box-shadow: 0 7px 28px #23364d06;
+  min-width: 0;
+}
+.settings-section-heading h2 {
+  font:
+    900 25px/1.4 Nunito,
+    sans-serif;
+  color: #23364d;
+  letter-spacing: -0.5px;
+}
+.settings-section-heading p {
+  margin-top: 7px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #76899f;
+}
+.account-settings .avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  background: #f2f6fc;
+  border: 1px solid #e0e8f4;
+  border-radius: 14px;
+  padding: 24px;
+  margin: 24px 0 26px;
+}
+.avatar-preview-frame {
+  width: 148px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(145deg, #fff, #e4eafa);
+  border: 1px solid #cedbec;
+  border-radius: 12px;
+  padding: 8px 8px 0;
+  overflow: hidden;
+  box-shadow: 0 5px 13px #23364d09;
+  transition: background 0.18s;
+}
+.avatar-preview-frame .trainer-avatar {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  transition: filter 0.15s;
+}
+.avatar-preview-label {
+  position: relative;
+  display: block;
+  background: #fffefa;
+  color: #7890ad;
+  font: 700 7px/1.8 var(--pixel-font, monospace);
+  text-align: center;
+  letter-spacing: 0.7px;
+  padding: 9px 4px;
+  width: calc(100% + 16px);
+  border-top: 1px solid #dbe3ef;
+}
+.account-settings .avatar-editor h3 {
+  font:
+    900 23px/1.4 Nunito,
+    sans-serif;
+  color: #23364d;
+  overflow-wrap: anywhere;
+}
+.account-settings .avatar-editor p {
+  font-size: 12px;
+  color: #7b8ca0;
+  line-height: 1.7;
+  margin: 7px 0 15px;
+}
+.account-settings .avatar-editor .randomise-trainer {
+  min-height: 37px;
+  font-size: 12px;
+  padding: 8px 13px;
+  background: #fff;
+  border: 1px solid #d1deed;
+  border-radius: 8px;
+  box-shadow: none;
+  color: #5c7799;
+  gap: 7px;
+}
+.editor-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin: 26px 0 13px;
+}
+.editor-label-row h3 {
+  font:
+    900 14px/1.5 Nunito,
+    sans-serif;
+  color: #3b536e;
+}
+.editor-label-row > span {
+  font-size: 11px;
+  color: #8b9aab;
+}
+.account-settings .character-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 11px;
+}
+.account-settings .character-options > button {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 11px;
+  border: 2px solid transparent;
+  border-radius: 11px;
+  background: #f6f8fb;
+  padding: 10px 3px;
+  color: #72849b;
+  position: relative;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    box-shadow 0.16s;
+}
+.account-settings .character-options > button:hover {
+  background: #edf3fb;
+  border-color: #d6e3f4;
+}
+.account-settings .character-options > button.selected {
+  background: #eaf2fd;
+  border-color: #7598c6;
+  box-shadow: 0 3px 12px #3f70b60d;
+  color: #375d92;
+}
+.account-settings .character-options .trainer-avatar {
+  width: 70px;
+  height: 70px;
+  border: 0;
+  box-shadow: none;
+}
+.account-settings .character-options > button > span:not(.trainer-selected-check) {
+  font-size: 12px;
+  font-weight: 900;
+}
+.trainer-selected-check {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border-radius: 50%;
+  background: #5a83ba;
+  color: white;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+}
+.account-settings .colour-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+}
+.account-settings .colour-options > button {
+  width: 35px;
+  height: 35px;
+  border: 3px solid #fffefa;
+  outline: 1px solid #d8e1ec;
+  border-radius: 50%;
+  box-shadow: none;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  transition:
+    transform 0.15s,
+    outline-color 0.15s;
+}
+.account-settings .colour-options > button:hover {
+  transform: scale(1.1);
+}
+.account-settings .colour-options > button.selected {
+  outline: 2px solid #4c6d96;
+  box-shadow: 0 0 0 4px #e6edf6;
+  transform: none;
+}
+.editor-display-name {
+  margin-top: 25px;
+  padding-top: 23px;
+  border-top: 1px solid #e7ebf1;
+}
+.account-settings .field-label {
+  color: #3b536e;
+  font:
+    900 13px/1.5 Nunito,
+    sans-serif;
+  margin: 0 0 9px;
+  display: block;
+}
+.account-settings .text-input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d5dfeb;
+  border-radius: 10px;
+  background: #fff;
+  font:
+    600 14px/1.6 Nunito,
+    sans-serif;
+  color: #23364d;
+  padding: 10px 13px;
+  transition:
+    border-color 0.16s,
+    box-shadow 0.16s;
+}
+.account-settings .text-input:focus {
+  border-color: #749acb;
+  box-shadow: 0 0 0 3px #4775b117;
+  outline: 0;
+}
+.account-settings .text-input::placeholder {
+  color: #98a6b7;
+}
+.account-settings .field-help {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #8998ac;
+  margin: 8px 0 0;
+}
+.account-settings .art-setting {
+  margin-top: 24px;
+  padding-top: 0;
+  border: 0;
+}
+.account-settings .art-style-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.account-settings .art-style-options > button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 2px solid transparent;
+  border-radius: 13px;
+  background: #f4f7fb;
+  padding: 17px 14px;
+  text-align: left;
+  transition:
+    border-color 0.18s,
+    background 0.18s;
+  overflow: visible;
+  min-height: 140px;
+}
+.account-settings .art-style-options > button:hover {
+  background: #eef4fc;
+}
+.account-settings .art-style-options > button.selected {
+  border-color: #7699c7;
+  background: #edf4fe;
+  box-shadow: none;
+}
+.account-settings .art-style-options .pokemon-art {
+  width: 110px;
+  height: 110px;
+  flex-shrink: 0;
+  max-width: 48%;
+  filter: none;
+}
+.account-settings .art-style-copy {
+  min-width: 0;
+}
+.account-settings .art-style-copy strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #3d597c;
+}
+.account-settings .art-style-copy small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #8191a6;
+}
+.art-choice-check {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  color: white;
+  background: #d7e1ee;
+  display: grid;
+  place-items: center;
+}
+.selected .art-choice-check {
+  background: #5c83b8;
+}
+.account-settings .toggle-row {
+  padding: 23px 0;
+  border-bottom: 1px solid #e4eaf2;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: space-between;
+}
+.account-settings .toggle-row strong {
+  font-size: 14px;
+  color: #3a536e;
+}
+.account-settings .toggle-row p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #8392a7;
+  margin-top: 5px;
+}
+.account-settings .toggle {
+  border: 0;
+  border-radius: 20px;
+  background: #d8e0eb;
+  padding: 4px;
+  width: 47px;
+  height: 28px;
+  flex-shrink: 0;
+  transition: background 0.18s;
+}
+.account-settings .toggle > span {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px #263b5722;
+  transition: transform 0.18s;
+}
+.account-settings .toggle.on {
+  background: #638dc1;
+}
+.account-settings .toggle.on > span {
+  transform: translateX(19px);
+}
+.account-settings .wallet-card {
+  border: 1px solid #dce5f1;
+  border-radius: 13px;
+  background: #f1f5fc;
+  color: #476385;
+  padding: 23px;
+  margin: 22px 0;
+}
+.account-settings .wallet-card code {
+  overflow-wrap: anywhere;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.8;
+  color: #3a5574;
+}
+.account-settings .notice {
+  font-size: 12px;
+  line-height: 1.8;
+  border-radius: 11px;
+}
+.account-settings .reset-section {
+  padding-top: 23px;
+  margin-top: 24px;
+  border-color: #e6ebf1;
+}
+.account-settings .reset-section h3 {
+  font-size: 16px;
+  color: #3b526e;
+}
+.account-settings .reset-section p {
+  font-size: 12px;
+  color: #8493a6;
+  line-height: 1.7;
+}
+.account-settings .reset-section .button {
+  font-size: 12px;
+  margin-top: 13px;
+}
+.profile-partner > .pokemon-art,
+.partner-summary > .pokemon-art {
+  width: 175px;
+  height: 175px;
+  flex-shrink: 0;
+}
+.profile-identity .trainer-avatar {
+  border-radius: 19px;
+}
+@keyframes autosave-pulse {
+  from {
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-width: 1100px) {
+  .account-settings .settings-layout {
+    grid-template-columns: 175px minmax(0, 1fr);
+    gap: 20px;
+  }
+  .account-settings .settings-content {
+    padding: 25px;
+  }
+  .account-settings .settings-nav > button {
+    font-size: 12px;
+    padding: 12px 10px;
+    gap: 8px;
+  }
+  .account-settings .art-style-options > button {
+    flex-direction: column;
+    text-align: center;
+    gap: 5px;
+  }
+  .account-settings .art-style-options .pokemon-art {
+    max-width: none;
+    width: 115px;
+    height: 115px;
+  }
+  .account-settings .character-options {
+    gap: 7px;
+  }
+  .account-settings .character-options .trainer-avatar {
+    width: 62px;
+    height: 62px;
+  }
+}
+@media (max-width: 800px) {
+  .account-settings .settings-layout {
+    grid-template-columns: 1fr;
+  }
+  .account-settings .settings-nav {
+    flex-direction: row;
+    gap: 6px;
+    overflow: auto;
+    padding: 0 0 3px;
+  }
+  .account-settings .settings-nav > button {
+    white-space: nowrap;
+    width: auto;
+    flex-shrink: 0;
+    padding: 10px 12px;
+  }
+  .account-settings .settings-nav > button > .pixel-icon:last-child {
+    display: none;
+  }
+  .account-settings .character-options .trainer-avatar {
+    width: 76px;
+    height: 76px;
+  }
+  .account-settings .art-style-options > button {
+    flex-direction: row;
+    text-align: left;
+  }
+  .account-settings .art-style-options .pokemon-art {
+    max-width: 47%;
+  }
+}
+@media (max-width: 560px) {
+  .account-settings .page-heading {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .account-settings .page-heading h1 {
+    font-size: 25px;
+  }
+  .autosave-status {
+    font-size: 10px;
+    min-width: 0;
+    margin-top: 7px;
+  }
+  .account-settings .settings-content {
+    padding: 22px 17px;
+    border-radius: 14px;
+  }
+  .settings-section-heading h2 {
+    font-size: 23px;
+  }
+  .account-settings .avatar-editor {
+    gap: 18px;
+    padding: 18px 13px;
+  }
+  .avatar-preview-frame {
+    width: 109px;
+  }
+  .avatar-preview-frame .trainer-avatar {
+    width: 95px;
+    height: 95px;
+  }
+  .avatar-preview-label {
+    font-size: 6px;
+    padding: 7px 2px;
+  }
+  .account-settings .avatar-editor h3 {
+    font-size: 18px;
+  }
+  .account-settings .avatar-editor p {
+    font-size: 10px;
+  }
+  .account-settings .avatar-editor .randomise-trainer {
+    font-size: 10px;
+    padding: 8px 10px;
+  }
+  .account-settings .character-options {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .account-settings .character-options > button {
+    padding: 7px 2px;
+    gap: 8px;
+    border-radius: 9px;
+  }
+  .account-settings .character-options .trainer-avatar {
+    width: 46px;
+    height: 46px;
+  }
+  .account-settings .character-options > button > span:not(.trainer-selected-check) {
+    font-size: 9px;
+  }
+  .trainer-selected-check {
+    width: 15px;
+    height: 15px;
+    top: 2px;
+    right: 2px;
+  }
+  .trainer-selected-check .pixel-icon {
+    width: 10px;
+    height: 10px;
+  }
+  .editor-label-row > span {
+    font-size: 10px;
+  }
+  .account-settings .colour-options {
+    gap: 13px;
+  }
+  .account-settings .colour-options > button {
+    width: 31px;
+    height: 31px;
+  }
+  .account-settings .art-style-options {
+    gap: 10px;
+  }
+  .account-settings .art-style-options > button {
+    flex-direction: column;
+    text-align: center;
+    padding: 14px 8px;
+  }
+  .account-settings .art-style-options .pokemon-art {
+    max-width: none;
+    width: 105px;
+    height: 105px;
+  }
+  .account-settings .art-style-copy strong {
+    font-size: 12px;
+  }
+  .account-settings .art-style-copy small {
+    font-size: 10px;
+  }
+  .account-settings .field-help {
+    font-size: 10px;
+  }
+  .profile-partner > .pokemon-art,
+  .partner-summary > .pokemon-art {
+    width: 140px;
+    height: 140px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-settings * {
+    transition: none !important;
+  }
+  .autosave-status.saving .autosave-indicator {
+    animation: none;
+  }
+}
+html[data-motion='reduced'] .autosave-status.saving .autosave-indicator {
+  animation: none;
+}

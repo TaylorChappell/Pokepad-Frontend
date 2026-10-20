@@ -1,6 +1,7 @@
 import type { Action, AppSnapshot, OwnedPokemon, Reward, Profile } from '../types';
 import { createInitialState } from '../data/demo';
 import { applyAction, STORAGE_KEY } from '../state/model';
+import { getPokemonHealth } from '../data/stats';
 export interface PokepadApi {
   mode: 'demo' | 'live';
   load(): Promise<AppSnapshot>;
@@ -38,12 +39,22 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
     // Legacy saves did not fund evolution. A zero reserve must be topped up by an actual vault debit.
     p.evolutionReserve = nonNegative(p.evolutionReserve);
     p.moveOffers = Array.isArray(p.moveOffers) ? p.moveOffers : [];
+    // Old reward tiers are not variants: never turn a legacy "Rare" Pokémon into a shiny
+    // or re-price existing owned assets. Missing variants become normal, at their funded value.
+    p.shiny = p.shiny === true;
+    p.rarity = '';
+    p.health = getPokemonHealth(p).current;
     return p;
   });
-  s.rewards = s.rewards.map((r: Reward) => ({
-    ...r,
-    evolutionReserve: nonNegative(r.evolutionReserve),
-  }));
+  s.rewards = s.rewards.map((r: Reward) => {
+    const reward = { ...r, evolutionReserve: nonNegative(r.evolutionReserve) };
+    // Local demo rewards now draw on opening. Keep their exact prior allocation until then.
+    if (!reward.openedAt) {
+      delete reward.outcomeSpeciesId;
+      delete reward.shiny;
+    } else reward.shiny = reward.shiny === true;
+    return reward;
+  });
   s.notifications = s.notifications.map((n) => ({
     ...n,
     title: n.title.replace(/stardust/gi, 'Rare Candy'),

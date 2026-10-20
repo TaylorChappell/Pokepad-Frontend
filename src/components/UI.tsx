@@ -9,9 +9,10 @@ import {
 } from 'react';
 import type { Coin, Profile, RewardMode } from '../types';
 import { pokemonById } from '../data/pokemon';
-import { asset, sol, TYPE_COLORS } from '../utils';
+import { asset, sol } from '../utils';
 import { PIXEL_ICONS } from '../data/icons';
 import { SPRITES } from '../data/sprites';
+import { ART_BOUNDS } from '../data/art-bounds';
 import { useOptionalApp } from '../state/AppContext';
 export type IconName = keyof typeof PIXEL_ICONS;
 export function Icon({
@@ -57,21 +58,15 @@ export function PokepadLogo({ size = 38 }: { size?: number }) {
       className="pokepad-logo"
       alt=""
       width={size}
-      height={size + 4}
+      height={size}
     />
   );
 }
 export function Wordmark() {
   return (
     <span className="pokemon-wordmark" aria-label="POKEPAD">
-      <span aria-hidden="true" className="wordmark-shadow">
-        POKéPAD
-      </span>
       <span aria-hidden="true" className="wordmark-solid">
-        POKéPAD
-      </span>
-      <span aria-hidden="true" className="wordmark-outline">
-        POKéPAD
+        POKÉPAD
       </span>
     </span>
   );
@@ -127,6 +122,8 @@ export function PokemonArt({
   eager = false,
   styleOverride,
   animated = true,
+  shiny = false,
+  portrait = false,
 }: {
   id: number;
   className?: string;
@@ -134,6 +131,8 @@ export function PokemonArt({
   eager?: boolean;
   styleOverride?: 'pixel' | 'drawn';
   animated?: boolean;
+  shiny?: boolean;
+  portrait?: boolean;
 }) {
   const app = useOptionalApp(),
     style = styleOverride || app?.state.profile.artStyle || 'pixel',
@@ -151,34 +150,107 @@ export function PokemonArt({
     return () => observer.disconnect();
   }, [style]);
   const sprite = SPRITES[id] || SPRITES[1],
-    moving = animated && !app?.state.profile.reducedMotion && visible && sprite.frames > 1;
+    moving =
+      animated &&
+      !shiny &&
+      !portrait &&
+      !app?.state.profile.reducedMotion &&
+      visible &&
+      sprite.frames > 1;
+  const bounds = ART_BOUNDS[id] || ART_BOUNDS[1];
+  const box = shiny ? bounds.shiny : moving ? bounds.animated : bounds.static;
+  const span = Math.max(box[2] - box[0], box[3] - box[1]);
+  // Normalize transparent source canvases, using every animation frame's union.
+  // The whole silhouette fits inside the art window, including wings and tails.
+  const fit = portrait ? 158 : id === 146 ? 80 : 88;
+  const canvas = shiny ? bounds.shinyCanvas : moving ? bounds.canvas : bounds.staticCanvas;
+  const centerX = (box[0] + box[2]) / 2;
+  const centerY = portrait ? box[1] + (box[3] - box[1]) * 0.28 : (box[1] + box[3]) / 2;
+  const label = pokemonById(id).name + (shiny ? ', shiny colour variant' : '');
   if (style === 'pixel' && !back)
     return (
       <span
         ref={ref}
         role="img"
-        aria-label={pokemonById(id).name}
-        className={'pokemon-art sprite-art ' + className + (moving ? ' sprite-animated' : '')}
-        style={
-          {
-            backgroundImage: 'url("' + asset(moving ? sprite.url : sprite.staticUrl) + '")',
-            backgroundSize: moving ? sprite.frames * 100 + '% 100%' : '100% 100%',
-            '--sprite-frames': sprite.frames,
-            '--sprite-duration': sprite.frames * sprite.frameMs + 'ms',
-            '--sprite-end': (sprite.frames / (sprite.frames - 1)) * 100 + '%',
-          } as CSSProperties
+        aria-label={label}
+        className={
+          'pokemon-art sprite-art normalized-art ' +
+          className +
+          (shiny ? ' shiny-art' : '') +
+          (portrait ? ' portrait-art' : '')
         }
-      />
+      >
+        {moving && bounds.animatedUrl ? (
+          <img
+            className="sprite-gif"
+            alt=""
+            src={asset(bounds.animatedUrl)}
+            style={{
+              width: (canvas[0] / span) * fit + '%',
+              height: (canvas[1] / span) * fit + '%',
+              left: 50 - (centerX / span) * fit + '%',
+              top: 50 - (centerY / span) * fit + '%',
+            }}
+          />
+        ) : (
+          <span
+            aria-hidden="true"
+            className={'sprite-pixels' + (moving ? ' sprite-pixels-moving' : '')}
+            style={
+              {
+                width: (canvas[0] / span) * fit + '%',
+                height: (canvas[1] / span) * fit + '%',
+                left: 50 - (centerX / span) * fit + '%',
+                top: 50 - (centerY / span) * fit + '%',
+                backgroundImage:
+                  'url("' +
+                  asset(
+                    shiny
+                      ? 'shiny/' + id + '.png'
+                      : moving
+                        ? sprite.url
+                        : bounds.staticUrl || sprite.staticUrl,
+                  ) +
+                  '")',
+                backgroundSize: moving ? sprite.frames * 100 + '% 100%' : '100% 100%',
+                '--sprite-frames': sprite.frames,
+                '--sprite-duration': sprite.frames * sprite.frameMs + 'ms',
+                '--sprite-end': (sprite.frames / (sprite.frames - 1)) * 100 + '%',
+              } as CSSProperties
+            }
+          />
+        )}
+        {shiny && !portrait && (
+          <span
+            className={
+              'shiny-glint' + (!animated || app?.state.profile.reducedMotion ? ' static-glint' : '')
+            }
+            aria-hidden="true"
+          />
+        )}
+      </span>
     );
   return (
     <img
       className={
         'pokemon-art ' +
-        (back ? 'pixel-art ' : 'drawn-art ' + (animated ? 'idle-drawn ' : '')) +
-        className
+        (back
+          ? 'pixel-art '
+          : 'drawn-art ' +
+            (animated && !portrait && !app?.state.profile.reducedMotion ? 'idle-drawn ' : '')) +
+        className +
+        (shiny ? ' shiny-art' : '') +
+        (portrait ? ' portrait-art' : '')
       }
-      src={asset('pokemon/' + (back ? 'back/' : '') + id + '.png')}
-      alt={pokemonById(id).name}
+      src={
+        shiny
+          ? 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/' +
+            (back ? 'back/shiny/' : 'other/official-artwork/shiny/') +
+            id +
+            '.png'
+          : asset('pokemon/' + (back ? 'back/' : '') + id + '.png')
+      }
+      alt={label}
       loading={eager ? 'eager' : 'lazy'}
       draggable={false}
       width={475}
@@ -186,13 +258,72 @@ export function PokemonArt({
     />
   );
 }
+export function PokemonPortrait({
+  id,
+  shiny = false,
+  size = 42,
+  className = '',
+}: {
+  id: number;
+  shiny?: boolean;
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <span className={'pokemon-headshot ' + className} style={{ width: size, height: size }}>
+      <PokemonArt id={id} shiny={shiny} portrait animated={false} styleOverride="pixel" />
+    </span>
+  );
+}
 export function TypeChip({ type }: { type: string }) {
+  const colors: Record<string, string> = {
+    Fire: '#bd3f24',
+    Water: '#286aa6',
+    Grass: '#357b3b',
+    Poison: '#864196',
+    Electric: '#caa124',
+    Normal: '#686960',
+    Flying: '#53679c',
+    Bug: '#596e20',
+    Psychic: '#ab336a',
+    Ice: '#479fba',
+    Ghost: '#69528c',
+    Dragon: '#5943ac',
+    Ground: '#86602d',
+    Rock: '#786b36',
+    Fighting: '#aa5746',
+    Steel: '#536e82',
+    Fairy: '#9c487a',
+  };
+  const glyphs: Record<string, string> = {
+    Fire: 'M12 2c2 5-3 5-1 9 2 0 3-2 3-4 5 4 6 7 4 11-3 6-12 5-14 0-2-5 1-8 5-11-1 3 1 4 2 4-1-4 2-6 1-9z',
+    Water: 'M12 2C9 7 4 11 4 15a8 8 0 0 0 16 0c0-4-5-8-8-13z',
+    Grass: 'M21 3C8 2 2 7 3 14c1 6 8 9 13 4 4-4 3-10 5-15ZM7 17l10-10-7 12z',
+    Electric: 'M13 1 4 14h7l-1 9 10-14h-7z',
+    Normal: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 6a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z',
+    Flying: 'M22 3C7 3 2 8 3 17l7-8-4 10c3 0 6-1 7-3H9c3-1 6-2 7-5h-5c4-1 8-4 11-8Z',
+    Poison: 'M12 2a7 7 0 0 0-7 7c0 5 3 5 3 8v3h8v-3c0-3 3-3 3-8a7 7 0 0 0-7-7ZM7 22h10v-2H7Z',
+    Bug: 'M8 3 5 1 4 3l4 3h8l4-3-1-2-3 2v3H8ZM5 7c-2 9 1 15 6 15V7Zm8 0v15c5 0 8-6 6-15Z',
+    Psychic:
+      'M12 2a10 10 0 1 0 10 10h-3a7 7 0 1 1-7-7c4 0 6 6 2 8-2 1-4-1-3-3H8c-2 6 6 9 9 4 4-6-1-12-5-12Z',
+    Ice: 'M11 1h2v7l5-5 2 2-5 5h8v2h-8l5 5-2 2-5-5v9h-2v-9l-5 5-2-2 5-5H1v-2h8L4 5l2-2 5 5z',
+    Ghost: 'M12 2C6 2 3 6 3 12v9l4-2 3 3 3-3 3 3 5-2v-8c0-6-3-10-9-10ZM7 9h3v4H7Zm7 0h3v4h-3Z',
+    Dragon: 'm3 19 6-5-3-4 6-7 9-1-3 7-5-2-2 4 5 3-3 8-6-3-4 3z',
+    Ground: 'M7 4h11l5 17H1Zm1 5L4 19h3l3-10Zm7-3 4 13h2L17 6Z',
+    Rock: 'm4 4 11-2 7 9-5 10H7l-6-9Zm8 1-6 3 4 5 8-2Z',
+    Fighting: 'M4 9V4h3v5h1V2h3v7h1V3h3v6h1V5h3v8l3-2v7l-6 4H7l-4-6V9Z',
+    Steel: 'm6 2 12 0 6 10-6 10H6L0 12Zm6 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z',
+    Fairy: 'm12 1 3 7 8 4-8 3-3 8-3-8-8-3 8-4Z',
+  };
   return (
     <span
-      className="type-chip"
-      style={{ '--type-color': TYPE_COLORS[type] || '#e2dfd8' } as CSSProperties}
+      className={'type-chip type-badge type-' + type.toLowerCase()}
+      style={{ '--type-color': colors[type] || '#8a8880' } as CSSProperties}
     >
-      {type}
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d={glyphs[type] || glyphs.Normal} fill="currentColor" fillRule="evenodd" />
+      </svg>
+      <span>{type}</span>
     </span>
   );
 }
@@ -239,17 +370,30 @@ export function Avatar({
   profile: Pick<Profile, 'character' | 'accessoryColor'>;
   size?: number;
 }) {
+  const crops = { red: [31, 22], leaf: [32, 23], misty: [33, 17], brock: [31, 19], blue: [31, 20] };
+  const [x, y] = crops[profile.character] || crops.red;
   return (
-    <img
-      className="trainer-avatar pixel-avatar"
-      width={size}
-      height={size}
-      src={asset(
-        'trainers/' + profile.character + '-' + profile.accessoryColor.replace('#', '') + '.png',
-      )}
-      alt={profile.character + ' trainer avatar'}
-      draggable={false}
-    />
+    <span
+      className={'trainer-avatar pixel-avatar trainer-portrait trainer-' + profile.character}
+      style={
+        { width: size, height: size, '--trainer-accent': profile.accessoryColor } as CSSProperties
+      }
+    >
+      <img
+        className="trainer-portrait-pixels"
+        style={{
+          width: '228.5714%',
+          height: '228.5714%',
+          left: 50 - (x / 28) * 100 + '%',
+          top: 50 - (y / 28) * 100 + '%',
+        }}
+        src={asset(
+          'trainers/' + profile.character + '-' + profile.accessoryColor.replace('#', '') + '.png',
+        )}
+        alt={profile.character + ' trainer avatar'}
+        draggable={false}
+      />
+    </span>
   );
 }
 export function EggArt({
@@ -260,14 +404,13 @@ export function EggArt({
   className?: string;
 }) {
   return (
-    <img
-      src={asset('pixel/egg-' + tier.toLowerCase() + '.png')}
-      width={96}
-      height={112}
-      className={'egg-art pixel-item ' + className}
-      alt={tier + ' egg'}
-      draggable={false}
-    />
+    <span
+      className={'egg-art pixel-item normalized-egg ' + className}
+      role="img"
+      aria-label={tier + ' egg'}
+    >
+      <img src={asset('pixel/egg-' + tier.toLowerCase() + '.png')} alt="" draggable={false} />
+    </span>
   );
 }
 export function PackArt({
@@ -278,14 +421,30 @@ export function PackArt({
   className?: string;
 }) {
   return (
-    <div className={'pack-art pixel-pack ' + (tier === 'Rare' ? 'blue-pack ' : '') + className}>
+    <div
+      className={
+        'pack-art collector-pack pack-' +
+        tier.toLowerCase() +
+        ' ' +
+        (tier === 'Rare' ? 'blue-pack ' : '') +
+        className
+      }
+    >
       <div className="pack-crimp top" />
       <div className="pack-inner">
         <span className="pack-brand">POKéPAD</span>
-        <span className="pack-edition">GEN I</span>
-        <PokemonArt id={tier === 'Rare' ? 133 : 25} styleOverride="pixel" animated={false} />
-        <span className="pack-tag">{tier.toUpperCase()} PACK</span>
-        <Pokeball size={18} />
+        <span className="pack-edition">KANTO COLLECTION</span>
+        <span className="pack-ball-emblem">
+          <svg viewBox="0 0 80 80" aria-hidden="true">
+            <circle cx="40" cy="40" r="33" fill="#fff9e4" stroke="currentColor" strokeWidth="4" />
+            <path d="M7 40a33 33 0 0 1 66 0Z" fill="currentColor" />
+            <path d="M8 40h64" stroke="#283b4a" strokeWidth="4" />
+            <circle cx="40" cy="40" r="11" fill="#fffaf0" stroke="#283b4a" strokeWidth="4" />
+            <circle cx="40" cy="40" r="5" fill="#e5e9e4" />
+          </svg>
+        </span>
+        <span className="pack-tag">{tier.toUpperCase()}</span>
+        <span className="pack-contents">1 mystery Pokémon</span>
       </div>
       <div className="pack-crimp bottom" />
     </div>

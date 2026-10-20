@@ -8,6 +8,7 @@ import {
   Wordmark,
   Avatar,
   PokemonArt,
+  PokemonPortrait,
   CoinAvatar,
   type IconName,
 } from './UI';
@@ -170,7 +171,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               <Avatar profile={state.profile} />
               {equipped && (
                 <span className="equipped-mini">
-                  <PokemonArt id={equipped.speciesId} />
+                  <PokemonPortrait id={equipped.speciesId} shiny={equipped.shiny} size={32} />
                 </span>
               )}
             </span>
@@ -297,15 +298,6 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
         </nav>
         <div className="sidebar-bottom">
           <SidebarBuddy path={path} />
-          <a href="#/settings" className="nav-link">
-            <Icon name="Settings" />
-            Settings
-          </a>
-          <div className="demo-indicator">
-            <span />
-            {mode === 'demo' ? 'Frontend preview' : 'Connected'}
-            <span className="version">v0.2</span>
-          </div>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="main-content">

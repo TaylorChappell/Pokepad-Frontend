@@ -1,0 +1,304 @@
+/* Shared identity and artwork. Original sprites retain their original pixel palettes. */
+.brand .pokepad-logo,
+.pokepad-logo {
+  image-rendering: auto;
+  width: auto;
+  filter: drop-shadow(0 2px 1px #21364a14);
+}
+.pokemon-wordmark .wordmark-solid {
+  font-family: Pokemon, sans-serif;
+  color: #ffcf36;
+  -webkit-text-fill-color: #ffcf36;
+  -webkit-text-stroke: 2.5px #2e5c96;
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 #214779;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+}
+.pokemon-wordmark {
+  overflow: visible;
+}
+.pokemon-art.normalized-art {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  aspect-ratio: 1;
+  background: none;
+  overflow: visible;
+  isolation: isolate;
+}
+.normalized-art .sprite-pixels {
+  display: block;
+  position: absolute;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+}
+.normalized-art .sprite-pixels-moving {
+  animation: sprite-frames var(--sprite-duration) steps(var(--sprite-frames)) infinite;
+}
+.normalized-art .sprite-gif {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.pokemon-headshot {
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+  background: none;
+  overflow: hidden;
+}
+.pokemon-headshot .pokemon-art {
+  width: 100%;
+  height: 100%;
+}
+.pokemon-art.portrait-art {
+  overflow: hidden;
+  background: none;
+}
+.shiny-glint {
+  position: absolute;
+  width: 11%;
+  height: 11%;
+  top: 12%;
+  right: 6%;
+  background: #eebf49;
+  clip-path: polygon(50% 0, 62% 36%, 100% 50%, 64% 62%, 50% 100%, 38% 62%, 0 50%, 37% 37%);
+  box-shadow: 0 0 16px #f4dc7f;
+  z-index: 2;
+  animation: shiny-gleam 2.8s ease-in-out infinite;
+}
+.shiny-glint.static-glint {
+  animation: none;
+}
+@keyframes shiny-gleam {
+  0%,
+  100% {
+    opacity: 0.65;
+    transform: scale(0.8) rotate(-12deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) rotate(12deg);
+  }
+}
+.trainer-avatar.trainer-portrait {
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--trainer-accent) 17%, white),
+    #f3f5f7
+  );
+  border: 1px solid color-mix(in srgb, var(--trainer-accent) 28%, #dce2e6);
+  box-shadow: inset 0 0 0 2px #ffffff90;
+}
+.trainer-portrait .trainer-portrait-pixels {
+  position: absolute;
+  display: block;
+  max-width: none;
+  object-fit: fill;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transition: filter 0.18s ease;
+}
+.type-chip.type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--type-color);
+  color: #fff;
+  border: 1px solid #00000014;
+  border-radius: 6px;
+  padding: 5px 9px;
+  min-height: 25px;
+  font-family: Nunito, system-ui, sans-serif;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.65px;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 #ffffff35,
+    0 2px 0 #00000010;
+}
+.type-chip.type-badge > svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+.type-chip.type-electric,
+.type-chip.type-ice {
+  color: #122d42;
+}
+.sol-value {
+  font-variant-numeric: tabular-nums;
+  gap: 7px;
+}
+.sol-value strong {
+  color: #263d4c;
+  font-weight: 900;
+  letter-spacing: -0.25px;
+}
+.sol-value .solana-icon {
+  width: 18px;
+  height: 16px;
+}
+.collector-pack.pack-art {
+  --pack-color: #dfa944;
+  --pack-deep: #9f6b25;
+  width: 135px;
+  height: 190px;
+  border: 1px solid var(--pack-deep);
+  border-radius: 5px;
+  background: var(--pack-color);
+  box-shadow:
+    0 12px 20px #332d3d1a,
+    inset 0 0 0 2px #ffffff40;
+  rotate: -4deg;
+  transform: none;
+  filter: none;
+}
+.collector-pack.pack-rare {
+  --pack-color: #86b5dd;
+  --pack-deep: #365c94;
+}
+.collector-pack.pack-epic {
+  --pack-color: #b39bde;
+  --pack-deep: #695192;
+}
+.collector-pack .pack-inner {
+  border-radius: 4px;
+  border: 0;
+  padding: 19px 10px 14px;
+  gap: 5px;
+  background:
+    linear-gradient(
+      112deg,
+      transparent 15%,
+      #ffffff55 26%,
+      transparent 39%,
+      #ffffff38 70%,
+      transparent 86%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--pack-color) 64%, white),
+      var(--pack-color) 60%,
+      var(--pack-deep)
+    );
+}
+.collector-pack .pack-inner:before {
+  content: '';
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border: 1px solid #ffffff50;
+  border-radius: 50%;
+  top: 20px;
+  left: -24px;
+}
+.collector-pack .pack-brand {
+  font-family: Pokemon;
+  color: #fff1b6;
+  -webkit-text-stroke: 1px #2e527c;
+  paint-order: stroke fill;
+  text-shadow: 0 1px #213c62;
+  font-size: 18px;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+.collector-pack .pack-edition {
+  position: static;
+  font-family: Nunito, system-ui, sans-serif;
+  font-size: 6px;
+  line-height: 1;
+  letter-spacing: 1.5px;
+  font-weight: 1000;
+  color: #293c50;
+  margin: 0;
+}
+.collector-pack .pack-ball-emblem {
+  color: var(--pack-deep);
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 7px 0 2px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 3px 0 #00000012);
+}
+.collector-pack .pack-ball-emblem svg {
+  width: 100%;
+  height: 100%;
+}
+.collector-pack .pack-tag {
+  position: static;
+  font-family: Nunito, system-ui, sans-serif;
+  line-height: 1.1;
+  font-size: 9px;
+  font-weight: 1000;
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 1px 1px #00000030;
+  margin: 0;
+}
+.collector-pack .pack-contents {
+  font-size: 6px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #fff8e5;
+  position: relative;
+  z-index: 1;
+}
+.collector-pack .pack-crimp {
+  height: 9px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--pack-deep) 0 1px,
+    color-mix(in srgb, var(--pack-color) 80%, white) 1px 4px
+  );
+}
+@media (prefers-reduced-motion: reduce) {
+  .normalized-art .sprite-pixels-moving,
+  .shiny-glint {
+    animation: none !important;
+  }
+}
+.reduced-motion .normalized-art .sprite-pixels-moving,
+.reduced-motion .shiny-glint {
+  animation: none !important;
+}
+/* The original egg sits in a 64px transparent canvas; frame the visible 24px art. */
+.egg-art.normalized-egg {
+  display: inline-block;
+  position: relative;
+  width: 96px;
+  height: 112px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+.egg-art.normalized-egg > img {
+  position: absolute;
+  display: block;
+  width: 218.6667%;
+  height: 218.6667%;
+  max-width: none;
+  left: -59.3333%;
+  top: -59.3333%;
+  object-fit: fill;
+  image-rendering: pixelated;
+  pointer-events: none;
+}

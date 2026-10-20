@@ -1,0 +1,1174 @@
+/* Reward collection and reveals: clear rarity, one meaningful timer, room for every sprite. */
+.rewards-v3 {
+  --reward-ink: #23364d;
+}
+.rewards-v3-overview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: -8px 0 28px;
+  color: #617184;
+}
+.rewards-v3-overview p {
+  margin: 0;
+  max-width: 400px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.rewards-v3-overview > div {
+  display: flex;
+  gap: 22px;
+}
+.rewards-v3-overview > div > span {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.rewards-v3-overview strong {
+  color: var(--reward-ink);
+  font-size: 23px;
+}
+.rewards-v3 .rewards-toolbar {
+  margin-bottom: 25px;
+}
+.rewards-v3 .tab-bar {
+  border-bottom: 1px solid #dce2e8;
+  gap: 10px;
+}
+.rewards-v3 .tab-bar button {
+  font-size: 14px;
+  padding: 14px 18px;
+  gap: 9px;
+}
+.rewards-v3 .tab-bar button.active {
+  color: #c94c45;
+  border-color: #e65c54;
+}
+.reward-v3-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+.reward-v3-card {
+  --tier: #4f976f;
+  --tier-light: #edf6ed;
+  background: #fffefa;
+  border: 1px solid #e0e6df;
+  border-radius: 20px;
+  overflow: visible;
+  box-shadow: 0 8px 22px #26344806;
+  transition:
+    box-shadow 0.25s,
+    transform 0.25s;
+}
+.reward-v3-card:hover {
+  box-shadow: 0 12px 30px #26344810;
+  transform: translateY(-3px);
+}
+.reward-v3-card.rare,
+.reward-v3-detail-art.rare {
+  --tier: #3c78c4;
+  --tier-light: #ecf4ff;
+}
+.reward-v3-card.epic,
+.reward-v3-detail-art.epic {
+  --tier: #9560bd;
+  --tier-light: #f5edff;
+}
+.reward-v3-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 0;
+  gap: 6px;
+}
+.reward-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #4f976f;
+  color: white;
+  font-weight: 900;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  border-radius: 6px 12px 12px 6px;
+  padding: 8px 12px 8px 8px;
+  box-shadow: inset 0 -2px 0 #0002;
+}
+.reward-tier.rare {
+  background: #3c78c4;
+}
+.reward-tier.epic {
+  background: #9560bd;
+}
+.reward-tier .pokeball {
+  width: 16px;
+  height: 16px;
+}
+.reward-v3-status {
+  font-size: 11px;
+  font-weight: 800;
+  color: #778395;
+}
+.reward-v3-status.ready {
+  color: #278252;
+}
+.reward-v3-status.ready:before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 5px;
+}
+.reward-v3-art {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 225px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 28px;
+  overflow: visible;
+}
+.reward-v3-art:before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  width: 170px;
+  height: 170px;
+  background: radial-gradient(circle, var(--tier-light) 40%, transparent 70%);
+  border-radius: 50%;
+}
+.reward-v3-art > .egg-art {
+  width: 130px;
+  height: 150px;
+  object-fit: contain;
+  margin: 0;
+  transition: transform 0.35s;
+}
+.reward-v3-art:hover > .egg-art {
+  transform: translateY(-5px) rotate(5deg);
+}
+.reward-v3-art > .pack-art {
+  transform: rotate(-6deg) scale(0.82);
+  margin: 0;
+  transition: transform 0.35s;
+}
+.reward-v3-art:hover > .pack-art {
+  transform: rotate(0) scale(0.86);
+}
+.reward-v3-art:focus-visible {
+  outline: 3px solid #5c8dd0;
+  outline-offset: -6px;
+  border-radius: 12px;
+}
+.reward-v3-info {
+  padding: 0 22px 18px;
+  text-align: center;
+}
+.reward-v3-info h2 {
+  font-size: 19px;
+  margin: 0 0 9px;
+  color: var(--reward-ink);
+}
+.rewards-v3 .reward-origin {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #69788a;
+}
+.rewards-v3 .source-coin,
+.reveal-v3 .source-coin {
+  gap: 5px;
+  font-size: 12px;
+  color: #4b5d70;
+}
+.reward-v3-timer {
+  margin: 23px 0 20px;
+  text-align: left;
+}
+.reward-v3-timer > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.reward-v3-timer > div:first-child > span {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  color: #69788a;
+}
+.reward-v3-timer strong {
+  color: var(--reward-ink);
+}
+.reward-v3-timer .progress-track {
+  height: 7px;
+  margin: 9px 0 11px;
+  background: var(--tier-light);
+  border: 0;
+  border-radius: 9px;
+}
+.reward-v3-timer .progress-track > span {
+  background: var(--tier);
+  border: 0;
+  border-radius: inherit;
+}
+.reward-v3-timer p {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  color: #647589;
+  font-size: 12px;
+  margin: 0;
+}
+.reward-v3-open {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--tier) 70%, black);
+  border-bottom-width: 3px;
+  border-radius: 10px;
+  background: var(--tier-light);
+  color: color-mix(in srgb, var(--tier) 60%, #16304b);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 900;
+  transition:
+    background 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.reward-v3-open > span {
+  flex: 1;
+  text-align: left;
+}
+.reward-v3-open:hover {
+  background: color-mix(in srgb, var(--tier-light) 80%, var(--tier));
+  box-shadow: 0 5px 12px #23364d0d;
+  transform: translateY(-2px);
+}
+.reward-v3-open:active {
+  transform: translateY(1px);
+}
+.reward-v3-card.is-ready .reward-v3-open {
+  background: var(--tier);
+  color: white;
+}
+.reward-v3-card .reward-v3-open.pack-button {
+  color: #fff;
+  background: #254669;
+  border-color: #18324e;
+  box-shadow: inset 0 1px 0 #ffffff25;
+}
+.reward-v3-card .reward-v3-open.pack-button:hover {
+  background: #325b85;
+}
+.reward-v3-pool-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  width: 100%;
+  padding: 13px 0 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6a7a8d;
+  cursor: pointer;
+}
+.reward-v3-pool-link:hover {
+  color: #285f9d;
+}
+.reward-v3-pack-copy {
+  margin: 20px 0;
+  color: #69788a;
+  font-size: 12px;
+  line-height: 1.8;
+  min-height: 62px;
+}
+.reward-v3-buddy {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-top: 32px;
+  border-radius: 18px;
+  padding: 12px 30px 12px 15px;
+  background: #eef4ec;
+  border: 1px solid #dae5d7;
+}
+.reward-v3-buddy-art {
+  width: 132px;
+  height: 132px;
+  flex: 0 0 132px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.reward-v3-buddy-art .pokemon-art {
+  width: 120px;
+  height: 120px;
+}
+.reward-v3-buddy > div:nth-child(2) {
+  flex: 1;
+}
+.reward-v3-buddy h3 {
+  margin: 0 0 7px;
+  font-size: 19px;
+  color: var(--reward-ink);
+}
+.reward-v3-buddy p {
+  margin: 0;
+  font-size: 13px;
+  color: #657866;
+}
+.reward-v3-history {
+  border-radius: 16px;
+  overflow: hidden;
+}
+.reward-v3-history .opened-reward-row {
+  padding: 15px 22px;
+}
+.reward-v3-history .opened-reward-row > .pokemon-art {
+  width: 78px;
+  height: 78px;
+}
+.reward-v3-history .opened-reward-row > .sol-value {
+  font-size: 16px;
+}
+.reward-v3-detail {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 28px;
+  padding: 28px;
+  color: #23364d;
+}
+.reward-v3-detail-art {
+  --tier: #4f976f;
+  --tier-light: #edf6ed;
+  border-radius: 16px;
+  background: linear-gradient(var(--tier-light), #fffefa);
+  text-align: center;
+  padding: 20px 18px;
+  align-self: start;
+}
+.reward-v3-detail-art > div:nth-child(2) {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.reward-v3-detail-art .egg-art {
+  width: 136px;
+  height: 156px;
+  object-fit: contain;
+}
+.reward-v3-detail-art .pack-art {
+  transform: scale(0.82);
+}
+.reward-v3-detail-art > p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.reward-v3-detail-timer {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0;
+}
+.reward-v3-detail-timer strong {
+  font-size: 15px;
+}
+.reward-v3-detail-timer span {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #627387;
+}
+.reward-v3-detail-timer .progress-track {
+  height: 7px;
+  border: 0;
+  border-radius: 7px;
+}
+.reward-v3-detail-timer .progress-track > span {
+  background: var(--tier);
+}
+.reward-v3-detail-art > .button {
+  margin-top: 15px;
+}
+.reward-v3-pool h3 {
+  margin: 3px 0 8px;
+  font-size: 20px;
+  line-height: 1.5;
+}
+.reward-v3-pool > p {
+  font-size: 13px;
+  color: #657589;
+  line-height: 1.6;
+}
+.reward-v3-pool-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 9px;
+}
+.reward-v3-pool-tabs button {
+  border: 1px solid #dce4ec;
+  background: white;
+  border-radius: 7px;
+  padding: 7px 12px;
+  color: #68788b;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 12px;
+}
+.reward-v3-pool-tabs button.active {
+  background: #233d5e;
+  color: white;
+  border-color: #233d5e;
+}
+.reward-v3-pool-list {
+  max-height: 365px;
+  overflow: auto;
+  scrollbar-width: thin;
+  padding: 0 7px 0 0;
+}
+.reward-v3-drop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e8ecf0;
+}
+.reward-v3-drop > .pokemon-art {
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+}
+.reward-v3-drop > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.reward-v3-drop strong {
+  font-size: 13px;
+}
+.reward-v3-drop .sol-value {
+  font-size: 11px;
+}
+.reward-v3-drop .solana-icon {
+  width: 12px;
+  height: 12px;
+}
+.reward-v3-drop.is-shiny {
+  background: linear-gradient(100deg, #fff7dc90, transparent);
+}
+.drop-chance {
+  font-size: 12px;
+  font-weight: 900;
+  color: #466486;
+  font-variant-numeric: tabular-nums;
+}
+.reward-v3-pool .reward-v3-odds-note {
+  margin: 14px 0 0;
+  font-size: 11px;
+  color: #758394;
+}
+.reward-v3-no-drops {
+  padding: 30px 10px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #69778a;
+}
+/* Both phases use the exact same stage and centre. No legacy absolute offsets. */
+.reveal-v3 {
+  position: relative;
+  padding: 10px 24px 28px;
+  text-align: center;
+  background: radial-gradient(ellipse at 50% 18%, #f5f7e7, transparent 60%);
+  overflow: visible;
+  color: #23364d;
+}
+.reveal-v3-stage {
+  position: relative;
+  isolation: isolate;
+  height: 285px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto;
+  max-width: 420px;
+  overflow: visible;
+}
+.reveal-v3-aura {
+  position: absolute;
+  z-index: -1;
+  width: 245px;
+  height: 245px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff8c4 0, #f6edb84d 50%, transparent 73%);
+}
+.reveal-v3-object {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 250px;
+  height: 250px;
+  margin: 0;
+  overflow: visible;
+}
+.reveal-v3-object > .egg-art {
+  width: 156px;
+  height: 180px;
+  object-fit: contain;
+  margin: 0;
+}
+.reveal-v3-object > .pack-art {
+  transform: scale(0.9);
+  margin: 0;
+}
+.reveal-v3-object > .pokemon-art {
+  width: 250px;
+  height: 250px;
+  margin: 0;
+}
+.reveal-v3.is-opening .reveal-v3-object.is-confirmed > .egg-art {
+  animation: reveal-egg-wobble 2.4s ease-in-out both;
+}
+.reveal-v3.is-opening .reveal-v3-object.is-confirmed > .pack-art {
+  animation: reveal-pack-open 2.4s ease-in-out both;
+}
+.reveal-v3.is-opening .is-confirmed .pack-crimp.top {
+  animation: reveal-pack-tear 2.4s ease-out both;
+}
+.reveal-v3.is-revealed .reveal-v3-object {
+  animation: reveal-pokemon-arrives 0.6s cubic-bezier(0.15, 0.8, 0.2, 1) both;
+}
+.reveal-v3-flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, #fff 10%, #fff9 35%, transparent 65%);
+  animation: reveal-flash 2.4s ease-in both;
+  z-index: 2;
+}
+.reveal-v3-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.reveal-v3.is-revealed .reveal-v3-stars {
+  opacity: 1;
+}
+.reveal-v3-stars > span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  color: #e8b64b;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--distance)))
+    rotate(calc(-1 * var(--angle)));
+}
+.reveal-v3-stars > span svg {
+  width: 100%;
+  height: 100%;
+  animation: reveal-star-twinkle 2.6s var(--delay) ease-in-out infinite;
+}
+.reveal-v3-details {
+  position: relative;
+  animation: reveal-detail-arrives 0.35s ease both;
+}
+.reveal-v3-details h2 {
+  margin: 0 0 14px;
+  font-size: 32px;
+  line-height: 1.5;
+}
+.reveal-v3-details .type-row {
+  justify-content: center;
+  gap: 9px;
+}
+.reveal-v3-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 170px;
+  padding: 13px 22px;
+  border: 1px solid #d8e4ec;
+  background: #fff;
+  border-radius: 12px;
+  margin: 22px 0 13px;
+  box-shadow: 0 5px 12px #23364d07;
+}
+.reveal-v3-value .sol-value {
+  color: #23364d;
+  font-size: 23px;
+}
+.reveal-v3-value .solana-icon {
+  width: 24px;
+  height: 21px;
+}
+.reveal-v3-source {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #697b8e;
+}
+.reveal-v3-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 23px;
+}
+.reveal-v3-actions .button {
+  padding: 13px 20px;
+}
+.reveal-v3-note {
+  margin: 17px 0 0;
+  font-size: 12px;
+  color: #718195;
+}
+.reveal-v3-wait {
+  min-height: 230px;
+  padding: 20px 0;
+}
+.reveal-v3-wait h3 {
+  font-size: 20px;
+  margin: 0 0 13px;
+}
+.reveal-v3-wait p {
+  color: #718195;
+  font-size: 14px;
+}
+.legendary-discovery {
+  display: inline-block;
+  padding: 6px 13px;
+  border-radius: 8px;
+  color: #8b611d;
+  background: #fff0be;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.walk-v3-showcase {
+  background: radial-gradient(circle at 50% 40%, #eff6e3, #fffdf7 70%);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px;
+  min-height: 540px;
+}
+.walk-v3-partner {
+  display: grid;
+  place-items: center;
+  width: min(100%, 330px);
+  height: 300px;
+  overflow: visible;
+}
+.walk-v3-partner .pokemon-art {
+  width: 260px;
+  height: 260px;
+}
+.walk-v3-showcase h2 {
+  margin: 0 0 12px;
+  font-size: 27px;
+}
+.walk-v3-showcase > p {
+  font-size: 14px;
+  color: #647588;
+  margin: 0;
+}
+.walk-v3-eggs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  border-top: 1px solid #e2e8dc;
+  margin-top: 25px;
+  padding-top: 20px;
+  width: 100%;
+}
+.walk-v3-eggs > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #66788b;
+  gap: 7px;
+}
+.walk-v3-eggs .egg-art {
+  width: 53px;
+  height: 62px;
+  object-fit: contain;
+}
+@keyframes reveal-egg-wobble {
+  0%,
+  20% {
+    transform: translateY(0) rotate(0);
+  }
+  30% {
+    transform: translateY(-5px) rotate(-7deg);
+  }
+  40% {
+    transform: rotate(8deg);
+  }
+  50% {
+    transform: rotate(-10deg);
+  }
+  60% {
+    transform: rotate(10deg);
+  }
+  70% {
+    transform: scale(1.06) rotate(-8deg);
+  }
+  82% {
+    transform: scale(1.08) rotate(5deg);
+    filter: brightness(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.15);
+    filter: brightness(2);
+    opacity: 0;
+  }
+}
+@keyframes reveal-pack-open {
+  0%,
+  15% {
+    transform: scale(0.9) rotate(-4deg);
+  }
+  45% {
+    transform: scale(0.94) rotate(4deg);
+  }
+  65% {
+    transform: scale(0.98) rotate(-2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.06);
+    opacity: 0;
+    filter: brightness(2);
+  }
+}
+@keyframes reveal-pack-tear {
+  0%,
+  30% {
+    transform: none;
+  }
+  70%,
+  100% {
+    transform: translate(35px, -42px) rotate(18deg);
+    opacity: 0;
+  }
+}
+@keyframes reveal-flash {
+  0%,
+  70% {
+    opacity: 0;
+    transform: scale(0.25);
+  }
+  90% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+@keyframes reveal-pokemon-arrives {
+  from {
+    opacity: 0;
+    transform: scale(0.84);
+    filter: brightness(4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+@keyframes reveal-detail-arrives {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes reveal-star-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.5) rotate(0);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.2) rotate(90deg);
+  }
+}
+@media (max-width: 1100px) {
+  .reward-v3-grid {
+    gap: 15px;
+  }
+  .reward-v3-info {
+    padding-inline: 16px;
+  }
+  .reward-v3-card > header {
+    padding-inline: 15px;
+  }
+  .reward-v3-status {
+    font-size: 10px;
+  }
+  .reward-v3-timer > div:first-child {
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .rewards-v3-overview {
+    align-items: flex-start;
+  }
+}
+@media (max-width: 850px) {
+  .reward-v3-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .rewards-v3-overview {
+    flex-direction: column;
+    gap: 14px;
+  }
+  .rewards-v3-overview > div {
+    gap: 30px;
+  }
+  .reward-v3-buddy {
+    gap: 10px;
+    padding: 12px;
+    flex-wrap: wrap;
+  }
+  .reward-v3-buddy-art {
+    width: 110px;
+    height: 110px;
+    flex-basis: 110px;
+  }
+  .reward-v3-buddy-art .pokemon-art {
+    width: 105px;
+    height: 105px;
+  }
+  .reward-v3-buddy h3 {
+    font-size: 16px;
+  }
+  .reward-v3-buddy > .button {
+    margin-left: auto;
+  }
+  .reward-v3-detail {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 18px;
+    padding: 20px;
+  }
+}
+@media (max-width: 600px) {
+  .rewards-v3 .page-heading {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .rewards-v3-overview {
+    margin-top: 0;
+  }
+  .rewards-v3-overview p {
+    font-size: 13px;
+  }
+  .rewards-v3-overview > div {
+    width: 100%;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .rewards-v3-overview > div > span {
+    font-size: 10px;
+  }
+  .rewards-v3-overview strong {
+    font-size: 21px;
+  }
+  .rewards-v3 .tab-bar {
+    gap: 0;
+  }
+  .rewards-v3 .tab-bar button {
+    padding: 12px;
+    font-size: 13px;
+  }
+  .reward-v3-grid {
+    gap: 12px;
+  }
+  .reward-v3-card {
+    border-radius: 15px;
+  }
+  .reward-v3-card > header {
+    padding: 12px 11px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 9px;
+  }
+  .reward-tier {
+    font-size: 10px;
+    padding: 6px 9px 6px 6px;
+  }
+  .reward-v3-art {
+    height: 175px;
+    padding: 15px;
+  }
+  .reward-v3-art > .egg-art {
+    width: 105px;
+    height: 120px;
+  }
+  .reward-v3-art > .pack-art {
+    transform: rotate(-5deg) scale(0.6);
+  }
+  .reward-v3-art:hover > .pack-art {
+    transform: scale(0.62);
+  }
+  .reward-v3-info {
+    padding: 0 11px 14px;
+  }
+  .reward-v3-info h2 {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .reward-v3-timer {
+    margin: 18px 0;
+  }
+  .reward-v3-timer > div:first-child {
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+  }
+  .reward-v3-timer p {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  .reward-v3-open {
+    font-size: 12px;
+    padding: 10px 8px;
+    gap: 6px;
+  }
+  .reward-v3-open > .pokeball {
+    width: 18px;
+    height: 18px;
+  }
+  .reward-v3-open > .pixel-icon {
+    display: none;
+  }
+  .reward-v3-pool-link {
+    font-size: 10px;
+    line-height: 1.5;
+    padding-top: 11px;
+  }
+  .reward-v3-pack-copy {
+    font-size: 11px;
+    min-height: 83px;
+    margin: 17px 0;
+  }
+  .reward-v3-buddy {
+    margin-top: 23px;
+    padding: 12px;
+  }
+  .reward-v3-buddy p {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .reward-v3-buddy-art {
+    flex-basis: 100px;
+    width: 100px;
+    height: 105px;
+  }
+  .reward-v3-buddy > .button {
+    width: 100%;
+    margin-top: 5px;
+  }
+  .reward-v3-history .opened-reward-row {
+    padding: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .reward-v3-history .opened-reward-row > .pokemon-art {
+    width: 65px;
+    height: 65px;
+  }
+  .reward-v3-history .opened-reward-row > .source-coin {
+    display: none;
+  }
+  .reward-v3-history .opened-reward-row > .sol-value {
+    font-size: 13px;
+  }
+  .reward-v3-detail {
+    display: flex;
+    flex-direction: column;
+    padding: 17px;
+    gap: 20px;
+  }
+  .reward-v3-detail-art {
+    align-self: stretch;
+    padding: 16px;
+  }
+  .reward-v3-detail-art > div:nth-child(2) {
+    height: 150px;
+  }
+  .reward-v3-detail-art .egg-art {
+    width: 112px;
+    height: 130px;
+  }
+  .reward-v3-detail-art .pack-art {
+    transform: scale(0.65);
+  }
+  .reward-v3-detail-timer {
+    margin: 15px 0;
+  }
+  .reward-v3-pool-list {
+    max-height: 315px;
+  }
+  .reveal-v3 {
+    padding: 5px 16px 22px;
+  }
+  .reveal-v3-stage {
+    height: 255px;
+  }
+  .reveal-v3-object {
+    width: 225px;
+    height: 225px;
+  }
+  .reveal-v3-object > .pokemon-art {
+    width: 225px;
+    height: 225px;
+  }
+  .reveal-v3-stars > span {
+    --distance: 110px !important;
+  }
+  .reveal-v3-details h2 {
+    font-size: 26px;
+  }
+  .reveal-v3-value {
+    font-size: 21px;
+    margin-top: 19px;
+    padding: 11px 20px;
+  }
+  .reveal-v3-actions {
+    gap: 9px;
+  }
+  .reveal-v3-actions .button {
+    font-size: 12px;
+    padding: 12px;
+  }
+  .reveal-v3-wait {
+    min-height: 180px;
+  }
+  .reveal-v3-wait h3 {
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .walk-v3-showcase {
+    min-height: 450px;
+    padding: 22px;
+  }
+  .walk-v3-partner {
+    height: 250px;
+  }
+  .walk-v3-partner .pokemon-art {
+    width: 220px;
+    height: 220px;
+  }
+}
+@media (max-width: 360px) {
+  .reward-v3-grid {
+    grid-template-columns: 1fr;
+  }
+  .reward-v3-card > header {
+    justify-content: space-between;
+  }
+  .reward-v3-art {
+    height: 200px;
+  }
+  .reward-v3-art > .egg-art {
+    width: 120px;
+    height: 140px;
+  }
+  .reward-v3-art > .pack-art {
+    transform: rotate(-5deg) scale(0.75);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-v3 *,
+  .reward-v3-card,
+  .reward-v3-art > * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+[data-motion='reduced'] .reveal-v3 *,
+[data-motion='reduced'] .reward-v3-card,
+[data-motion='reduced'] .reward-v3-art > * {
+  animation: none !important;
+  transition: none !important;
+}
+/* Keep the modal's top edge fixed when the egg becomes a Pokémon. */
+.modal-panel.wide:has(.reveal-v3) {
+  height: min(740px, 90dvh);
+}
+.reward-v3-pool-search {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 9px 11px;
+  border: 1px solid #dce4ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #23364d;
+  font: inherit;
+  font-size: 12px;
+}
+.reward-v3-pool-more {
+  border: 0;
+  background: #eef4fa;
+  color: #3c668e;
+  font-weight: 800;
+  font-size: 12px;
+  width: 100%;
+  border-radius: 7px;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  margin-top: 9px;
+}
+@media (max-width: 600px) {
+  .modal-panel.wide:has(.reveal-v3) {
+    height: min(690px, 90dvh);
+  }
+}

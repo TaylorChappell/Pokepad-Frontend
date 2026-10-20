@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { POKEMON, pokemonById } from '../data/pokemon';
 import { moveByName } from '../data/moves';
+import { getPokemonHealth, getPokemonStats } from '../data/stats';
 import { collectionValue, EVOLUTION_CANDY, getEvolutionStatus, pendingMove } from '../state/model';
 import {
   Button,
@@ -29,6 +30,39 @@ function CandySprite() {
     />
   );
 }
+function SpeciesDistinction({ id }: { id: number }) {
+  if (![144, 145, 146, 150, 151].includes(id)) return null;
+  return <span className="species-distinction">{id === 151 ? 'Mythical' : 'Legendary'}</span>;
+}
+function HealthMeter({ pokemon, compact = false }: { pokemon: OwnedPokemon; compact?: boolean }) {
+  const hp = getPokemonHealth(pokemon);
+  return (
+    <div className={'pokemon-health ' + (compact ? 'compact' : '')}>
+      <div className="health-caption">
+        <span>HP</span>
+        <strong>
+          {hp.current}
+          <small> / {hp.max}</small>
+        </strong>
+      </div>
+      <div
+        className="health-meter"
+        role="meter"
+        aria-label="Health"
+        aria-valuenow={hp.current}
+        aria-valuemin={0}
+        aria-valuemax={hp.max}
+      >
+        <span
+          style={{
+            width: hp.percent + '%',
+            background: hp.percent < 25 ? '#dc595a' : hp.percent < 50 ? '#e4aa42' : undefined,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
   const { state } = useApp(),
     species = pokemonById(pokemon.speciesId),
@@ -38,32 +72,49 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
   return (
     <a
       href={'#/pokemon/' + pokemon.id}
-      className={'pokemon-card pc-slot ' + (equipped ? 'equipped' : '')}
+      className={
+        'pokemon-card pc-slot ' +
+        (equipped ? 'equipped ' : '') +
+        (pokemon.shiny ? 'variant-glow' : '')
+      }
       style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
     >
       <div className="pokemon-card-image">
         <span className="pc-index">No. {String(species.id).padStart(3, '0')}</span>
-        <span className="level-tag">Lv.{pokemon.level}</span>
-        <PokemonArt id={species.id} />
-        {equipped && <span className="pc-partner">PARTNER</span>}
+        <span className="level-tag">Lv. {pokemon.level}</span>
+        <PokemonArt id={species.id} shiny={pokemon.shiny} />
+        {equipped && (
+          <span className="pc-partner">
+            <span aria-hidden="true">●</span> Partner
+          </span>
+        )}
       </div>
       <div className="pokemon-card-body">
-        <h3>{species.name}</h3>
+        <div className="pc-name-line">
+          <h3>{species.name}</h3>
+          <SpeciesDistinction id={species.id} />
+        </div>
         <div className="type-row">
           {species.types.map((t) => (
             <TypeChip key={t} type={t} />
           ))}
         </div>
+        <HealthMeter pokemon={pokemon} compact />
         <div className="pc-alerts">
-          {offer ? (
-            <span className="pc-move-alert">NEW MOVE</span>
-          ) : evolution.canEvolve ? (
-            <span className="pc-evolve-alert">EVOLUTION READY</span>
-          ) : pokemon.listed ? (
-            <span>LISTED</span>
-          ) : (
-            <span>{pokemon.starter ? 'STARTER' : pokemon.rarity.toUpperCase()}</span>
+          {offer && (
+            <span className="pc-move-alert">
+              <Icon name="BookOpen" size={13} />
+              Move ready
+            </span>
           )}
+          {evolution.canEvolve && (
+            <span className="pc-evolve-alert">
+              <CandySprite />
+              Can evolve
+            </span>
+          )}
+          {pokemon.listed && <span className="pc-listed-alert">Listed</span>}
+          {pokemon.locked && <span>In battle</span>}
         </div>
         <div className="pokemon-card-value">
           <SolValue amount={pokemon.backing} />
@@ -83,7 +134,10 @@ export function InventoryPage() {
       (p) =>
         (filter === 'All' ||
           (filter === 'Partner' && p.id === state.profile.equippedId) ||
-          (filter === 'Battle ready' && !p.listed && !p.locked) ||
+          (filter === 'Battle ready' &&
+            !p.listed &&
+            !p.locked &&
+            getPokemonHealth(p).current > 0) ||
           (filter === 'Listed' && !!p.listed) ||
           (filter === 'Can evolve' && getEvolutionStatus(state, p).canEvolve) ||
           (filter === 'New move' && !!pendingMove(p))) &&
@@ -139,7 +193,7 @@ export function InventoryPage() {
       <section className="pc-storage">
         <div className="pc-storage-bar">
           <span className="pc-screen-light" />
-          <strong>POKÉMON STORAGE</strong>
+          <strong>YOUR COLLECTION</strong>
           <span>
             {list.length} / {state.pokemon.length}
           </span>
@@ -161,7 +215,7 @@ export function InventoryPage() {
           </EmptyState>
         )}
         <div className="pc-storage-footer">
-          <span>Select a Pokémon to view its summary.</span>
+          <span>Select a Pokémon to see its stats, moves, and evolution.</span>
           <a href="#/pokedex">OPEN POKÉDEX →</a>
         </div>
       </section>
@@ -202,7 +256,17 @@ export function PokemonDetailPage({ id }: { id: string }) {
     offer = pendingMove(p),
     evoStatus = getEvolutionStatus(state, p),
     unavailable = !!p.listed || !!p.locked,
-    newMove = offer ? moveByName(offer.move) : null;
+    newMove = offer ? moveByName(offer.move) : null,
+    stats = getPokemonStats(p),
+    health = getPokemonHealth(p);
+  const statRows = [
+    { name: 'Attack', value: stats.attack, color: '#e77966' },
+    { name: 'Defense', value: stats.defense, color: '#e4b650' },
+    { name: 'Sp. Attack', value: stats.specialAttack, color: '#6c94d4' },
+    { name: 'Sp. Defense', value: stats.specialDefense, color: '#62ad92' },
+    { name: 'Speed', value: stats.speed, color: '#c581ac' },
+  ];
+  const statScale = Math.max(...statRows.map((stat) => stat.value), stats.hp) * 1.12;
   const closeDialog = () => {
     setDialog(null);
     setDeclining(false);
@@ -263,39 +327,57 @@ export function PokemonDetailPage({ id }: { id: string }) {
         <Icon name="ArrowLeft" size={19} />
         Back to My Pokémon
       </a>
-      <div className="summary-device">
-        <div className="summary-device-top">
-          <span className="summary-blue-lens" />
-          <span className="summary-status-lights">
-            <i />
-            <i />
-            <i />
-          </span>
-          <strong>POKÉMON SUMMARY</strong>
-          <span>No.{String(species.id).padStart(3, '0')}</span>
+      <header className="summary-heading">
+        <div>
+          <span className="summary-eyebrow">POKÉMON SUMMARY</span>
+          <h1>{species.name}</h1>
         </div>
+        <span
+          className={
+            'summary-battle-status ' + (unavailable || health.current === 0 ? 'unavailable' : '')
+          }
+        >
+          <span />
+          {p.listed
+            ? 'Listed on marketplace'
+            : p.locked
+              ? 'In battle'
+              : health.current === 0
+                ? 'Needs healing'
+                : 'Ready for battle'}
+        </span>
+      </header>
+      <div className="summary-device">
         <div className="summary-device-body">
           <section
-            className="summary-mon-screen"
+            className={'summary-mon-screen ' + (p.shiny ? 'variant-glow' : '')}
             style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
           >
             <div className="summary-screen-label">
-              <span>
-                {equipped ? 'YOUR PARTNER' : p.starter ? 'STARTER' : p.rarity.toUpperCase()}
-              </span>
-              <strong>Lv.{p.level}</strong>
+              <span>No. {String(species.id).padStart(3, '0')}</span>
+              <strong>Lv. {p.level}</strong>
             </div>
             <div className="summary-pokemon-stage">
-              <PokemonArt id={p.speciesId} eager />
+              <div className="summary-pokeball-watermark" aria-hidden="true" />
+              <PokemonArt id={p.speciesId} shiny={p.shiny} eager />
               <div className="summary-ground" />
             </div>
-            <h1>{species.name}</h1>
+            <div className="summary-species-line">
+              {equipped && (
+                <span className="partner-label">
+                  <Icon name="Heart" size={14} />
+                  Your partner
+                </span>
+              )}
+              <SpeciesDistinction id={species.id} />
+            </div>
             <div className="type-row">
               {species.types.map((t) => (
                 <TypeChip type={t} key={t} />
               ))}
             </div>
             <div className="summary-value">
+              <span>Pokémon value</span>
               <SolValue amount={p.backing} />
             </div>
             <div className="summary-main-actions">
@@ -306,6 +388,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                     toast(species.name + ' equipped.');
                 }}
               >
+                <Icon name="Heart" size={17} />
                 {equipped ? 'Equipped' : 'Equip Pokémon'}
               </Button>
               {p.listed ? (
@@ -321,7 +404,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
               ) : (
                 <Button
                   variant="secondary"
-                  disabled={!!p.starter || !!p.locked}
+                  disabled={!!p.starter || !!p.locked || busy}
                   onClick={() => {
                     setPrice(String(Math.round(p.backing * 1.2 * 100) / 100));
                     setDialog('sell');
@@ -333,13 +416,45 @@ export function PokemonDetailPage({ id }: { id: string }) {
             </div>
             {origin && (
               <a href={'#/coin/' + origin.id} className="summary-origin">
-                <CoinAvatar coin={origin} size={25} />
-                <span>{'$' + origin.ticker}</span>
-                <Icon name="ArrowUpRight" size={13} />
+                <span>From</span>
+                <CoinAvatar coin={origin} size={26} />
+                <strong>{'$' + origin.ticker}</strong>
+                <Icon name="ArrowUpRight" size={14} />
               </a>
+            )}
+            {p.starter && (
+              <p className="summary-starter-note">
+                Your starter becomes tradeable after a funded evolution.
+              </p>
             )}
           </section>
           <div className="summary-data">
+            <section className="summary-stats">
+              <div className="summary-section-heading">
+                <div>
+                  <h2>Battle stats</h2>
+                </div>
+                <span className="stat-level">Lv. {p.level}</span>
+              </div>
+              <HealthMeter pokemon={p} />
+              <div className="stat-rows">
+                {statRows.map((stat) => (
+                  <div className="stat-row" key={stat.name}>
+                    <span>{stat.name}</span>
+                    <strong>{stat.value}</strong>
+                    <div>
+                      <i
+                        style={{
+                          width: (stat.value / statScale) * 100 + '%',
+                          background: stat.color,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="stat-note">Stats reflect this Pokémon’s species and current level.</p>
+            </section>
             <section className="summary-candy">
               <div className="row-between">
                 <h2>
@@ -348,39 +463,35 @@ export function PokemonDetailPage({ id }: { id: string }) {
                 </h2>
                 <strong>
                   {p.rareCandy.toLocaleString()}
-                  <small> / {EVOLUTION_CANDY.toLocaleString()}</small>
+                  <small>
+                    {species.evolvesTo.length
+                      ? ' / ' + EVOLUTION_CANDY.toLocaleString()
+                      : ' collected'}
+                  </small>
                 </strong>
               </div>
-              <Progress value={(p.rareCandy / EVOLUTION_CANDY) * 100} color="#6d9fc1" />
-              <p>
-                {species.evolvesTo.length
-                  ? 'Earn Rare Candy while this Pokémon is equipped and you hold active coins.'
-                  : 'Final evolution in the Kanto Pokédex.'}
-              </p>
-              {species.evolvesTo.length > 0 && (
+              {species.evolvesTo.length ? (
                 <>
+                  <Progress value={(p.rareCandy / EVOLUTION_CANDY) * 100} color="#7f8ddb" />
                   <div className="evolution-funding-row">
                     <span>After evolution</span>
                     <SolValue amount={evoStatus.nextValue} />
                   </div>
-                  {evoStatus.fundingNeeded > 0 ? (
-                    <p className="evolution-funding-note">
-                      {sol(evoStatus.fundingNeeded)} SOL will be allocated from the reward pool when
-                      you evolve.
-                    </p>
-                  ) : (
-                    <p className="evolution-funding-note">
-                      The {sol(evoStatus.valueIncrease)} SOL increase is already funded.
-                    </p>
-                  )}
+                  <p className="evolution-funding-note">
+                    {evoStatus.fundingNeeded > 0
+                      ? sol(evoStatus.fundingNeeded) +
+                        ' SOL will come from this coin’s reward pool.'
+                      : 'The ' + sol(evoStatus.valueIncrease) + ' SOL increase is already funded.'}
+                  </p>
                   <Button
-                    className="full-width"
+                    className="full-width evolve-action"
                     disabled={!evoStatus.canEvolve || busy}
                     onClick={() => {
                       setEvolution({ from: p.speciesId, before: p.backing, phase: 'ready' });
                       setDialog('evolve');
                     }}
                   >
+                    <CandySprite />
                     Evolve Pokémon
                   </Button>
                   {!evoStatus.canEvolve && (
@@ -389,98 +500,116 @@ export function PokemonDetailPage({ id }: { id: string }) {
                     </small>
                   )}
                 </>
-              )}
-            </section>
-            <section className="summary-moves">
-              <div className="row-between">
-                <h2>Moves</h2>
-                <span>{p.moves.length}/4</span>
-              </div>
-              {p.moves.map((name, i) => {
-                const move = moveByName(name);
-                return (
-                  <div className="summary-move-row" key={name}>
-                    <span className="move-slot">{i + 1}</span>
-                    <div>
-                      <strong>{name}</strong>
-                      <TypeChip type={move.type} />
-                    </div>
-                    <span>
-                      {move.pp}
-                      <small>PP</small>
-                    </span>
-                    <span>
-                      {move.power ?? '—'}
-                      <small>POWER</small>
-                    </span>
-                  </div>
-                );
-              })}
-              {Array.from({ length: Math.max(0, 4 - p.moves.length) }, (_, i) => (
-                <div className="summary-move-row empty" key={'empty' + i}>
-                  <span className="move-slot">{p.moves.length + i + 1}</span>
-                  <span>Empty move slot</span>
-                </div>
-              ))}
-              {offer ? (
-                <button
-                  className="pending-move-prompt"
-                  disabled={unavailable}
-                  onClick={() => {
-                    setReplaceIndex(null);
-                    setDeclining(false);
-                    setDialog('learn');
-                  }}
-                >
-                  <span className="move-prompt-pointer">▶</span>
-                  <span>
-                    <strong>
-                      {species.name} wants to learn {offer.move}!
-                    </strong>
-                    <small>Learned at Lv.{offer.level} · Choose what to do</small>
-                  </span>
-                  <Icon name="ArrowRight" size={18} />
-                </button>
               ) : (
-                <p className="moves-footnote">
-                  New moves appear when a level-up opportunity is earned.
+                <p>
+                  Final Kanto evolution. Your partner still collects Rare Candy while you hold
+                  active coins.
                 </p>
               )}
             </section>
           </div>
         </div>
-        <div className="summary-device-bottom">
-          <span className="device-grip">
-            <i />
-            <i />
-            <i />
-          </span>
-          <span>
-            {p.starter
-              ? 'Starter Pokémon cannot be sold until a funded evolution.'
-              : p.listed
-                ? 'Listed Pokémon cannot battle or evolve.'
-                : 'Stored in your Pokémon inventory.'}
-          </span>
-        </div>
       </div>
+      <section className="summary-moves">
+        <div className="row-between">
+          <div>
+            <h2>Moves</h2>
+          </div>
+          <span className="move-count">{p.moves.length} / 4 moves</span>
+        </div>
+        {offer && (
+          <button
+            className="pending-move-prompt"
+            disabled={unavailable || busy}
+            onClick={() => {
+              setReplaceIndex(null);
+              setDeclining(false);
+              setDialog('learn');
+            }}
+          >
+            <span className="move-prompt-symbol">
+              <Icon name="BookOpen" size={23} />
+            </span>
+            <span>
+              <strong>
+                {species.name} wants to learn {offer.move}!
+              </strong>
+              <small>Available at Lv. {offer.level} · Choose to learn or skip</small>
+            </span>
+            <Icon name="ArrowRight" size={19} />
+          </button>
+        )}
+        <div className="summary-move-grid">
+          {p.moves.map((name, i) => {
+            const move = moveByName(name);
+            return (
+              <details
+                className="summary-move-card"
+                key={name}
+                style={{ '--move-color': TYPE_COLORS[move.type] } as CSSProperties}
+              >
+                <summary>
+                  <div className="move-card-identity">
+                    <span className="move-slot">{i + 1}</span>
+                    <strong>{name}</strong>
+                    <Icon name="ChevronDown" size={16} />
+                  </div>
+                  <TypeChip type={move.type} />
+                  <dl>
+                    <div>
+                      <dt>POWER</dt>
+                      <dd>{move.power ?? '—'}</dd>
+                    </div>
+                    <div>
+                      <dt>ACCURACY</dt>
+                      <dd>{move.accuracy === null ? '—' : move.accuracy + '%'}</dd>
+                    </div>
+                    <div>
+                      <dt>PP</dt>
+                      <dd>{move.pp}</dd>
+                    </div>
+                  </dl>
+                </summary>
+                <p>{move.description}</p>
+              </details>
+            );
+          })}
+          {Array.from({ length: Math.max(0, 4 - p.moves.length) }, (_, i) => (
+            <div className="summary-move-card empty" key={'empty' + i}>
+              <span className="move-slot">{p.moves.length + i + 1}</span>
+              <strong>Empty move slot</strong>
+              <p>A new move can be learned here when it becomes available.</p>
+            </div>
+          ))}
+        </div>
+        {!offer && (
+          <p className="moves-footnote">
+            New moves appear when a level-up opportunity is earned. Select a move to read what it
+            does.
+          </p>
+        )}
+      </section>
       {species.evolvesTo.length > 0 && (
         <section className="evolution-line">
           <div>
+            <span className="summary-eyebrow">WHAT’S NEXT</span>
             <h2>Evolution</h2>
-            {species.id === 133 && (
-              <p>Vaporeon, Jolteon, or Flareon. Each has an equal 1-in-3 chance.</p>
+            {species.id === 133 ? (
+              <p>Each evolution has an equal 1-in-3 chance.</p>
+            ) : (
+              <p>Keep your partner equipped to collect Rare Candy.</p>
             )}
           </div>
           <div className="evolution-line-sprites">
             <div>
-              <PokemonArt id={p.speciesId} />
+              <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
               <strong>{species.name}</strong>
+              <small>Current</small>
             </div>
             <span className="evolution-arrow">→</span>
             {species.evolvesTo.map((next) => (
               <div key={next}>
-                <PokemonArt id={next} />
+                <PokemonArt id={next} shiny={p.shiny} animated={false} />
                 <strong>{pokemonById(next).name}</strong>
                 {species.evolvesTo.length > 1 && <small>33⅓%</small>}
               </div>
@@ -495,7 +624,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
         >
           <div className="move-decision-dialog">
             <div className="move-decision-title">
-              <PokemonArt id={p.speciesId} />
+              <PokemonArt id={p.speciesId} shiny={p.shiny} />
               <p>
                 <strong>{species.name}</strong> wants to learn <strong>{offer.move}</strong>.
               </p>
@@ -606,11 +735,11 @@ export function PokemonDetailPage({ id }: { id: string }) {
                 ))}
               </div>
               <div className="evolution-old">
-                <PokemonArt id={evolution.from} />
+                <PokemonArt id={evolution.from} shiny={p.shiny} animated={false} />
               </div>
               {evolution.to && (
                 <div className="evolution-new">
-                  <PokemonArt id={evolution.to} />
+                  <PokemonArt id={evolution.to} shiny={p.shiny} animated={false} />
                 </div>
               )}
               <div className="evolution-flash" />
@@ -667,7 +796,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
       {dialog === 'sell' && (
         <Modal title={'Sell ' + species.name} onClose={closeDialog}>
           <div className="modal-body sell-modal">
-            <PokemonArt id={p.speciesId} />
+            <PokemonArt id={p.speciesId} shiny={p.shiny} />
             <div className="sale-value">
               <SolValue amount={p.backing} />
             </div>

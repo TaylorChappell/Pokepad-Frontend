@@ -1,4 +1,4 @@
-# Backend integration boundary · v0.2
+# Backend integration boundary · v0.3
 
 The static frontend deploys to GitHub Pages using hash routes. The backend belongs in a separate repository and can deploy to Railway. Production balances, funding, movement, progression, random outcomes, and settlement must be server-authoritative. This package implements none of those backend services.
 
@@ -9,7 +9,7 @@ src/services/api.ts exposes PokepadApi:
     load(): Promise<AppSnapshot>
     dispatch(action: Action): Promise<AppSnapshot>
 
-The demo adapter persists locally under the existing pokepad.frontend.v1 storage key. The snapshot schema is version 2. Migration accepts version 1 or 2 saves, maps legacy Stardust to Rare Candy, and defaults the art preference to pixel. Missing evolution reserves become zero, not an invented allocation; missing move offers become an empty list. Existing drawn-art preferences are preserved.
+The demo adapter persists locally under the existing pokepad.frontend.v1 storage key. The snapshot schema is version 2. Migration accepts version 1 or 2 saves, maps legacy Stardust to Rare Candy, and defaults the art preference to pixel. Missing evolution reserves become zero, not an invented allocation; missing move offers become an empty list. Existing drawn-art preferences are preserved. Missing `OwnedPokemon.shiny` becomes false, and deprecated `rarity` labels are cleared without changing funded values. Missing health becomes the species/level maximum; supplied HP is clamped to a valid range. Only local demo migration clears unopened fixed outcomes so those rewards can use the new random pool; it preserves their existing allocations. The HTTP adapter does not run that local migration over authoritative live outcomes.
 
 VITE_API_BASE_URL selects the HTTP adapter at build time. It uses credentialed requests, an Idempotency-Key header on actions, and a 15-second timeout. Failures do not silently activate demo mode.
 
@@ -64,11 +64,13 @@ Split actually collected creator fees 50/50 between creator and holder rewards. 
 
 The accounting invariant is: collected holder allocation equals free funds plus outstanding base values plus evolution reserves plus completed outflows. Creator allocation is separate. The Creator console illustrates the outstanding buckets for the sample account; it is not a complete all-holder ledger or fee history.
 
-Reserve reward allocations before issuance, atomically. Opening transfers the reward's base value and evolutionReserve to its Pokémon instance, with no second debit and no duplicate liability for the opened reward. Issued eggs remain funded after the holder sells the coin or the coin becomes inactive.
+The local demo draws on opening from `src/data/rewardPools.ts`. It combines the reward’s existing `backing` and `evolutionReserve` with the originating `Coin.vault`, filters out outcomes whose value plus next-evolution reserve exceed that budget, then draws by the remaining normalized weights. It returns surplus to that coin’s free pool and transfers the chosen allocations to the new instance. Other rewards’ reserves are excluded. If no outcome is affordable, the action leaves the original state unchanged.
 
-Demo outcomes are fixed fixtures. Live reward outcomes should use auditable randomness against immutable, funded batches, with their funded odds supplied to the frontend. Reserving a conservative batch maximum is an alternative only with a precise reconciliation policy. Do not silently re-roll a reveal when funds become short.
+All 151 species have normal and shiny entries. Egg tier and reward kind affect weights; each species/variant has one provisional issuance value independent of tier. Demo shiny issuance value is three times the normal value. Legendaries and Mew are available only when the pool can afford them. The displayed odds are conditional on current funding, so another opening may change them. These prices and odds are sample configuration, not market quotes or a final economy.
 
-Reward.outcomeSpeciesId may be absent before opening. The UI reveals the authoritative updated snapshot returned by the action. The demo supplies outcomes in advance for offline operation. Pre-reveal reserve visibility may need redesign to prevent amount-based outcome inference.
+Production must reserve allocations before issuance atomically and define immutable, funded batches with auditable odds supplied to the frontend. An issued egg’s committed outcome must remain funded after a holder sells or a coin becomes inactive. Do not reproduce the demo’s mutable opening-time pool as an undisclosed fixed-odds product, or re-roll an already committed outcome when funding falls. Opening must transfer liabilities without a second debit or double-counting the opened reward.
+
+`Reward.outcomeSpeciesId` and `Reward.shiny` may be absent before opening. The frontend reveals the authoritative updated snapshot returned by `reward.open`; it does not send a requested species or variant. Live batch odds and commitments need a dedicated response model beyond the current demo table. Pre-reveal reserve visibility may also need redesign to prevent amount-based outcome inference.
 
 Opening, evolution, payouts, and settlement require durable transaction constraints and idempotency across retries and multiple tabs. Frontend guards alone provide no security.
 
@@ -100,7 +102,7 @@ The launch Pokémon and coin image are independent. Demo uploads accept PNG/JPEG
 
 Created coins are local drafts with an empty reward pool, not deployed tokens. Trainer-launched coins use launchKind=trainer, pokemonId=0, and a trainer appearance snapshot. Display uploaded art first, otherwise the appropriate Pokémon or trainer.
 
-Profile.artStyle is pixel or drawn, defaulting to pixel. Character, accessory colour, and display name are persisted preferences. The sidebar partner remains a pixel sprite. These settings affect rendering only.
+Profile.artStyle is pixel or drawn, defaulting to pixel. Character, accessory colour, and display name are persisted preferences. The sidebar partner remains a pixel sprite. The account editor previews preferences immediately and sends debounced `profile.update` actions automatically; the API must support repeated idempotent preference updates. The five-step launch wizard still submits one final `coin.create` action. These presentation changes do not add token deployment or financial authority.
 
 ## Gyms, walking and holding
 
@@ -109,6 +111,14 @@ Each trainer supports one active gym. Preview scores sum current Pokémon backin
 Demo walking removes two hours from egg timers per kilometre. This is a configurable preview parameter. Real verification needs server sessions, device signals, route/speed plausibility, and duplicate detection. A browser cannot supply cheat-proof GPS evidence; show pending/accepted/rejected progress without allowing local timers to mint rewards.
 
 Balances, sales/transfers, active-coin eligibility, holding streaks, and Rare Candy accrual require a chain indexer and explicit server policy. Preview values are samples, not ongoing verified earnings.
+
+## Pokémon variants, stats and health
+
+`OwnedPokemon.shiny?: boolean` identifies the colour variant; absent means normal. It is independent of reward tier, persists through evolution and transfer, and changes the provisional reward value, not combat stats. `OwnedPokemon.rarity` is retained only for compatibility and should not define a variant. Never infer shiny status from a legacy Rare/Epic label or reprice an existing funded instance without an explicit funded operation.
+
+`OwnedPokemon.health?: number` is current HP. `src/data/stats.ts` derives maximum HP, Attack, Defense, Special Attack, Special Defense, and Speed from actual species base stats and level using neutral nature, 31 IVs, and 0 EVs. Missing health defaults to maximum; values are bounded to 0–max. Evolution keeps the existing damage amount relative to the new maximum. These are demo assumptions using modern six-stat data, not exact original Gen 1 rules.
+
+Production needs server-owned health, status, nature/IV/EV policy, progression, and healing. The current view model is not a complete competitive stat record. Practice battle HP is match-local and must not be treated as persistent authoritative health.
 
 ## Battles
 

@@ -1,10 +1,10 @@
-# Poképad frontend · v0.2
+# Poképad frontend · v0.3
 
-A Pokémon launchpad frontend built with React, TypeScript, Vite, and locally bundled artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
+A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
 
 ## Try the preview
 
-Open the supplied **Pokepad-Preview.html** file in a modern browser. It bundles the app, fonts, trainer sprites, and all 151 Gen 1 Pokémon, and works offline. Demo changes persist in that browser when local storage is available.
+Build a single-file preview with `npm run preview:file`, then open `artifacts/Pokepad-Preview.html` in a modern browser. It embeds the app, fonts, trainers, normal artwork, and pixel sprites for all 151 Gen 1 Pokémon, including their shiny palettes. Drawn shiny artwork and shiny battle back sprites load from PokeAPI’s public sprite repository and need a network connection. Demo changes persist in that browser when local storage is available.
 
 For development, use Node.js 24:
 
@@ -13,40 +13,42 @@ For development, use Node.js 24:
 
 The preview starts with sample coins, Pokémon, eggs, and packs. No wallet is connected. Trading, wagering, redemption, and walking use labelled preview flows.
 
-## What changed in v0.2
+## What changed in v0.3
 
-Pixel Pokémon are the default, with a drawn-art option in Settings. Local sprite sheets give the Pokémon idle animations; the sidebar partner responds to petting and selected account events. Trainers use classic game sprites with accessory colour choices. The wordmark uses existing Pokémon Solid/Hollow font files beside a custom Poképad logo. Eggs, item art, and the three-page animated Trainer Handbook follow the pixel theme.
+The interface combines crisp game sprites with cleaner typography, stronger type badges, and larger Pokémon previews. The new Poképad emblem and correctly coloured wordmark sit beside a shoulder-cropped trainer portrait and a static partner headshot. Coin mascots use still poses; the home introduction and three-page handbook use static Pokémon illustrations instead of a game-map scene.
 
-Rare Candy replaces Stardust. Evolution increases a Pokémon's SOL value only when the increase can be fully funded from its existing evolution budget and originating coin's reward pool. Eevee's three Kanto evolutions each have an equal one-third chance. Moves are offered as earned, one-time opportunities; learning can replace one of four moves, while declining permanently closes that move for the instance.
+Pokémon summaries now put HP, battle stats, moves, value, and evolution together. Owned Pokémon have normal or shiny appearances rather than inheriting their egg’s tier. Genuine shiny palettes identify the variant visually. Both eggs and packs draw from varied, funded Gen 1 pools, with legendary and mythical possibilities and distinct shiny values. Reward tiers affect odds; they do not become Pokémon variants.
 
-Coin creation is a dedicated page. Choose an available Pokémon you own, or launch as your trainer when your inventory is empty. A separate uploaded coin image and website, X, Telegram, and Discord links are supported.
+The launch page is a five-step wizard: details, Pokémon, rewards, links, and review. Choose an available Pokémon you own, or launch as your trainer when your inventory is empty. Uploaded coin images and website, X, Telegram, and Discord links remain independent of that Pokémon. Trainer preferences preview immediately and save automatically.
+
+Rare Candy still funds progression: evolution requires 1,000 Candy and sufficient reward-pool funding for the value increase. Eevee’s three Kanto evolutions each have an equal one-third chance. Earned move prompts allow learning, replacing one of four moves, or permanently declining the opportunity.
 
 ## Pages and interactions
 
-| Area           | Included                                                                                               |
-| -------------- | ------------------------------------------------------------------------------------------------------ |
-| Discover       | Illustrated introduction, main token, leading gym, coin discovery, reward-mode filters and sorting     |
-| Coin           | Illustrative chart, trades, holders, rewards, gym, buy/sell review                                     |
-| Create coin    | Owned Pokémon or trainer identity, separate image, social links, Eggs/Packs/Mixed mode, local draft    |
-| Portfolio      | Holdings, holding streaks, Pokémon value, equipped partner's Rare Candy                                |
-| Rewards        | Eggs/Packs/Opened tabs, source coin badges, timers, walking equivalents, reward tables                 |
-| Reveals        | Animated pack opening, egg hatching and evolution, looping reveal stars, reduced-motion setting        |
-| Walking        | Illustrated map, partner, simulated sessions, egg timer acceleration                                   |
-| Inventory      | Current Pokémon, search, filters, equip action, evolution and move notifications                       |
-| Pokémon detail | Explicit back button, funded evolution, pending learn/forget/decline flow, list/unlist/redeem previews |
-| Pokédex        | All 151 Gen 1 species and permanent discovery history                                                  |
-| Marketplace    | Sample listings, asking prices, own listings and purchase review                                       |
-| Battles        | Friendly practice, teams of up to three, simplified moves/PP/HP, switching and result                  |
-| Wager flows    | SOL/token/Pokémon stake review, whole-team loss explanation, practice-only settlement                  |
-| Gyms           | One supported gym, ticker badges, inventory-value leaderboard and trainer views                        |
-| Account        | Pixel trainer customization, display name, pixel/drawn Pokémon preference, notifications               |
-| Other          | Starter selection, creator console, wallet placeholder, three-page handbook and error states           |
+| Area           | Included                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| Discover       | Illustrated introduction, main token, leading gym, coin discovery, reward-mode filters and sorting         |
+| Coin           | Illustrative chart, trades, holders, rewards, gym, buy/sell review                                         |
+| Create coin    | Five-step wizard, owned Pokémon or trainer identity, separate image, social links and local draft          |
+| Portfolio      | Holdings, holding streaks, Pokémon value, equipped partner's Rare Candy                                    |
+| Rewards        | Eggs/Packs/Opened tabs, source coin badges, timers, walking equivalents, reward tables                     |
+| Reveals        | Animated pack opening, egg hatching and evolution, looping reveal stars, reduced-motion setting            |
+| Walking        | Illustrated map, partner, simulated sessions, egg timer acceleration                                       |
+| Inventory      | Current Pokémon, search, filters, equip action, evolution and move notifications                           |
+| Pokémon detail | HP, species/level stats, expandable move records, funded evolution, learn/forget/decline and sale previews |
+| Pokédex        | All 151 Gen 1 species and permanent discovery history                                                      |
+| Marketplace    | Sample listings, asking prices, own listings and purchase review                                           |
+| Battles        | Friendly practice, teams of up to three, simplified moves/PP/HP, switching and result                      |
+| Wager flows    | SOL/token/Pokémon stake review, whole-team loss explanation, practice-only settlement                      |
+| Gyms           | One supported gym, ticker badges, inventory-value leaderboard and trainer views                            |
+| Account        | Autosaving trainer appearance, shoulder portrait, display name, art preference and notifications           |
+| Other          | Starter selection, creator console, wallet placeholder, three-page handbook and error states               |
 
-The desktop sidebar becomes a mobile drawer. Header search accepts ticker or contract address. Unread notifications show a red dot. The equipped Pokémon overlays the avatar's bottom-left without a circular background.
+The desktop sidebar becomes a mobile drawer. Header search accepts ticker or contract address. Unread notifications show a red dot. A static partner headshot overlays the avatar’s bottom-left without a circular background. Settings are reached through the account menu.
 
 ## Reward and evolution accounting
 
-The proposed allocation is 50% of actually collected creator fees to the creator and 50% to holder rewards. The reward allocation has separate buckets: free pool funds, unopened reward values, issued Pokémon values, and evolution budgets. An opened reward transfers its existing allocations to the resulting Pokémon; it does not create money or debit the pool twice.
+The proposed allocation is 50% of actually collected creator fees to the creator and 50% to holder rewards. The reward allocation has separate buckets: free pool funds, unopened reward values, issued Pokémon values, and evolution budgets. In the demo, opening uses that reward’s existing allocation plus its originating coin’s free pool to determine affordable outcomes. It assigns the selected species/variant value and next-evolution budget, returns any surplus to the free pool, and transfers those allocations to the new instance. Other unopened rewards’ allocations remain protected; the same liability is never counted twice.
 
 The provisional demo evolution policy requires 1,000 Rare Candy and increases current value by 50%, with a minimum increase of 0.02 SOL. That exact increase must come from an already allocated evolution budget, then any remaining amount from the originating coin's free pool. If the pool cannot cover the shortfall, evolution waits. This is an example product policy, not a live payout promise or final economic model. See [the backend contract](docs/backend-contract.md) for the complete ledger and migration rules.
 
@@ -54,7 +56,7 @@ The provisional demo evolution policy requires 1,000 Rare Candy and increases cu
 
     src/
       components/   Shared shell, sprite rendering, controls and modal
-      data/         Demo seed, Gen 1 catalogue, sprite metadata and sample moves
+      data/         Demo seed, reward pools, species stats, sprite bounds and sample moves
       pages/        Route screens
       services/     Demo and HTTP API adapters
       state/        App context, transitions and gym scoring
@@ -92,13 +94,13 @@ See [docs/backend-contract.md](docs/backend-contract.md). VITE-prefixed environm
     npm test
     npm run build
 
-To recreate the single-file offline preview:
+To recreate the single-file preview:
 
     npm run preview:file
 
 The result is artifacts/Pokepad-Preview.html. Deploy the normal dist/ build to GitHub Pages. Formatting is available with npm run format.
 
-Model tests cover funded reward transfer, duplicate opening, egg timing, evolution conservation and insufficient-funds rejection, all three Eevee outcomes, earned move replacement and permanent decline, redemption, starter eligibility, gym scoring, coin-creation eligibility, and legacy-save migration. DOM tests cover the frontend interaction flows.
+Model tests cover funded random outcomes, shiny values, legendary availability, health, duplicate opening, egg timing, evolution conservation, all three Eevee outcomes, one-time moves, redemption, eligibility, and save migration. DOM tests cover the main interaction flows, including the wizard and autosaving settings.
 
 ## Frontend scope and remaining work
 
@@ -106,6 +108,8 @@ All 151 Gen 1 species are in the Pokédex. Animated sprites depict those species
 
 Practice battles use a curated move set and simplified damage, not a complete original-generation battle simulator. The future backend must implement complete rules and learnsets, level progression, movement verification, holding/indexer policy, Rare Candy accrual, funded reward issuance, wallet authentication, escrow, and settlement. No such backend is included.
 
-Preview reward outcomes are fixed fixtures. Demo Eevee randomness runs locally and is not secure against a client owner; live randomness and results must be authoritative server outputs. Local storage migration preserves older saves without giving them unearned evolution funds or new move opportunities.
+Demo reward and Eevee randomness run locally and are not secure against a client owner. Reward odds are conditional on the currently affordable pool and may change before opening; live issuance needs immutable funded batches and authoritative server results. Save migration preserves existing owned values, defaults missing variants to normal, and does not invent evolution funds or move opportunities.
 
-Desktop/mobile visual browser QA remains a handoff check: an approved browser preview capability was unavailable in this environment. Build, model, and DOM checks do not replace that visual review.
+Displayed stats use actual species base stats with a consistent demo assumption of neutral nature, 31 IVs, and 0 EVs. HP derives from species and level; missing legacy HP defaults to full health. These are modern six-stat displays, not exact original Red/Blue stat rules. Practice battles remain simplified and do not provide a persistent healing or competitive rules system.
+
+Build and interaction checks should be complemented by desktop and mobile visual review after deployment.
