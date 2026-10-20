@@ -9,7 +9,6 @@ import {
   Avatar,
   CoinAvatar,
   ModeBadge,
-  Sparkline,
   PageHeading,
   Badge,
   SolValue,
@@ -19,69 +18,219 @@ import {
   PackArt,
 } from '../components/UI';
 import type { Coin, RewardMode } from '../types';
-import { compact, navigate, sol } from '../utils';
-export function CoinCard({ coin }: { coin: Coin }) {
+import { compact, navigate, relativeTime, sol } from '../utils';
+import { useCoinWatchlist } from '../state/watchlist';
+function WatchStar({ filled = false }: { filled?: boolean }) {
   return (
-    <a
-      href={'#/coin/' + coin.id}
-      className="coin-card"
-      style={{ '--card-tint': coin.color } as CSSProperties}
+    <svg
+      viewBox="0 0 24 24"
+      width="19"
+      height="19"
+      fill={filled ? 'currentColor' : 'none'}
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinejoin="round"
+      aria-hidden="true"
     >
-      <div className="coin-card-top">
-        <CoinAvatar coin={coin} />
-        <div>
-          <strong>{'$' + coin.ticker}</strong>
-          <span>{coin.name}</span>
-        </div>
-        <span className="coin-card-arrow">
-          <Icon name="ArrowUpRight" size={17} />
-        </span>
-      </div>
-      <div className="coin-card-middle">
-        <div>
-          <ModeBadge mode={coin.mode} />
-          <div className="coin-price">
-            {coin.price ? coin.price.toFixed(7) : 'New'} <small>SOL</small>
-          </div>
-          <span className={coin.change >= 0 ? 'positive' : 'negative'}>
-            {coin.change >= 0 ? '+' : ''}
-            {coin.change}% <small>24h</small>
+      <path d="m12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.2-5.6-3-5.6 3 1.1-6.2L2.9 9.6l6.3-.9Z" />
+    </svg>
+  );
+}
+function MarketValue({ coin, field }: { coin: Coin; field: 'marketCap' | 'volume' }) {
+  const usd = field === 'marketCap' ? coin.marketCapUsd : coin.volumeUsd;
+  return (
+    <>
+      {typeof usd === 'number' && Number.isFinite(usd)
+        ? '$' + compact(usd)
+        : compact(coin[field]) + ' SOL'}
+    </>
+  );
+}
+function CoinSocials({ coin }: { coin: Coin }) {
+  const socials = Object.entries(coin.socials || {}).filter((entry): entry is [string, string] =>
+    Boolean(entry[1] && /^https?:\/\//i.test(entry[1])),
+  );
+  return (
+    <div className="market-coin-socials">
+      {socials.map(([kind, url]) => (
+        <a
+          key={kind}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={coin.name + ' on ' + (kind === 'x' ? 'X' : kind)}
+          title={kind === 'x' ? 'X' : kind.charAt(0).toUpperCase() + kind.slice(1)}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {kind === 'website' ? (
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <ellipse cx="12" cy="12" rx="4" ry="9" />
+                <path d="M3 12h18" />
+              </>
+            ) : kind === 'x' ? (
+              <>
+                <path d="m5 3 14 18h-4L1 3h4Z" transform="translate(2)" />
+                <path d="M20 3 4 21" />
+              </>
+            ) : kind === 'telegram' ? (
+              <>
+                <path d="m21 3-4 18-6-6-4 3 1-6-6-3 19-6Z" />
+                <path d="m8 12 9-5-6 8" />
+              </>
+            ) : (
+              <>
+                <path d="M6 5 3 7 1 17c3 3 5 3 7 2l1-2h6l1 2c2 1 4 1 7-2L21 7l-3-2-2 2H8L6 5Z" />
+                <path d="M8 11v3m8-3v3" />
+              </>
+            )}
+          </svg>
+        </a>
+      ))}
+    </div>
+  );
+}
+export function CoinCard({
+  coin,
+  watched,
+  onToggleWatch,
+}: {
+  coin: Coin;
+  watched: boolean;
+  onToggleWatch: () => void;
+}) {
+  const { toast } = useApp();
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const copyAddress = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(coin.ca);
+      toast('Contract address copied');
+    } catch {
+      toast('Clipboard unavailable. Open the coin to view its contract address.');
+    }
+  };
+  return (
+    <article
+      className="coin-card market-coin-card"
+      data-coin-id={coin.id}
+      style={{ '--card-tint': coin.color } as CSSProperties}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+      }}
+    >
+      <header className="market-coin-header">
+        <CoinAvatar coin={coin} size={44} />
+        <div className="market-coin-identity">
+          <a className="market-coin-link" href={'#/coin/' + coin.id}>
+            {coin.name}
+          </a>
+          <span>
+            <span>${coin.ticker}</span>
+            <i aria-hidden="true">·</i>
+            <time dateTime={coin.launchedAt ? new Date(coin.launchedAt).toISOString() : undefined}>
+              {coin.launchedAt ? relativeTime(coin.launchedAt) : 'Age unavailable'}
+            </time>
           </span>
         </div>
-        {coin.launchKind === 'trainer' && coin.trainer ? (
-          <Avatar profile={coin.trainer} size={100} />
-        ) : (
-          <PokemonArt id={coin.pokemonId} animated={false} />
-        )}
+        <button
+          type="button"
+          className={'coin-watch-button' + (watched ? ' is-watched' : '')}
+          aria-pressed={watched}
+          aria-label={
+            (watched ? 'Remove ' : 'Add ') +
+            coin.name +
+            (watched ? ' from watchlist' : ' to watchlist')
+          }
+          onClick={onToggleWatch}
+        >
+          <WatchStar filled={watched} />
+        </button>
+      </header>
+      <div className="market-coin-main">
+        <div className="market-cap-figure">
+          <span>Market cap</span>
+          <strong>
+            <MarketValue coin={coin} field="marketCap" />
+          </strong>
+          <div className={'market-coin-change ' + (coin.change >= 0 ? 'positive' : 'negative')}>
+            {coin.change >= 0 ? '+' : ''}
+            {coin.change.toFixed(1)}% <small>24h</small>
+          </div>
+        </div>
+        <div className="market-mascot-stage" aria-label="Coin Pokémon">
+          {coin.launchKind === 'trainer' && coin.trainer ? (
+            <Avatar profile={coin.trainer} size={96} />
+          ) : (
+            <PokemonArt
+              id={coin.pokemonId}
+              shiny={coin.pokemonShiny}
+              animated={hovered || focused}
+            />
+          )}
+        </div>
       </div>
-      <Sparkline seed={coin.pokemonId} negative={coin.change < 0} />
-      <div className="coin-card-footer">
-        <span>
-          <Icon name="Users" size={14} />
-          {compact(coin.holders)} holders
-        </span>
-        <span>
-          <Icon name="Gift" size={14} />
-          {sol(coin.vault)} SOL
-        </span>
+      <div className="market-coin-stats">
+        <div>
+          <span>24h volume</span>
+          <strong>
+            <MarketValue coin={coin} field="volume" />
+          </strong>
+        </div>
+        <div>
+          <span>Holders</span>
+          <strong>{compact(coin.holders)}</strong>
+        </div>
       </div>
-    </a>
+      <footer className="market-coin-footer">
+        <ModeBadge mode={coin.mode} />
+        <CoinSocials coin={coin} />
+        <button
+          type="button"
+          className="coin-copy-address"
+          onClick={copyAddress}
+          aria-label={'Copy ' + coin.ticker + ' contract address'}
+          title="Copy contract address"
+        >
+          <span>CA</span>
+          <Icon name="Copy" size={14} />
+        </button>
+      </footer>
+    </article>
   );
 }
 export function DiscoverPage({ explore = false }: { explore?: boolean }) {
   const { state } = useApp(),
     [mode, setMode] = useState('All'),
     [sort, setSort] = useState('Trending'),
-    [view, setView] = useState<'grid' | 'list'>(explore ? 'list' : 'grid');
+    [watchOnly, setWatchOnly] = useState(false),
+    [view, setView] = useState<'grid' | 'list'>('grid');
   const main = state.coins.find((c) => c.main)!;
-  let coins = state.coins.filter((c) => mode === 'All' || c.mode === mode);
+  const watchlist = useCoinWatchlist(state.profile.wallet);
+  let coins = state.coins.filter(
+    (c) => (mode === 'All' || c.mode === mode) && (!watchOnly || watchlist.ids.includes(c.id)),
+  );
   coins = [...coins].sort((a, b) =>
     sort === 'Top volume'
       ? b.volume - a.volume
       : sort === 'Most holders'
         ? b.holders - a.holders
         : sort === 'New pairs'
-          ? 0
+          ? (b.launchedAt || 0) - (a.launchedAt || 0)
           : b.change - a.change,
   );
   return (
@@ -174,12 +323,28 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
           </a>
         </div>
         <div className="market-toolbar">
-          <div className="segmented">
+          <div className="market-sort-tabs" aria-label="Sort coins">
             {['Trending', 'New pairs', 'Top volume', 'Most holders'].map((s) => (
-              <button className={sort === s ? 'active' : ''} key={s} onClick={() => setSort(s)}>
+              <button
+                className={sort === s && !watchOnly ? 'active' : ''}
+                aria-pressed={sort === s && !watchOnly}
+                key={s}
+                onClick={() => {
+                  setSort(s);
+                  setWatchOnly(false);
+                }}
+              >
                 {s}
               </button>
             ))}
+            <button
+              className={'watchlist-tab' + (watchOnly ? ' active' : '')}
+              aria-pressed={watchOnly}
+              onClick={() => setWatchOnly(!watchOnly)}
+            >
+              <WatchStar filled={watchOnly} /> Watchlist
+              {watchlist.ids.length > 0 && <span>{watchlist.ids.length}</span>}
+            </button>
           </div>
           <div className="toolbar-right">
             <div className="filter-pills">
@@ -207,10 +372,38 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
             </div>
           </div>
         </div>
-        {view === 'grid' ? (
+        <div className="market-result-count" aria-live="polite">
+          {coins.length} {coins.length === 1 ? 'coin' : 'coins'}
+          {watchOnly ? ' in your watchlist' : ''}
+        </div>
+        {!coins.length ? (
+          <EmptyState
+            title={watchOnly ? 'Your watchlist is waiting' : 'No coins in this mode'}
+            description={
+              watchOnly
+                ? 'Tap the star on a coin to keep it here.'
+                : 'Choose another reward mode to explore more coins.'
+            }
+          >
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setWatchOnly(false);
+                setMode('All');
+              }}
+            >
+              Explore coins
+            </Button>
+          </EmptyState>
+        ) : view === 'grid' ? (
           <div className="coin-grid">
             {coins.map((c) => (
-              <CoinCard coin={c} key={c.id} />
+              <CoinCard
+                coin={c}
+                key={c.id}
+                watched={watchlist.ids.includes(c.id)}
+                onToggleWatch={() => watchlist.toggle(c.id)}
+              />
             ))}
           </div>
         ) : (
@@ -219,10 +412,10 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
               <thead>
                 <tr>
                   <th>Coin</th>
-                  <th>Price / SOL</th>
-                  <th>24h</th>
                   <th>Market cap</th>
-                  <th>Reward vault</th>
+                  <th>24h</th>
+                  <th>24h volume</th>
+                  <th>Holders</th>
                   <th>Rewards</th>
                   <th />
                 </tr>
@@ -239,20 +432,36 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
                         </span>
                       </a>
                     </td>
-                    <td>{c.price.toFixed(7)}</td>
+                    <td>
+                      <MarketValue coin={c} field="marketCap" />
+                    </td>
                     <td className={c.change >= 0 ? 'positive' : 'negative'}>
                       {c.change >= 0 ? '+' : ''}
                       {c.change}%
                     </td>
-                    <td>{compact(c.marketCap)} SOL</td>
-                    <td>{sol(c.vault)} SOL</td>
+                    <td>
+                      <MarketValue coin={c} field="volume" />
+                    </td>
+                    <td>{compact(c.holders)}</td>
                     <td>
                       <ModeBadge mode={c.mode} />
                     </td>
                     <td>
-                      <a href={'#/coin/' + c.id} aria-label={'View ' + c.name}>
-                        <Icon name="ChevronRight" />
-                      </a>
+                      <button
+                        type="button"
+                        className={
+                          'coin-watch-button' + (watchlist.ids.includes(c.id) ? ' is-watched' : '')
+                        }
+                        aria-pressed={watchlist.ids.includes(c.id)}
+                        aria-label={
+                          (watchlist.ids.includes(c.id) ? 'Remove ' : 'Add ') +
+                          c.name +
+                          (watchlist.ids.includes(c.id) ? ' from watchlist' : ' to watchlist')
+                        }
+                        onClick={() => watchlist.toggle(c.id)}
+                      >
+                        <WatchStar filled={watchlist.ids.includes(c.id)} />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -355,7 +564,7 @@ export function CoinPage({ id }: { id: string }) {
             {coin.launchKind === 'trainer' && coin.trainer ? (
               <Avatar profile={coin.trainer} size={100} />
             ) : (
-              <PokemonArt id={coin.pokemonId} animated={false} />
+              <PokemonArt id={coin.pokemonId} shiny={coin.pokemonShiny} animated={false} />
             )}
           </div>
           <p className="coin-description">{coin.description}</p>
@@ -367,7 +576,7 @@ export function CoinPage({ id }: { id: string }) {
               </>
             ) : (
               <>
-                <PokemonArt id={coin.pokemonId} animated={false} />
+                <PokemonArt id={coin.pokemonId} shiny={coin.pokemonShiny} animated={false} />
                 <span>
                   Launched with {POKEMON.find((p) => p.id === coin.pokemonId)?.name || 'a Pokémon'}
                 </span>
@@ -410,10 +619,16 @@ export function CoinPage({ id }: { id: string }) {
             <PriceChart seed={coin.pokemonId + ['5M', '15M', '1H', '4H', '1D'].indexOf(time)} />
             <div className="chart-metrics">
               <span>
-                Market cap<strong>{compact(coin.marketCap)} SOL</strong>
+                Market cap
+                <strong>
+                  <MarketValue coin={coin} field="marketCap" />
+                </strong>
               </span>
               <span>
-                24h volume<strong>{compact(coin.volume)} SOL</strong>
+                24h volume
+                <strong>
+                  <MarketValue coin={coin} field="volume" />
+                </strong>
               </span>
               <span>
                 Holders<strong>{coin.holders.toLocaleString()}</strong>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Avatar, Button, EggArt, Icon, PackArt, PokemonArt, TypeChip } from '../components/UI';
 import { pokemonById } from '../data/pokemon';
 import { useApp } from '../state/AppContext';
-import { profileName } from '../state/model';
+import { isValidCoinTicker, profileName } from '../state/model';
 import { navigate } from '../utils';
 import type { RewardMode } from '../types';
 
@@ -65,15 +65,11 @@ export function CreateCoinPage() {
   const selected = eligible.find((p) => p.id === selectedId);
   const trainerLaunch = state.pokemon.length === 0;
   const selectedSpecies = selected ? pokemonById(selected.speciesId) : null;
-  const duplicateTicker = state.coins.some(
-    (coin) => coin.ticker.toUpperCase() === ticker.trim().toUpperCase(),
-  );
   const invalidSocial = SOCIAL_FIELDS.some(({ key }) => !validSocial(socials[key]));
   const canCreate =
     name.trim().length >= 3 &&
     name.trim().length <= 32 &&
-    /^[A-Z0-9]{2,10}$/.test(ticker) &&
-    !duplicateTicker &&
+    isValidCoinTicker(ticker) &&
     !invalidSocial &&
     (trainerLaunch || !!selected) &&
     !imageLoading &&
@@ -154,11 +150,7 @@ export function CreateCoinPage() {
 
   const steps = ['Details', 'Pokémon', 'Rewards', 'Links', 'Review'];
   const stepValid = [
-    name.trim().length >= 3 &&
-      /^[A-Z0-9]{2,10}$/.test(ticker) &&
-      !duplicateTicker &&
-      !imageLoading &&
-      !imageError,
+    name.trim().length >= 3 && isValidCoinTicker(ticker) && !imageLoading && !imageError,
     trainerLaunch || !!selected,
     true,
     !invalidSocial,
@@ -169,7 +161,7 @@ export function CreateCoinPage() {
   }, [step]);
   const nextLabels = ['Next: Pokémon', 'Next: Rewards', 'Next: Links', 'Review coin'];
   const partnerArt = selected ? (
-    <PokemonArt id={selected.speciesId} shiny={selected.shiny} animated={false} eager />
+    <PokemonArt id={selected.speciesId} shiny={selected.shiny} eager />
   ) : (
     <Avatar profile={state.profile} size={144} />
   );
@@ -181,7 +173,6 @@ export function CreateCoinPage() {
           <h1>Create a coin</h1>
           <p>Your community starts here. Make it yours, one step at a time.</p>
         </div>
-        <span className="creation-draft-stamp">Coin studio</span>
       </header>
       <nav className="wizard-progress" aria-label="Launch steps">
         {steps.map((label, index) => (
@@ -298,24 +289,18 @@ export function CreateCoinPage() {
                         value={ticker}
                         maxLength={10}
                         required
-                        placeholder="MOON"
-                        pattern="[A-Z0-9]{2,10}"
-                        onChange={(e) =>
-                          setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))
-                        }
-                        aria-invalid={duplicateTicker}
-                        aria-describedby={duplicateTicker ? 'ticker-error' : 'ticker-help'}
+                        placeholder="e.g. moon club"
+                        autoCapitalize="off"
+                        autoCorrect="off"
+                        spellCheck={false}
+                        onChange={(e) => setTicker(e.target.value)}
+                        aria-invalid={ticker.length > 0 && !isValidCoinTicker(ticker)}
+                        aria-describedby="ticker-help"
                       />
                     </div>
-                    {duplicateTicker ? (
-                      <p id="ticker-error" className="creation-error">
-                        That ticker is already in use.
-                      </p>
-                    ) : (
-                      <span id="ticker-help" className="creation-field-note">
-                        2–10 letters or numbers
-                      </span>
-                    )}
+                    <span id="ticker-help" className="creation-field-note">
+                      1–10 characters · case and spaces are kept
+                    </span>
                   </div>
                 </div>
                 {imageError && (
@@ -405,11 +390,7 @@ export function CreateCoinPage() {
                               <Icon name="Check" size={14} />
                             </span>
                           )}
-                          <PokemonArt
-                            id={pokemon.speciesId}
-                            shiny={pokemon.shiny}
-                            animated={false}
-                          />
+                          <PokemonArt id={pokemon.speciesId} shiny={pokemon.shiny} />
                           <strong>{pokemonById(pokemon.speciesId).name}</strong>
                           <small>Lv. {pokemon.level}</small>
                         </button>

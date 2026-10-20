@@ -1,0 +1,539 @@
+.analytics-page {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.analytics-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+.analytics-heading h1 {
+  margin: 0 0 8px;
+}
+.analytics-heading p {
+  margin: 0;
+  font-size: 14px;
+}
+.analytics-source-label {
+  font-size: 10px;
+  font-weight: 850;
+  color: #8c7860;
+  background: #fcf5e7;
+  border: 1px solid #ede1c8;
+  border-radius: 8px;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+.analytics-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: white;
+  border: 1px solid #e0e6ed;
+  border-radius: 19px;
+  padding: 25px 0;
+}
+.analytics-metrics > div {
+  padding: 0 26px;
+  border-right: 1px solid #e9edf2;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.analytics-metrics > div:last-child {
+  border: 0;
+}
+.analytics-metrics span {
+  font-size: 12px;
+  color: #8c98a8;
+  font-weight: 750;
+}
+.analytics-metrics strong {
+  color: #304961;
+  font-size: clamp(24px, 2.3vw, 34px);
+  line-height: 1.2;
+  font-weight: 900;
+  letter-spacing: -0.7px;
+}
+.analytics-metrics em {
+  font-size: 14px;
+  font-style: normal;
+  color: #97a3b0;
+  letter-spacing: 0;
+}
+.analytics-metrics small {
+  font-size: 10px;
+  color: #9aa4b1;
+}
+.analytics-data-caption {
+  font-size: 11px;
+  color: #93a0ae;
+  line-height: 1.6;
+  margin: 12px 2px 26px;
+}
+.analytics-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(310px, 1fr);
+  gap: 23px;
+  margin-bottom: 26px;
+}
+.analytics-volume-panel,
+.analytics-mode-panel,
+.analytics-feed-panel {
+  background: white;
+  border: 1px solid #e0e6ed;
+  border-radius: 19px;
+  overflow: hidden;
+}
+.analytics-panel-heading {
+  padding: 23px 25px 19px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.analytics-panel-heading h2,
+.analytics-feed-heading h2 {
+  margin: 0 0 5px;
+  font-size: 18px;
+}
+.analytics-panel-heading p,
+.analytics-feed-heading p {
+  margin: 0;
+  font-size: 11px;
+  color: #97a2ae;
+}
+.analytics-panel-heading > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #7892ae;
+  font-weight: 800;
+}
+.analytics-volume-list {
+  padding: 0 25px 15px;
+}
+.analytics-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+.analytics-volume-row:last-child {
+  border: 0;
+}
+.analytics-rank {
+  width: 10px;
+  color: #b0bac5;
+  font-size: 10px;
+}
+.analytics-volume-row .coin-avatar {
+  flex-shrink: 0;
+}
+.analytics-volume-name {
+  flex: 1;
+  min-width: 90px;
+}
+.analytics-volume-name strong {
+  display: block;
+  font-size: 12px;
+  color: #4b6077;
+}
+.analytics-volume-name > span {
+  display: block;
+  font-size: 10px;
+  color: #9ca7b2;
+  margin-top: 2px;
+}
+.analytics-volume-chart {
+  width: 22%;
+  height: 6px;
+  background: #f2f5f8;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.analytics-volume-chart > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  filter: saturate(1.5);
+}
+.analytics-volume-row > strong {
+  min-width: 58px;
+  font-size: 12px;
+  color: #536d88;
+  text-align: right;
+}
+.analytics-mode-track {
+  display: flex;
+  gap: 4px;
+  height: 28px;
+  margin: 5px 25px 23px;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #f0f3f7;
+}
+.analytics-mode-track > span {
+  min-width: 0;
+}
+.analytics-mode-legend {
+  padding: 0 25px;
+}
+.analytics-mode-legend > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 12px;
+  color: #708096;
+}
+.analytics-mode-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+.analytics-mode-legend span {
+  flex: 1;
+}
+.analytics-mode-legend strong {
+  color: #4a617a;
+}
+.analytics-mode-legend small {
+  min-width: 33px;
+  text-align: right;
+  font-size: 10px;
+  color: #a1aab6;
+}
+.analytics-funding-link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 21px 25px 23px;
+  padding: 12px;
+  border: 1px solid #e7edf3;
+  border-radius: 11px;
+  background: #f8fafd;
+  color: #8194a9;
+  font-size: 10px;
+  font-weight: 800;
+}
+.analytics-funding-link span {
+  flex: 1;
+}
+.analytics-funding-link .pokeball {
+  flex-shrink: 0;
+}
+.analytics-feed-heading {
+  padding: 25px 28px 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: center;
+}
+.analytics-feed-source {
+  display: flex;
+  background: #f1f4f7;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 2px;
+}
+.analytics-feed-source button {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #8b98a8;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+.analytics-feed-source button.active {
+  background: white;
+  color: #4a6889;
+  box-shadow: 0 1px 4px #2139510c;
+}
+.analytics-feed-note {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 18px;
+  margin: 0 28px 18px;
+  border-radius: 11px;
+  background: #f0f6fb;
+  color: #6c89a5;
+}
+.analytics-feed-note.example {
+  background: #fbf7ed;
+  color: #a39070;
+}
+.analytics-feed-note span {
+  font-size: 8px;
+  letter-spacing: 0.6px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.analytics-feed-note p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: inherit;
+  margin: 0;
+}
+.analytics-event-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 0 28px;
+  border-bottom: 1px solid #e9edf2;
+}
+.analytics-event-filters button {
+  padding: 12px 0;
+  border-bottom: 2px solid transparent;
+  color: #9ba5b0;
+  font-size: 11px;
+  font-weight: 850;
+  margin-bottom: -1px;
+}
+.analytics-event-filters button.active {
+  border-color: #6f98c0;
+  color: #4f789f;
+}
+.analytics-event-list {
+  padding: 0 28px;
+}
+.analytics-event {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #edf0f4;
+  padding: 19px 0;
+}
+.analytics-event:last-child {
+  border: 0;
+}
+.analytics-event > .trainer-avatar {
+  flex-shrink: 0;
+}
+.analytics-event-copy {
+  flex: 1;
+  min-width: 0;
+}
+.analytics-event-copy > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+.analytics-event-copy > div > strong {
+  font-size: 11px;
+  color: #8a99aa;
+}
+.analytics-event-copy time {
+  margin-left: auto;
+  font-size: 10px;
+  color: #a3adb9;
+}
+.analytics-event-copy h3 {
+  margin: 0 0 4px;
+  color: #405a75;
+  font-size: 13px;
+  font-weight: 850;
+}
+.analytics-event-copy p {
+  margin: 0;
+  font-size: 11px;
+  color: #9aa5b1;
+}
+.analytics-event-tag {
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #f0f3f7;
+  color: #8a98a9;
+}
+.analytics-event-tag.egg {
+  background: #fbf1dd;
+  color: #ba9456;
+}
+.analytics-event-tag.pack {
+  background: #f0ecfc;
+  color: #9b86c5;
+}
+.analytics-event-tag.market {
+  background: #e9f5ef;
+  color: #75a492;
+}
+.analytics-event-tag.evolve {
+  background: #e8f2fc;
+  color: #7a9bbb;
+}
+.analytics-event-pokemon {
+  width: 62px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.analytics-event-pokemon .pokemon-art {
+  width: 56px;
+  height: 56px;
+  overflow: visible;
+}
+.analytics-event > svg {
+  color: #bbc5d0;
+  flex-shrink: 0;
+}
+.analytics-event:hover h3 {
+  color: #2876ad;
+}
+.analytics-feed-empty {
+  text-align: center;
+  padding: 38px 20px;
+}
+.analytics-feed-empty > .pokeball {
+  margin: 0 auto 12px;
+  opacity: 0.6;
+}
+.analytics-feed-empty h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+.analytics-feed-empty p {
+  font-size: 12px;
+  max-width: 440px;
+  margin: 0 auto 15px;
+}
+.analytics-feed-empty a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6c90b3;
+}
+.analytics-empty-inline {
+  font-size: 13px;
+  padding: 15px 0;
+}
+@media (max-width: 1100px) {
+  .analytics-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 23px 0;
+  }
+  .analytics-metrics > div:nth-child(2) {
+    border: 0;
+  }
+  .analytics-overview {
+    grid-template-columns: 1fr;
+  }
+  .analytics-mode-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .analytics-mode-panel .analytics-panel-heading {
+    grid-column: 1/-1;
+  }
+  .analytics-mode-track {
+    grid-column: 1;
+    align-self: center;
+    margin-bottom: 12px;
+  }
+  .analytics-mode-legend {
+    grid-column: 2;
+    grid-row: 2/4;
+  }
+  .analytics-funding-link {
+    grid-column: 1;
+    margin-top: 15px;
+  }
+}
+@media (max-width: 650px) {
+  .analytics-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 13px;
+  }
+  .analytics-heading h1 {
+    font-size: 19px;
+  }
+  .analytics-heading p {
+    font-size: 13px;
+  }
+  .analytics-metrics {
+    padding: 20px 0;
+  }
+  .analytics-metrics > div {
+    padding: 0 17px;
+    gap: 8px;
+  }
+  .analytics-metrics span {
+    font-size: 10px;
+  }
+  .analytics-metrics strong {
+    font-size: 25px;
+  }
+  .analytics-metrics small {
+    font-size: 9px;
+    line-height: 1.6;
+  }
+  .analytics-mode-panel {
+    display: block;
+  }
+  .analytics-volume-list {
+    padding-inline: 17px;
+  }
+  .analytics-panel-heading {
+    padding-inline: 17px;
+  }
+  .analytics-volume-chart {
+    display: none;
+  }
+  .analytics-volume-name {
+    min-width: 0;
+  }
+  .analytics-feed-heading {
+    padding: 20px 18px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .analytics-feed-note {
+    margin-inline: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  .analytics-event-filters {
+    padding-inline: 18px;
+    gap: 16px;
+  }
+  .analytics-event-list {
+    padding-inline: 18px;
+  }
+  .analytics-event {
+    gap: 11px;
+  }
+  .analytics-event-copy time {
+    margin-left: 0;
+  }
+  .analytics-event-copy h3 {
+    font-size: 12px;
+  }
+  .analytics-event-copy p {
+    font-size: 10px;
+    line-height: 1.6;
+  }
+  .analytics-event-pokemon {
+    width: 45px;
+  }
+  .analytics-event-pokemon .pokemon-art {
+    width: 45px;
+    height: 45px;
+  }
+  .analytics-event > svg {
+    display: none;
+  }
+}

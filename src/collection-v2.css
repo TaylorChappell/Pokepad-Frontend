@@ -69,8 +69,10 @@
 }
 .pc-grid .pc-slot .pokemon-card-image,
 .pc-slot .pokemon-card-image {
+  display: grid;
+  place-items: center;
   height: 212px;
-  padding: 25px 12px 15px;
+  padding: 24px 12px;
   background: radial-gradient(
     ellipse at 50% 70%,
     color-mix(in srgb, var(--pokemon-color) 65%, white) 0%,
@@ -82,8 +84,11 @@
 }
 .pc-grid .pc-slot .pokemon-art,
 .pc-slot .pokemon-card-image .pokemon-art {
-  width: 164px;
-  height: 164px;
+  display: block;
+  width: min(164px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
   max-width: 100%;
   position: relative;
   z-index: 1;
@@ -456,9 +461,8 @@
   font-size: 14px;
 }
 .summary-pokemon-stage {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  display: grid;
+  place-items: center;
   position: relative;
   width: 100%;
   min-height: 310px;
@@ -479,7 +483,8 @@
 }
 .summary-ground {
   position: absolute;
-  bottom: 17px;
+  top: calc(50% + 120px);
+  bottom: auto;
   width: 55%;
   height: 20px;
   border-radius: 50%;
@@ -489,6 +494,8 @@
 }
 .summary-pokeball-watermark {
   position: absolute;
+  inset: 0;
+  margin: auto;
   width: 250px;
   height: 250px;
   border-radius: 50%;
@@ -1611,6 +1618,9 @@
   .summary-pokemon-stage > .pokemon-art {
     width: 280px;
   }
+  .summary-ground {
+    top: calc(50% + 112px);
+  }
   .summary-data {
     grid-template-columns: 1fr 1fr;
     gap: 17px;
@@ -1662,8 +1672,8 @@
     height: 190px;
   }
   .pc-grid .pc-slot .pokemon-art {
-    width: 151px;
-    height: 151px;
+    width: min(151px, 100%);
+    height: auto;
   }
   .pc-grid .pc-slot .pokemon-card-body {
     padding: 14px 14px 0;
@@ -1769,11 +1779,11 @@
   }
   .pc-grid .pc-slot .pokemon-card-image {
     height: 163px;
-    padding: 24px 9px 12px;
+    padding: 20px 9px;
   }
   .pc-grid .pc-slot .pokemon-art {
-    width: 132px;
-    height: 132px;
+    width: min(132px, 100%);
+    height: auto;
   }
   .pc-grid .pc-slot .pokemon-card-body {
     padding: 13px 10px 0;
@@ -1828,6 +1838,9 @@
   }
   .summary-pokemon-stage > .pokemon-art {
     width: 250px;
+  }
+  .summary-ground {
+    top: calc(50% + 100px);
   }
   .summary-pokeball-watermark {
     transform: scale(0.85);

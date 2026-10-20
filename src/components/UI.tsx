@@ -14,7 +14,7 @@ import { PIXEL_ICONS } from '../data/icons';
 import { SPRITES } from '../data/sprites';
 import { ART_BOUNDS } from '../data/art-bounds';
 import { useOptionalApp } from '../state/AppContext';
-export type IconName = keyof typeof PIXEL_ICONS;
+export type IconName = keyof typeof PIXEL_ICONS | 'Pokeball';
 export function Icon({
   name,
   size = 18,
@@ -26,6 +26,25 @@ export function Icon({
   strokeWidth?: number;
 }) {
   if (name === 'Sparkles') return null;
+  if (name === 'Pokeball')
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={'pokeball-icon ' + className}
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h6m6 0h6" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    );
   if (name === 'Bell')
     return (
       <svg
@@ -124,11 +143,11 @@ export function Pokeball({ size = 32, className = '' }: { size?: number; classNa
       shapeRendering="crispEdges"
       aria-hidden="true"
     >
-      <path d="M5 1h6v1h2v2h1v2h1v5h-1v2h-2v1H4v-1H2v-2H1V6h1V4h1V2h2z" fill="#30434c" />
-      <path d="M5 2h6v1h2v3h1v2H2V6h1V4h2z" fill="#e95e55" />
-      <path d="M2 9h4v2h4V9h4v2h-1v2h-2v1H5v-1H3v-2H2z" fill="#fff5d3" />
-      <path d="M6 6h4v1h1v3h-1v1H6v-1H5V7h1z" fill="#30434c" />
-      <path d="M7 7h2v3H7zM6 8h4v1H6z" fill="#fff5d3" />
+      <path d="M5 1h6v1h2v2h1v2h1v4h-1v2h-1v2h-2v1H5v-1H3v-2H2v-2H1V6h1V4h1V2h2z" fill="#30434c" />
+      <path d="M5 2h6v1h2v3h1v4h-1v2h-2v2H5v-1H3v-3H2V6h1V4h2z" fill="#fff6df" />
+      <path d="M5 2h6v1h2v3h1v1H2V6h1V4h2z" fill="#e95e55" />
+      <path d="M2 7h12v2H2zM6 5h4v1h1v4h-1v1H6v-1H5V6h1z" fill="#30434c" />
+      <path d="M7 6h2v1h1v2H9v1H7V9H6V7h1z" fill="#fff6df" />
       <path d="M4 4h3v1H4z" fill="#ffaaa0" />
     </svg>
   );
@@ -273,7 +292,7 @@ export function TypeChip({ type }: { type: string }) {
     Water: '#286aa6',
     Grass: '#357b3b',
     Poison: '#864196',
-    Electric: '#caa124',
+    Electric: '#ffdb45',
     Normal: '#686960',
     Flying: '#53679c',
     Bug: '#596e20',
@@ -332,10 +351,10 @@ export function CoinAvatar({ coin, size = 38 }: { coin: Coin; size?: number }) {
     <span className="coin-avatar" style={{ background: coin.color, width: size, height: size }}>
       {coin.image ? (
         <img src={coin.image} alt={coin.name} className="coin-image" />
-      ) : coin.launchKind === 'trainer' && coin.trainer ? (
-        <Avatar profile={coin.trainer} size={size} />
       ) : (
-        <PokemonArt id={coin.pokemonId} animated={false} />
+        <span className="coin-monogram" aria-label={coin.name + ' coin'}>
+          {coin.ticker.trim().slice(0, 2)}
+        </span>
       )}
     </span>
   );
@@ -362,10 +381,24 @@ export function Avatar({
   profile: Pick<Profile, 'character' | 'accessoryColor'>;
   size?: number;
 }) {
-  const crops = { red: [31, 8], leaf: [36, 8], misty: [37, 2], brock: [31, 1], blue: [32, 6] };
-  const [x, y] = crops[profile.character] || crops.red;
-  const scale = Math.max(1, Math.floor((size - 4) / 26));
-  const inset = Math.floor((size - 2 - 26 * scale) / 2);
+  // Source-pixel head bounds keep hair intact while allowing shoulders to crop.
+  const crops = {
+    red: { left: 24, right: 39, top: 8, headHeight: 16 },
+    leaf: { left: 23, right: 49, top: 8, headHeight: 22 },
+    misty: { left: 25, right: 49, top: 2, headHeight: 24 },
+    brock: { left: 22, right: 41, top: 1, headHeight: 18 },
+    blue: { left: 25, right: 46, top: 6, headHeight: 17 },
+  };
+  const crop = crops[profile.character] || crops.red;
+  const innerSize = size - 2;
+  const scale = Math.max(
+    1,
+    Math.min(
+      Math.round(innerSize / 24),
+      Math.floor(innerSize / (crop.right - crop.left)),
+      Math.floor((innerSize - 2) / crop.headHeight),
+    ),
+  );
   return (
     <span
       className={'trainer-avatar pixel-avatar trainer-portrait trainer-' + profile.character}
@@ -378,9 +411,9 @@ export function Avatar({
         style={{
           width: 64 * scale,
           height: 64 * scale,
-          left: inset - (x - 13) * scale,
-          top: inset - y * scale,
-          clipPath: `inset(${y * scale}px ${(64 - x - 13) * scale}px ${(64 - y - 26) * scale}px ${(x - 13) * scale}px)`,
+          left: Math.round(innerSize / 2 - ((crop.left + crop.right) / 2) * scale),
+          top: 2 - crop.top * scale,
+          clipPath: `inset(${crop.top * scale}px 0 ${(64 - crop.top - 26) * scale}px 0)`,
         }}
         src={asset(
           'trainers/' + profile.character + '-' + profile.accessoryColor.replace('#', '') + '.png',

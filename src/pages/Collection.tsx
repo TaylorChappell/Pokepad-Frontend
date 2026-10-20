@@ -78,6 +78,7 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
         (pokemon.shiny ? 'variant-glow' : '')
       }
       style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
+      data-variant={pokemon.shiny ? 'shiny' : 'original'}
     >
       <div className="pokemon-card-image">
         <span className="pc-index">No. {String(species.id).padStart(3, '0')}</span>
@@ -133,6 +134,7 @@ export function InventoryPage() {
     .filter(
       (p) =>
         (filter === 'All' ||
+          (filter === 'Shiny' && !!p.shiny) ||
           (filter === 'Partner' && p.id === state.profile.equippedId) ||
           (filter === 'Battle ready' &&
             !p.listed &&
@@ -162,11 +164,18 @@ export function InventoryPage() {
       </PageHeading>
       <div className="collection-toolbar">
         <div className="filter-pills">
-          {['All', 'Battle ready', 'Partner', 'Can evolve', 'New move', 'Listed'].map((f) => (
-            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
-              {f}
-            </button>
-          ))}
+          {['All', 'Shiny', 'Battle ready', 'Partner', 'Can evolve', 'New move', 'Listed'].map(
+            (f) => (
+              <button
+                key={f}
+                className={filter === f ? 'active' : ''}
+                aria-pressed={filter === f}
+                onClick={() => setFilter(f)}
+              >
+                {f}
+              </button>
+            ),
+          )}
         </div>
         <div className="toolbar-right">
           <div className="small-search">
@@ -207,7 +216,11 @@ export function InventoryPage() {
         ) : (
           <EmptyState
             title="No Pokémon found"
-            description="Change your filters or open a reward to add Pokémon."
+            description={
+              filter === 'Shiny'
+                ? 'No shiny Pokémon match this search yet. Shiny variants can appear in eggs and packs.'
+                : 'Change your filters or open a reward to add Pokémon.'
+            }
           >
             <a className="button primary" href="#/rewards">
               View rewards

@@ -13,6 +13,7 @@ export interface Coin {
   ticker: string;
   ca: string;
   pokemonId: number;
+  pokemonShiny?: boolean;
   launchKind?: 'pokemon' | 'trainer';
   launchPokemonId?: string;
   trainer?: Pick<Profile, 'character' | 'accessoryColor'>;
@@ -24,6 +25,10 @@ export interface Coin {
   change: number;
   marketCap: number;
   volume: number;
+  /** Optional USD quotes from the market-data service; base figures above are SOL. */
+  marketCapUsd?: number;
+  volumeUsd?: number;
+  launchedAt?: number;
   totalSupply: number;
   holders: number;
   vault: number;

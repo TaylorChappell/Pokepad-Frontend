@@ -1,0 +1,1485 @@
+.arena-v6 {
+  --battle-green: #4c9177;
+}
+.arena-mode-tabs {
+  display: flex;
+  gap: 8px;
+  width: fit-content;
+  margin: 0 0 25px;
+  padding: 5px;
+  border: 1px solid #e1e6ed;
+  border-radius: 15px;
+  background: #eef1f5;
+}
+.arena-mode-tabs > button {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 2px 9px;
+  padding: 12px 22px;
+  text-align: left;
+  border-radius: 11px;
+  color: #7a8797;
+  font-size: 14px;
+  font-weight: 900;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+.arena-mode-tabs > button > svg {
+  grid-row: 1/3;
+  align-self: center;
+}
+.arena-mode-tabs > button > span {
+  grid-column: 2;
+  font-size: 10px;
+  font-weight: 650;
+}
+.arena-mode-tabs > button.active {
+  color: #314863;
+  background: #fff;
+  box-shadow: 0 3px 9px #293c5010;
+}
+.duel-lobby-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(290px, 0.85fr);
+  overflow: hidden;
+  border: 1px solid #dce4e9;
+  border-radius: 23px;
+  background: white;
+  box-shadow: 0 9px 25px #283e5105;
+}
+.arena-v6 .arena-hero.duel-lobby-art {
+  position: relative;
+  min-height: 430px;
+  border: 0;
+  border-right: 1px solid #e1e8e8;
+  border-radius: 0;
+  padding: 0;
+  background: radial-gradient(ellipse at 50% 34%, #fffdf4 0, #f1f7f3 70%);
+}
+.duel-lobby-pair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 215px;
+  padding: 22px 25px 0;
+}
+.duel-lobby-pair > .pokemon-art {
+  flex: 0 1 180px;
+  width: 180px;
+  min-width: 0;
+  max-width: calc((100% - 30px) / 2);
+  height: auto;
+  aspect-ratio: 1;
+}
+.duel-lobby-pair > span:not(.pokemon-art) {
+  color: #9aaba7;
+  font-size: 13px;
+  font-weight: 1000;
+}
+.duel-lobby-copy {
+  padding: 10px 30px 30px;
+}
+.practice-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  border: 1px solid #cfe3d9;
+  background: #eaf5ef;
+  color: #50876d;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 4px 9px;
+}
+.duel-lobby-copy h2 {
+  font-size: 25px;
+  margin: 14px 0 7px;
+  letter-spacing: -0.6px;
+}
+.duel-lobby-copy p {
+  max-width: 430px;
+  font-size: 13px;
+  margin: 0 0 20px;
+}
+.duel-lobby-settings {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 30px;
+}
+.duel-lobby-settings h3 {
+  margin: 0 0 18px;
+  font-size: 18px;
+}
+.difficulty-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.difficulty-picker button {
+  padding: 12px 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e5e9ee;
+  border-radius: 12px;
+  color: #7f8b9b;
+  background: #fbfcfd;
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    transform 0.18s;
+}
+.difficulty-picker button:hover {
+  transform: translateY(-2px);
+  border-color: #bfcfd1;
+}
+.difficulty-picker button.selected {
+  background: #eaf4ed;
+  border-color: #80ad92;
+  color: #3e725b;
+  box-shadow: inset 0 0 0 1px #80ad9233;
+}
+.difficulty-picker button:last-child.selected {
+  background: #f3edf8;
+  color: #815e9e;
+  border-color: #b498cd;
+}
+.difficulty-picker strong {
+  font-size: 12px;
+}
+.difficulty-picker small {
+  font-size: 9px;
+  white-space: nowrap;
+}
+.difficulty-pips {
+  display: flex;
+  gap: 3px;
+  height: 16px;
+  align-items: flex-end;
+}
+.difficulty-pips i {
+  display: block;
+  width: 4px;
+  height: 6px;
+  border-radius: 2px;
+  background: #e0e5e9;
+}
+.difficulty-pips i:nth-child(2) {
+  height: 9px;
+}
+.difficulty-pips i:nth-child(3) {
+  height: 12px;
+}
+.difficulty-pips i:nth-child(4) {
+  height: 15px;
+}
+.difficulty-pips .lit {
+  background: currentColor;
+}
+.duel-coach {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin: 27px 0 18px;
+  padding-top: 23px;
+  border-top: 1px solid #edf0f2;
+}
+.duel-coach strong {
+  font-size: 13px;
+}
+.duel-coach p {
+  font-size: 12px;
+  margin: 5px 0 0;
+}
+.duel-offline-note,
+.practice-safety {
+  color: #8793a1;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.duel-streak {
+  color: #b27a32;
+  font-size: 12px;
+  font-weight: 850;
+  margin-top: 12px;
+}
+.duel-tactics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin: 28px 0 10px;
+}
+.duel-tactics > div {
+  border-left: 3px solid #dce9df;
+  padding-left: 17px;
+}
+.duel-tactics strong {
+  font-size: 13px;
+  color: #455b6c;
+}
+.duel-tactics p {
+  font-size: 12px;
+  margin: 5px 0 0;
+}
+.duel-team-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(290px, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.duel-party-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 29px;
+}
+.duel-party-slots > div {
+  position: relative;
+  min-height: 166px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: 1px dashed #cfd8df;
+  border-radius: 16px;
+  background: #f4f6f7;
+  color: #94a0ad;
+}
+.duel-party-slots > div.filled {
+  border-style: solid;
+  border-color: #c4dcca;
+  background: #f2f9f3;
+}
+.duel-party-slots .pokemon-art {
+  width: 95px;
+  height: 95px;
+}
+.duel-party-slots strong {
+  font-size: 13px;
+  color: #4b6657;
+}
+.duel-party-slots small,
+.duel-party-slots > div > span:not(.pokemon-art) {
+  font-size: 10px;
+  margin-top: 5px;
+}
+.duel-party-slots button {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: #80958b;
+  background: #e4eee7;
+}
+.duel-team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.arena-v6 .team-select-card.duel-team-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 16px 7px 13px;
+  background: #fff;
+  border: 1px solid #e0e6ed;
+  border-radius: 15px;
+  box-shadow: none;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+}
+.arena-v6 .duel-team-card:hover:not(:disabled) {
+  transform: translateY(-3px);
+  border-color: #9db8aa;
+}
+.arena-v6 .duel-team-card.selected {
+  background: #eef8f1;
+  border-color: #84b094;
+}
+.arena-v6 .duel-team-card > .pokemon-art {
+  width: 90px;
+  height: 90px;
+  margin: 6px auto;
+}
+.duel-team-card > strong {
+  font-size: 13px;
+  margin: 2px 0 9px;
+}
+.duel-team-level {
+  color: #8a97a5;
+  font-size: 10px;
+  align-self: flex-start;
+  padding-left: 5px;
+}
+.duel-team-card > div {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.duel-team-card .type-badge {
+  font-size: 8px;
+  min-height: 21px;
+  padding: 4px 6px;
+  gap: 3px;
+}
+.duel-team-card .type-badge svg {
+  width: 10px;
+  height: 10px;
+}
+.duel-selection-check {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #6ca47f;
+  color: white;
+}
+.duel-team-review {
+  position: sticky;
+  top: 105px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e0e6ed;
+  border-radius: 20px;
+}
+.duel-team-review h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+}
+.duel-team-review > p {
+  font-size: 12px;
+  margin: 15px 0;
+}
+.duel-rival-preview {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 0 20px;
+}
+.duel-rival-preview > div {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+.duel-rival-preview .pokemon-art {
+  width: 80px;
+  height: 80px;
+}
+.duel-rival-preview strong {
+  font-size: 11px;
+  margin-top: 6px;
+}
+.duel-rival-preview small {
+  font-size: 9px;
+  color: #98a1af;
+  margin-top: 4px;
+}
+.duel-rival-placeholder {
+  min-height: 150px;
+  justify-content: center;
+  color: #b4c0bb;
+}
+.duel-rival-placeholder p {
+  font-size: 11px;
+  max-width: 180px;
+}
+.duel-strength {
+  border-top: 1px solid #eef1f3;
+  padding: 16px 0 9px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: #8491a0;
+}
+.duel-strength strong {
+  color: #4a6658;
+}
+.duel-reroll {
+  font-size: 11px;
+  margin: 5px 0 22px;
+}
+.duel-team-review > .practice-safety {
+  display: block;
+  margin-top: 15px;
+  text-align: center;
+}
+.duel-empty {
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e0e6ed;
+  border-radius: 18px;
+  padding: 30px;
+}
+.duel-empty > svg {
+  margin: auto;
+}
+.duel-empty h3 {
+  margin: 12px 0 6px;
+}
+.duel-empty p {
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+.arena-v6 .battle-page-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 13px;
+  margin-bottom: 20px;
+}
+.duel-page-heading > strong {
+  margin-left: auto;
+  font-size: 13px;
+  color: #697c8b;
+}
+.duel-trainers {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 7px 17px;
+  gap: 12px;
+}
+.duel-trainers > div {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.duel-trainers > div:last-child {
+  text-align: right;
+}
+.duel-trainers strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.duel-trainers small {
+  display: flex;
+  gap: 4px;
+}
+.duel-trainers > div:last-child small {
+  justify-content: flex-end;
+}
+.duel-trainers > span {
+  font-size: 10px;
+  font-weight: 1000;
+  color: #b3bdc4;
+}
+.duel-trainers .fainted {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+.arena-v6 .battle-field.duel-field {
+  height: auto;
+  min-height: 350px;
+  overflow: visible;
+  border: 1px solid #dbe6df;
+  border-radius: 22px;
+  padding: 27px 27px 20px;
+  background: linear-gradient(#edf5ef, #f7faf1 70%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr);
+  gap: 0;
+  box-shadow: inset 0 0 0 6px #ffffff60;
+  isolation: isolate;
+}
+.duel-field-lines {
+  position: absolute;
+  inset: 60px 10% 55px;
+  border: 2px solid #d8e5d85c;
+  border-radius: 50%;
+  z-index: -1;
+  transform: perspective(400px) rotateX(40deg);
+}
+.duel-fighter {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.duel-health {
+  width: min(245px, 100%);
+  background: #fffffff2;
+  border: 1px solid #d7e2db;
+  border-radius: 12px;
+  padding: 13px 15px 10px;
+  box-shadow: 0 4px 0 #dfe9df80;
+}
+.duel-health > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.duel-health strong {
+  font-size: 13px;
+}
+.duel-health > div > span:not(.duel-health-track) {
+  font-size: 11px;
+  color: #8a998e;
+}
+.duel-health-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+}
+.duel-health-line b {
+  font-size: 9px;
+  color: #bdab64;
+}
+.duel-health-track {
+  display: block;
+  flex: 1;
+  height: 7px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #edf0ec;
+}
+.duel-health-track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition:
+    width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 0.2s;
+}
+.duel-health-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 17px;
+  margin-top: 5px;
+}
+.duel-health-foot small {
+  font-size: 9px;
+  color: #819184;
+}
+.battle-condition {
+  font-size: 8px;
+  line-height: 1.2;
+  letter-spacing: 0.4px;
+  padding: 3px 5px;
+  background: #c7b2d1;
+  border-radius: 4px;
+  color: #fff;
+}
+.condition-burn {
+  background: #d27b61;
+}
+.condition-paralysis {
+  background: #d3ad4d;
+}
+.condition-sleep {
+  background: #8998b3;
+}
+.condition-freeze {
+  background: #7bb7c9;
+}
+.duel-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 190px;
+  margin: 10px 0 4px;
+}
+.duel-stage > .pokemon-art {
+  width: 180px;
+  height: 180px;
+  position: relative;
+  z-index: 2;
+}
+.duel-stage-shadow {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ccdcca75;
+  box-shadow: 0 0 0 7px #dbe8d947;
+}
+.duel-rival .duel-stage-shadow {
+  background: #dddcc675;
+  box-shadow: 0 0 0 7px #ebe8d447;
+}
+.duel-center-mark {
+  align-self: center;
+  opacity: 0.1;
+  display: grid;
+  place-items: center;
+}
+.duel-type-row {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+}
+.duel-matchup {
+  grid-column: 1/-1;
+  text-align: center;
+  color: #799381;
+  font-size: 11px;
+  font-weight: 850;
+  margin-top: 18px;
+}
+.duel-matchup span {
+  margin-left: 9px;
+  color: #9aa99b;
+  font-size: 10px;
+  font-weight: 650;
+}
+.duel-field.player .duel-player .duel-stage > .pokemon-art {
+  animation: duel-lunge-right 0.65s ease;
+}
+.duel-field.player .duel-rival .duel-stage > .pokemon-art {
+  animation: duel-impact 0.65s ease;
+}
+.duel-field.rival .duel-rival .duel-stage > .pokemon-art {
+  animation: duel-lunge-left 0.65s ease;
+}
+.duel-field.rival .duel-player .duel-stage > .pokemon-art {
+  animation: duel-impact 0.65s ease;
+}
+@keyframes duel-lunge-right {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  35% {
+    translate: 20px -7px;
+  }
+  55% {
+    translate: 6px 0;
+  }
+}
+@keyframes duel-lunge-left {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  35% {
+    translate: -20px -7px;
+  }
+  55% {
+    translate: -6px 0;
+  }
+}
+@keyframes duel-impact {
+  0%,
+  35%,
+  100% {
+    filter: none;
+    translate: 0 0;
+  }
+  43%,
+  62% {
+    filter: brightness(1.8);
+    translate: 5px 0;
+  }
+  52%,
+  70% {
+    translate: -4px 0;
+  }
+}
+.duel-console {
+  background: #fff;
+  border: 1px solid #e0e5ec;
+  border-radius: 20px;
+  padding: 24px;
+  margin-top: 18px;
+}
+.duel-command-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 19px;
+}
+.duel-command-heading h2 {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+.duel-command-heading p {
+  font-size: 11px;
+  margin: 0;
+}
+.duel-command-heading .text-link {
+  font-size: 11px;
+  white-space: nowrap;
+}
+.arena-v6 .battle-moves.duel-moves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0;
+  background: none;
+}
+.arena-v6 .duel-moves > button {
+  display: block;
+  text-align: left;
+  min-height: 104px;
+  padding: 15px 17px;
+  border: 1px solid #e1e6ed;
+  border-left: 4px solid var(--move-color);
+  border-radius: 12px;
+  background: #fbfcfd;
+  transition:
+    background 0.15s,
+    transform 0.15s,
+    border-color 0.15s;
+}
+.arena-v6 .duel-moves > button:hover:not(:disabled) {
+  background: #f5f8f5;
+  transform: translateY(-2px);
+  border-color: #c4d7c9;
+  border-left-color: var(--move-color);
+}
+.arena-v6 .duel-moves > button:disabled {
+  opacity: 0.48;
+}
+.arena-v6 .duel-moves > button > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+}
+.duel-move-top strong {
+  font-size: 14px !important;
+}
+.duel-move-top > small {
+  font-size: 10px !important;
+  color: #82909c;
+}
+.arena-v6 .duel-moves > button > .duel-move-meta {
+  justify-content: flex-start;
+  margin-top: 9px;
+}
+.duel-move-meta .type-badge {
+  font-size: 8px;
+  min-height: 20px;
+  padding: 4px 6px;
+  gap: 4px;
+}
+.duel-move-meta .type-badge svg {
+  width: 10px;
+  height: 10px;
+}
+.duel-move-meta > small {
+  font-size: 10px;
+  color: #8f9ba6;
+}
+.arena-v6 .duel-moves > button > .duel-move-hint {
+  display: block;
+  font-size: 10px;
+  color: #6b8171;
+  line-height: 1.5;
+  margin-top: 9px;
+}
+.duel-bench {
+  display: flex;
+  gap: 8px;
+  margin-top: 19px;
+  padding-top: 17px;
+  border-top: 1px solid #eff2f5;
+}
+.duel-bench > button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 11px;
+  background: #f7f9fb;
+  border: 1px solid #e7edf2;
+  text-align: left;
+}
+.duel-bench > button.active {
+  background: #edf6ef;
+  border-color: #c8e1cf;
+  opacity: 1;
+}
+.duel-bench > button:disabled:not(.active) {
+  opacity: 0.45;
+}
+.duel-bench .pokemon-art {
+  width: 43px;
+  height: 43px;
+}
+.duel-bench strong {
+  display: block;
+  font-size: 11px;
+}
+.duel-bench small {
+  display: block;
+  font-size: 9px;
+  color: #8796a3;
+  margin-top: 4px;
+}
+.duel-history {
+  background: #f3f6f8;
+  border: 1px solid #e1e7ec;
+  border-radius: 15px;
+  margin: 18px 0;
+  padding: 15px 20px;
+  font-size: 12px;
+  color: #758696;
+}
+.duel-history > summary {
+  font-weight: 850;
+  color: #586d7d;
+  cursor: pointer;
+}
+.duel-history > summary > span {
+  float: right;
+  font-weight: 650;
+  font-size: 10px;
+  color: #9ca8b3;
+}
+.duel-current-events {
+  padding-top: 10px;
+}
+.duel-history p {
+  margin: 4px 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #788b99;
+}
+.duel-history .event-move,
+.duel-history .event-result {
+  color: #405e52;
+  font-weight: 850;
+}
+.duel-history .event-faint {
+  color: #b47970;
+  font-weight: 800;
+}
+.duel-history > details {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e7ea;
+}
+.duel-history > details > div {
+  max-height: 160px;
+  overflow: auto;
+  margin-top: 8px;
+}
+.duel-result {
+  padding: 38px;
+  text-align: center;
+  border-radius: 24px;
+}
+.duel-result-seal {
+  display: grid;
+  place-items: center;
+  width: 90px;
+  height: 90px;
+  margin: auto;
+  background: #f2f4f7;
+  border-radius: 50%;
+  border: 1px solid #e1e6ed;
+}
+.duel-result-seal.won {
+  background: #f8f2dc;
+  border-color: #e8dca6;
+}
+.duel-eyebrow {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 19px 0 10px;
+}
+.duel-result h1 {
+  margin-bottom: 8px;
+}
+.duel-result > p:not(.duel-eyebrow) {
+  font-size: 13px;
+}
+.duel-result-team {
+  display: flex;
+  justify-content: center;
+  gap: 35px;
+  padding: 20px 0;
+}
+.duel-result-team > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.duel-result-team .pokemon-art {
+  width: 120px;
+  height: 120px;
+}
+.duel-result-team strong {
+  font-size: 13px;
+}
+.duel-result-team small {
+  font-size: 10px;
+  color: #95a0ab;
+  margin-top: 5px;
+}
+.duel-result-facts {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 20px 0;
+  border-top: 1px solid #eef1f4;
+  border-bottom: 1px solid #eef1f4;
+  margin: 0 0 17px;
+}
+.duel-result-facts span {
+  font-size: 10px;
+  color: #94a0ac;
+}
+.duel-result-facts strong {
+  display: block;
+  font-size: 21px;
+  color: #546d5c;
+  margin-bottom: 5px;
+}
+.duel-result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+.duel-switch-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 20px;
+}
+.duel-switch-list > button {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 10px 15px;
+  text-align: left;
+  background: #f7faf8;
+}
+.duel-switch-list > button > span:not(.pokemon-art) {
+  flex: 1;
+}
+.duel-switch-list .pokemon-art {
+  width: 65px;
+  height: 65px;
+}
+.duel-switch-list strong {
+  display: block;
+  font-size: 14px;
+}
+.duel-switch-list small {
+  display: block;
+  font-size: 11px;
+  color: #879a8f;
+  margin-top: 5px;
+}
+.duel-rules p {
+  font-size: 13px;
+  line-height: 1.85;
+  margin-bottom: 17px;
+}
+.duel-online-card {
+  background: #fff;
+  border: 1px solid #dfe5ec;
+  border-radius: 22px;
+  padding: 32px;
+}
+.duel-online-heading {
+  max-width: 650px;
+}
+.duel-online-heading h2 {
+  margin: 16px 0 9px;
+  font-size: 24px;
+}
+.duel-online-heading p {
+  font-size: 13px;
+}
+.online-unavailable {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  font-size: 10px;
+  color: #969ea8;
+  border: 1px solid #e1e5eb;
+  background: #f7f8fa;
+  border-radius: 7px;
+  font-weight: 800;
+}
+.online-unavailable i {
+  width: 6px;
+  height: 6px;
+  background: #b4bec9;
+  border-radius: 50%;
+}
+.duel-online-form {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 35px;
+  margin-top: 25px;
+  align-items: center;
+}
+.duel-online-form label {
+  display: block;
+  font-size: 12px;
+  font-weight: 850;
+  color: #6c7d8c;
+  margin: 0 0 12px;
+}
+.duel-online-form label input,
+.duel-online-form label select {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #dbe3e9;
+  background: #f8fafb;
+  border-radius: 10px;
+  padding: 11px 12px;
+}
+.duel-online-form label small {
+  display: block;
+  text-align: right;
+  font-size: 10px;
+  color: #9aa6b1;
+  margin-top: 5px;
+}
+.online-formats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  margin: 0 0 20px;
+}
+.online-formats button {
+  padding: 12px 8px;
+  border: 1px solid #e1e7ed;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #8996a5;
+  background: #fbfcfd;
+}
+.online-formats button.active {
+  border-color: #9bb4cc;
+  background: #edf4fb;
+  color: #4d759a;
+}
+.duel-online-art {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  background: #f7f8f1;
+  border: 1px solid #e9eadf;
+  border-radius: 18px;
+  padding: 20px 15px;
+}
+.duel-online-art .pokemon-art {
+  flex: 0 0 auto;
+  width: 120px;
+  height: 120px;
+}
+.duel-online-art strong {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 13px;
+  margin-top: 10px;
+}
+.duel-online-art p {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 11px;
+  margin-top: 8px;
+  max-width: 240px;
+}
+.duel-stake-note {
+  border-left: 3px solid #d9a57b;
+  background: #fff7ef;
+  padding: 13px 15px;
+  font-size: 12px;
+  color: #987659;
+  line-height: 1.7;
+  margin-bottom: 15px;
+}
+.duel-online-status {
+  font-size: 11px;
+  color: #94a0ab;
+  margin: 15px 0;
+}
+@media (max-width: 1100px) {
+  .duel-lobby-card,
+  .duel-team-layout {
+    grid-template-columns: minmax(0, 1fr) 310px;
+  }
+  .duel-lobby-settings,
+  .duel-team-review {
+    padding: 22px;
+  }
+  .duel-lobby-pair > .pokemon-art {
+    flex-basis: 155px;
+    width: 155px;
+  }
+  .duel-rival-preview {
+    gap: 3px;
+  }
+  .duel-rival-preview .pokemon-art {
+    width: 70px;
+    height: 70px;
+  }
+  .duel-team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .duel-lobby-copy {
+    padding: 10px 23px 27px;
+  }
+  .duel-lobby-copy h2 {
+    font-size: 22px;
+  }
+  .duel-stage > .pokemon-art {
+    width: 165px;
+    height: 165px;
+  }
+}
+@media (max-width: 850px) {
+  .duel-lobby-card,
+  .duel-team-layout {
+    grid-template-columns: 1fr;
+  }
+  .arena-v6 .arena-hero.duel-lobby-art {
+    border-right: 0;
+    border-bottom: 1px solid #e1e8e8;
+    min-height: 0;
+  }
+  .duel-lobby-settings {
+    padding: 25px;
+  }
+  .duel-coach {
+    margin: 20px 0 10px;
+    padding-top: 18px;
+  }
+  .duel-team-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .duel-team-review {
+    position: static;
+  }
+  .duel-rival-preview .pokemon-art {
+    width: 105px;
+    height: 105px;
+  }
+  .duel-tactics {
+    gap: 17px;
+  }
+  .duel-online-form {
+    grid-template-columns: 1fr;
+  }
+  .duel-online-art {
+    display: none;
+  }
+}
+@media (max-width: 560px) {
+  .arena-mode-tabs {
+    width: 100%;
+    gap: 4px;
+  }
+  .arena-mode-tabs > button {
+    flex: 1;
+    padding: 10px;
+    grid-template-columns: 17px 1fr;
+    font-size: 12px;
+    gap: 2px 7px;
+  }
+  .arena-mode-tabs > button > span {
+    font-size: 9px;
+  }
+  .duel-lobby-pair {
+    height: 180px;
+    padding: 15px 18px 0;
+  }
+  .duel-lobby-pair > .pokemon-art {
+    flex-basis: 145px;
+    width: 145px;
+  }
+  .duel-lobby-copy {
+    padding: 12px 22px 24px;
+  }
+  .duel-lobby-copy h2 {
+    font-size: 22px;
+  }
+  .duel-tactics {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .duel-tactics > div {
+    padding-left: 12px;
+  }
+  .duel-party-slots {
+    gap: 7px;
+  }
+  .duel-party-slots > div {
+    min-height: 142px;
+  }
+  .duel-party-slots .pokemon-art {
+    width: 76px;
+    height: 76px;
+  }
+  .duel-party-slots strong {
+    font-size: 11px;
+  }
+  .duel-party-slots small,
+  .duel-party-slots > div > span:not(.pokemon-art) {
+    font-size: 8px;
+  }
+  .duel-team-grid {
+    gap: 8px;
+  }
+  .arena-v6 .duel-team-card > .pokemon-art {
+    width: 72px;
+    height: 72px;
+  }
+  .duel-team-card > strong {
+    font-size: 11px;
+  }
+  .duel-team-card .type-badge {
+    font-size: 7px;
+    padding: 3px 4px;
+    min-height: 17px;
+  }
+  .duel-team-card .type-badge svg {
+    display: none;
+  }
+  .duel-team-card > div {
+    gap: 3px;
+  }
+  .duel-team-level {
+    font-size: 9px;
+  }
+  .duel-selection-check {
+    width: 18px;
+    height: 18px;
+    right: 7px;
+    top: 9px;
+  }
+  .duel-result {
+    padding: 25px 17px;
+  }
+  .duel-result-team {
+    gap: 12px;
+  }
+  .duel-result-team .pokemon-art {
+    width: 90px;
+    height: 90px;
+  }
+  .duel-result-team strong {
+    font-size: 11px;
+  }
+  .duel-result-facts {
+    gap: 23px;
+  }
+  .duel-result-actions {
+    flex-direction: column;
+  }
+  .duel-page-heading > .button {
+    font-size: 11px;
+    padding: 9px 12px;
+    min-height: 37px;
+  }
+  .duel-page-heading > strong {
+    font-size: 11px;
+  }
+  .arena-v6 .battle-page-heading {
+    gap: 7px;
+  }
+  .practice-chip {
+    font-size: 9px;
+  }
+  .duel-trainers strong {
+    font-size: 11px;
+  }
+  .duel-trainers > div {
+    gap: 7px;
+  }
+  .arena-v6 .battle-field.duel-field {
+    padding: 17px 12px;
+    grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+    min-height: 285px;
+    border-radius: 17px;
+  }
+  .duel-health {
+    padding: 10px 9px 6px;
+    border-radius: 9px;
+  }
+  .duel-health strong {
+    font-size: 10px;
+  }
+  .duel-health > div > span:not(.duel-health-track) {
+    font-size: 8px;
+  }
+  .duel-health-line {
+    gap: 5px;
+    margin-top: 7px;
+  }
+  .duel-health-line b {
+    font-size: 8px;
+  }
+  .duel-health-track {
+    height: 6px;
+  }
+  .duel-stage {
+    height: 145px;
+    margin-top: 8px;
+  }
+  .duel-stage > .pokemon-art {
+    width: 130px;
+    height: 130px;
+  }
+  .duel-stage-shadow {
+    width: 105px;
+    height: 24px;
+    bottom: 9px;
+  }
+  .duel-center-mark > .pokeball {
+    width: 30px;
+    height: 30px;
+  }
+  .duel-type-row {
+    gap: 3px;
+  }
+  .duel-type-row .type-badge {
+    font-size: 7px;
+    padding: 4px 5px;
+    min-height: 19px;
+  }
+  .duel-type-row .type-badge svg {
+    display: none;
+  }
+  .duel-matchup {
+    font-size: 10px;
+    margin-top: 12px;
+  }
+  .duel-matchup span {
+    display: block;
+    font-size: 9px;
+    margin: 4px 0 0;
+  }
+  .duel-console {
+    padding: 17px 13px;
+    border-radius: 17px;
+  }
+  .duel-command-heading {
+    display: block;
+    margin-bottom: 15px;
+  }
+  .duel-command-heading h2 {
+    font-size: 15px;
+  }
+  .duel-command-heading p {
+    font-size: 10px;
+  }
+  .duel-command-heading .text-link {
+    margin-top: 8px;
+    font-size: 10px;
+  }
+  .arena-v6 .battle-moves.duel-moves {
+    gap: 7px;
+  }
+  .arena-v6 .duel-moves > button {
+    padding: 11px 10px;
+    min-height: 110px;
+    border-left-width: 3px;
+  }
+  .duel-move-top {
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+  .duel-move-top strong {
+    font-size: 11px !important;
+  }
+  .duel-move-top > small {
+    font-size: 8px !important;
+    white-space: nowrap;
+  }
+  .arena-v6 .duel-moves > button > .duel-move-meta {
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .duel-move-meta > small {
+    font-size: 8px;
+  }
+  .arena-v6 .duel-moves > button > .duel-move-hint {
+    font-size: 9px;
+  }
+  .duel-bench {
+    gap: 5px;
+    margin-top: 14px;
+    padding-top: 13px;
+  }
+  .duel-bench > button {
+    flex-direction: column;
+    text-align: center;
+    padding: 6px 3px;
+    gap: 3px;
+  }
+  .duel-bench .pokemon-art {
+    width: 38px;
+    height: 38px;
+  }
+  .duel-bench strong {
+    font-size: 9px;
+  }
+  .duel-bench small {
+    font-size: 8px;
+  }
+  .duel-history {
+    padding: 13px 15px;
+  }
+  .duel-history > summary > span {
+    font-size: 9px;
+  }
+  .duel-online-card {
+    padding: 23px 20px;
+  }
+  .duel-online-heading h2 {
+    font-size: 21px;
+  }
+  .duel-online-heading p {
+    font-size: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-v6 *,
+  .arena-v6 *::before,
+  .arena-v6 *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+[data-motion='reduced'] .arena-v6 *,
+[data-motion='reduced'] .arena-v6 *::before,
+[data-motion='reduced'] .arena-v6 *::after {
+  animation: none !important;
+  transition: none !important;
+}

@@ -17,6 +17,8 @@ import { GymsPage, GymDetailPage } from './pages/Community';
 import { CreateCoinPage } from './pages/CreateCoin';
 import { GuidePage } from './pages/Guide';
 import { BattlesPage } from './pages/Battles';
+import { AnalyticsPage } from './pages/Analytics';
+import { TrainerPage } from './pages/Trainer';
 import { dismissBootScreen } from './components/BootScreen';
 function useRoute() {
   const read = () => window.location.hash.slice(1) || '/discover';
@@ -34,6 +36,9 @@ function Routes() {
   let page: ReactNode;
   if (path === '/' || path === '/discover') page = <DiscoverPage />;
   else if (path === '/explore') page = <DiscoverPage explore />;
+  else if (path === '/analytics') page = <AnalyticsPage />;
+  else if (path.startsWith('/trainer/'))
+    page = <TrainerPage wallet={path.slice('/trainer/'.length)} />;
   else if (path.startsWith('/coin/')) page = <CoinPage key={path} id={path.split('/')[2]} />;
   else if (path === '/guide') page = <GuidePage />;
   else if (path === '/create') page = <CreateCoinPage />;

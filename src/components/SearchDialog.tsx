@@ -1,14 +1,27 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Coin } from '../types';
 import { compact, navigate } from '../utils';
 import { useOptionalApp } from '../state/AppContext';
-import { CoinAvatar, Icon, Pokeball } from './UI';
+import { Avatar, CoinAvatar, Icon, Pokeball, PokemonArt } from './UI';
+import {
+  matchesTrainer,
+  ownTrainer,
+  searchDemoTrainers,
+  trainerDirectory,
+  type PublicTrainer,
+} from '../services/trainers';
+
+type SearchEntry = { kind: 'coin'; coin: Coin } | { kind: 'trainer'; trainer: PublicTrainer };
 
 export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () => void }) {
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [closing, setClosing] = useState(false);
+  const [trainers, setTrainers] = useState<PublicTrainer[]>([]);
+  const [trainerLoading, setTrainerLoading] = useState(false);
+  const [trainerError, setTrainerError] = useState('');
+  const keyboardSelection = useRef(false);
   const input = useRef<HTMLInputElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -20,6 +33,10 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
     app?.state.profile.reducedMotion ||
     (typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const own = useMemo(
+    () => (app ? ownTrainer(app.state, app.mode === 'demo') : undefined),
+    [app?.state, app?.mode],
+  );
   const term = query.trim().toLowerCase();
   const tickerTerm = term.replace(/^\$/, '');
   const matches = term
@@ -27,12 +44,52 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
         (coin) =>
           coin.ticker.toLowerCase().includes(tickerTerm) ||
           coin.name.toLowerCase().includes(term) ||
-          coin.ca.toLowerCase().includes(term),
+          coin.ca.includes(query.trim()),
       )
     : [...coins].sort(
         (a, b) => Number(Boolean(b.main)) - Number(Boolean(a.main)) || b.volume - a.volume,
       );
-  const results = matches.slice(0, 8);
+  const coinResults = matches.slice(0, term ? 8 : 5);
+  const results: SearchEntry[] = [
+    ...coinResults.map((coin) => ({ kind: 'coin' as const, coin })),
+    ...trainers.map((trainer) => ({ kind: 'trainer' as const, trainer })),
+  ];
+
+  useEffect(() => {
+    setTrainerError('');
+    if (trainerDirectory.mode === 'demo') {
+      setTrainers(searchDemoTrainers(query, own));
+      setTrainerLoading(false);
+      return;
+    }
+    setTrainers(own && matchesTrainer(own, query) ? [own] : []);
+    if (query.trim().length < 2) {
+      setTrainerLoading(false);
+      return;
+    }
+    const controller = new AbortController();
+    setTrainerLoading(true);
+    const timer = setTimeout(() => {
+      trainerDirectory
+        .search(query, own, controller.signal)
+        .then((found) => {
+          if (!controller.signal.aborted) setTrainers(found);
+        })
+        .catch((error) => {
+          if (!controller.signal.aborted)
+            setTrainerError(
+              error instanceof Error ? error.message : 'Trainer search is unavailable.',
+            );
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setTrainerLoading(false);
+        });
+    }, 180);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, own]);
 
   function dismiss(afterClose?: () => void) {
     if (closeTimer.current !== undefined || closing) return;
@@ -47,8 +104,14 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
     }
   }
 
-  function select(coin: Coin) {
-    dismiss(() => navigate('/coin/' + coin.id));
+  function select(result: SearchEntry) {
+    dismiss(() =>
+      navigate(
+        result.kind === 'coin'
+          ? '/coin/' + result.coin.id
+          : '/trainer/' + encodeURIComponent(result.trainer.wallet),
+      ),
+    );
   }
 
   // Keep background navigation out of the focus order while the search device is open.
@@ -100,7 +163,8 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
   });
 
   useEffect(() => {
-    document.getElementById(`${id}-coin-${active}`)?.scrollIntoView?.({ block: 'nearest' });
+    if (keyboardSelection.current)
+      document.getElementById(`${id}-result-${active}`)?.scrollIntoView?.({ block: 'nearest' });
   }, [active, id]);
 
   return createPortal(
@@ -133,8 +197,8 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
         <div className="coin-search-screen">
           <header className="coin-search-heading">
             <div>
-              <h2 id={`${id}-title`}>Find a coin</h2>
-              <p id={`${id}-description`}>Search by ticker, name or contract address.</p>
+              <h2 id={`${id}-title`}>Search Poképad</h2>
+              <p id={`${id}-description`}>Find a coin or visit another trainer.</p>
             </div>
             <Pokeball size={32} />
           </header>
@@ -156,19 +220,20 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
               ref={input}
               id={`${id}-input`}
               type="search"
-              aria-label="Search coins by name, ticker or contract address"
+              aria-label="Search coins or trainers by name, ticker, contract or wallet address"
               role="combobox"
               aria-autocomplete="list"
               aria-expanded="true"
               aria-controls={`${id}-results`}
-              aria-activedescendant={results[active] ? `${id}-coin-${active}` : undefined}
-              placeholder="$TICKER or contract address"
+              aria-activedescendant={results[active] ? `${id}-result-${active}` : undefined}
+              placeholder="Name, $ticker, contract or wallet address"
               value={query}
               autoComplete="off"
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
               onChange={(event) => {
+                keyboardSelection.current = false;
                 setQuery(event.target.value);
                 setActive(0);
               }}
@@ -176,6 +241,7 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
                 if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
                   event.preventDefault();
                   if (results.length) {
+                    keyboardSelection.current = true;
                     setActive(
                       (index) =>
                         (index + (event.key === 'ArrowDown' ? 1 : -1) + results.length) %
@@ -203,27 +269,41 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
             )}
           </div>
           <div className="coin-search-results-heading">
-            <span>{term ? 'Search results' : 'Explore coins'}</span>
-            <small aria-live="polite">{term ? `${matches.length} found` : 'Around Kanto'}</small>
+            <span>{term ? 'Search results' : 'Explore Kanto'}</span>
+            <small aria-live="polite">
+              {trainerLoading
+                ? 'Finding trainers…'
+                : term
+                  ? `${matches.length + trainers.length} found`
+                  : 'Coins & trainers'}
+            </small>
           </div>
           <div
             className="coin-search-results"
             id={`${id}-results`}
             role="listbox"
-            aria-label="Coins"
+            aria-label="Coins and trainers"
           >
-            {results.map((coin, index) => (
+            {coinResults.length > 0 && (
+              <div className="search-result-group" role="presentation">
+                Coins
+              </div>
+            )}
+            {coinResults.map((coin, index) => (
               <button
                 key={coin.id}
-                id={`${id}-coin-${index}`}
+                id={`${id}-result-${index}`}
                 className={
                   'coin-search-result search-dialog-result' + (active === index ? ' is-active' : '')
                 }
                 role="option"
                 aria-selected={active === index}
                 tabIndex={-1}
-                onMouseEnter={() => setActive(index)}
-                onClick={() => select(coin)}
+                onMouseEnter={() => {
+                  keyboardSelection.current = false;
+                  setActive(index);
+                }}
+                onClick={() => select({ kind: 'coin', coin })}
               >
                 <CoinAvatar coin={coin} size={46} />
                 <span className="coin-search-result-name">
@@ -242,22 +322,86 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
                 </span>
               </button>
             ))}
+            {trainers.length > 0 && (
+              <div className="search-result-group" role="presentation">
+                Trainers
+              </div>
+            )}
+            {trainers.map((trainer, offset) => {
+              const index = coinResults.length + offset;
+              const partner = trainer.pokemon.find((pokemon) => pokemon.id === trainer.partnerId);
+              return (
+                <button
+                  key={trainer.wallet}
+                  id={`${id}-result-${index}`}
+                  className={
+                    'coin-search-result trainer-search-result search-dialog-result' +
+                    (active === index ? ' is-active' : '')
+                  }
+                  role="option"
+                  aria-selected={active === index}
+                  tabIndex={-1}
+                  onMouseEnter={() => {
+                    keyboardSelection.current = false;
+                    setActive(index);
+                  }}
+                  onClick={() => select({ kind: 'trainer', trainer })}
+                >
+                  <Avatar profile={trainer} size={46} />
+                  <span className="coin-search-result-name">
+                    <strong>
+                      {trainer.displayName}
+                      {trainer.wallet === own?.wallet && <em>You</em>}
+                    </strong>
+                    <small className="trainer-search-wallet">
+                      {trainer.wallet.slice(0, 8)}…{trainer.wallet.slice(-6)}
+                      {trainer.demo && trainer.wallet !== own?.wallet && (
+                        <span>Sample trainer</span>
+                      )}
+                    </small>
+                  </span>
+                  {partner && (
+                    <span className="trainer-search-partner">
+                      <PokemonArt
+                        id={partner.speciesId}
+                        shiny={partner.shiny}
+                        animated={false}
+                        frameFill={88}
+                      />
+                    </span>
+                  )}
+                  <span className="coin-search-result-arrow">
+                    <Icon name="ArrowRight" size={18} />
+                  </span>
+                </button>
+              );
+            })}
+            {trainerError && (
+              <p className="trainer-search-error" role="status">
+                {trainerError}
+              </p>
+            )}
+            {!results.length && (
+              <div className="coin-search-empty" role="status">
+                <Pokeball size={48} />
+                <h3>{trainerLoading ? 'Looking for a trainer…' : 'No matches found'}</h3>
+                <p>
+                  {trainerDirectory.mode === 'demo'
+                    ? 'Try a coin, your wallet, or a sample trainer such as Leaf. The demo directory only includes these profiles.'
+                    : 'Try a different name, ticker, contract address or registered trainer wallet.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setQuery('');
+                    setActive(0);
+                    input.current?.focus();
+                  }}
+                >
+                  Explore coins & trainers
+                </button>
+              </div>
+            )}
           </div>
-          {!results.length && (
-            <div className="coin-search-empty" role="status">
-              <Pokeball size={48} />
-              <h3>No coins found</h3>
-              <p>Try a different ticker, or paste the full contract address.</p>
-              <button
-                onClick={() => {
-                  setQuery('');
-                  input.current?.focus();
-                }}
-              >
-                Explore coins
-              </button>
-            </div>
-          )}
         </div>
         <footer className="coin-search-footer">
           <span>
@@ -265,7 +409,7 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
             <kbd>↓</kbd> Browse
           </span>
           <span>
-            <kbd>↵</kbd> Open coin
+            <kbd>↵</kbd> Open result
           </span>
           <span>
             <kbd>esc</kbd> Close

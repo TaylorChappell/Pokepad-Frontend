@@ -1,4 +1,4 @@
-/* Coin studio: a focused launch flow, one decision at a time. */
+/* A focused launch flow, one decision at a time. */
 .creation-desk {
   max-width: 1160px;
   margin: auto;
@@ -594,6 +594,27 @@
   width: 185px;
   height: 185px;
   filter: drop-shadow(0 9px 5px #23364d16);
+}
+/* Shiny sprites retain their original palette while moving gently in the wizard. */
+.creation-desk .pokemon-art.shiny-art {
+  animation: launch-shiny-idle 2.8s ease-in-out infinite;
+}
+@keyframes launch-shiny-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .creation-desk .pokemon-art.shiny-art {
+    animation: none;
+  }
+}
+[data-motion='reduced'] .creation-desk .pokemon-art.shiny-art {
+  animation: none;
 }
 .creation-preview-identity {
   display: flex;

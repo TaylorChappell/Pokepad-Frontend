@@ -1,0 +1,88 @@
+.pokeball,
+.pokeball-icon {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+.type-chip.type-Electric,
+.type-chip.type-electric {
+  color: #564409;
+  border-color: #ebc52e;
+  background: #ffdf4f;
+  box-shadow: inset 0 1px 0 #fff4b3;
+}
+.coin-avatar .coin-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  image-rendering: auto;
+}
+.coin-monogram {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #31465a;
+  font:
+    900 15px/1 Nunito,
+    sans-serif;
+  letter-spacing: -1px;
+}
+.search-trigger {
+  background: #e8675f;
+  border-color: #cf554e;
+  color: #fff9ef;
+  box-shadow:
+    inset 0 1px 0 #ffffff50,
+    0 2px 0 #bf4c46;
+  border-radius: 13px 13px 16px 13px;
+}
+.search-trigger:hover {
+  background: #ec746a;
+  border-color: #cf554e;
+}
+.search-trigger kbd {
+  color: #ffe9e4;
+}
+.search-trigger .search-trigger-lens {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 2px solid #fff5df;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 25%, #e5faff 0 12%, #75d2eb 18%, #3b95c5 80%);
+  box-shadow: 0 1px 0 #9f3f3630;
+}
+.search-trigger-lens i {
+  display: block;
+  width: 5px;
+  height: 5px;
+  margin: -5px 0 0 -5px;
+  background: #fff8;
+  border-radius: 50%;
+}
+.account-button .trainer-portrait {
+  border-radius: 6px;
+}
+@media (max-width: 350px) {
+  .topbar {
+    padding-inline: 8px;
+    gap: 6px;
+  }
+  .brand {
+    gap: 4px;
+  }
+  .brand > .pokemon-wordmark {
+    font-size: 20px;
+  }
+  .brand .pokepad-logo {
+    width: 22px;
+    height: 27px;
+  }
+  .mobile-menu {
+    width: 24px;
+  }
+}

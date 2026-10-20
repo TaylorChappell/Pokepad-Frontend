@@ -2,6 +2,7 @@ import type { Action, AppSnapshot, OwnedPokemon, Reward, Profile } from '../type
 import { createInitialState } from '../data/demo';
 import { applyAction, STORAGE_KEY } from '../state/model';
 import { getPokemonHealth } from '../data/stats';
+import { decorateDemoCoins } from '../data/coin-presentation';
 export interface PokepadApi {
   mode: 'demo' | 'live';
   load(): Promise<AppSnapshot>;
@@ -72,7 +73,7 @@ const readLocal = (): AppSnapshot => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const migrated = migrateSnapshot(JSON.parse(raw));
-      if (migrated) return migrated;
+      if (migrated) return { ...migrated, coins: decorateDemoCoins(migrated.coins) };
     }
   } catch {
     /* Recover from corrupt or inaccessible local storage. */

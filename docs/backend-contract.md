@@ -1,4 +1,4 @@
-# Backend integration boundary · v0.3
+# Backend integration boundary · interface v6
 
 The static frontend deploys to GitHub Pages using hash routes. The backend belongs in a separate repository and can deploy to Railway. Production balances, funding, movement, progression, random outcomes, and settlement must be server-authoritative. This package implements none of those backend services.
 
@@ -17,16 +17,42 @@ src/types.ts is a view-model contract, not a database or ledger schema. Return o
 
 ## Proposed endpoints
 
-| Endpoint               | Request                                  | Response                               |
-| ---------------------- | ---------------------------------------- | -------------------------------------- |
-| GET /v1/bootstrap      | Authenticated session                    | AppSnapshot                            |
-| POST /v1/actions       | Permitted Action; Idempotency-Key header | Updated AppSnapshot                    |
-| GET /v1/auth/challenge | Wallet and origin                        | Expiring single-use signing challenge  |
-| POST /v1/auth/verify   | Signed challenge                         | Session cookie and account identity    |
-| POST /v1/auth/logout   | Session                                  | Clears session                         |
-| GET /v1/events         | Authenticated event stream               | Reward, notification and battle events |
+| Endpoint                 | Request                                  | Response                               |
+| ------------------------ | ---------------------------------------- | -------------------------------------- |
+| GET /v1/bootstrap        | Authenticated session                    | AppSnapshot                            |
+| POST /v1/actions         | Permitted Action; Idempotency-Key header | Updated AppSnapshot                    |
+| GET /v1/trainers         | query string                             | { trainers: PublicTrainer[] }          |
+| GET /v1/trainers/:wallet | Exact wallet address                     | { trainer: PublicTrainer }, or 404     |
+| GET /v1/auth/challenge   | Wallet and origin                        | Expiring single-use signing challenge  |
+| POST /v1/auth/verify     | Signed challenge                         | Session cookie and account identity    |
+| POST /v1/auth/logout     | Session                                  | Clears session                         |
+| GET /v1/events           | Authenticated event stream               | Reward, notification and battle events |
 
-Only the first two have client adapters. Wallet signing and live event subscription remain future work. Errors should use non-2xx JSON with a user-safe message and stable machine-readable code.
+Bootstrap, actions, and the two public trainer routes have client adapters. Wallet signing and live event subscription remain future work. Errors should use non-2xx JSON with a user-safe message and stable machine-readable code.
+
+## Market quotes, launch age and watchlists
+
+`Coin.marketCap` and `Coin.volume` retain their existing SOL units. `Coin.marketCapUsd?: number` and `Coin.volumeUsd?: number` are independent USD display quotes. Supply finite values from the market-data service; do not reinterpret the SOL fields as dollars. Coin cards use each available USD quote or an explicitly labelled SOL fallback. `Coin.launchedAt?: number` is the original launch timestamp in Unix milliseconds, not the time of the latest fetch. Coins without a timestamp show unavailable age; new local drafts receive the current time.
+
+`src/data/coin-presentation.ts` decorates only initial demo data and migrated local saves. It uses the fixed illustrative `DEMO_SOL_USD = 150` to fill absent USD fields, supplies fixture ages for known sample coins, and supplies their separate token artwork. This is not a price oracle. The HTTP adapter does not decorate live responses. New local coin drafts have zero SOL/USD market figures and an empty reward pool.
+
+Watchlists are local preferences in `pokepad-watchlist-v1:<wallet>`, storing coin IDs and responding to browser storage events. They do not buy tokens, update the account snapshot, or submit an API action. A future synchronized watchlist needs its own authenticated endpoint; this version does not imply cross-device persistence.
+
+## Public trainer directory
+
+`src/services/trainers.ts` provides `search(query, own?, signal?)` and `get(wallet, own?, signal?)`, selected with the same `VITE_API_BASE_URL`. Search requests use `GET /v1/trainers?query=<encoded text>`; direct profile requests use `GET /v1/trainers/<encoded wallet>`. Requests include credentials, support cancellation, and time out after 12 seconds. Remote searches start at two trimmed characters. The client combines a matching current-account profile with returned results, removes its duplicate, and displays at most eight.
+
+Return the `PublicTrainer` view defined in that service: wallet, displayName, character, accessoryColor, optional partnerId, pokemon, discovered, badges, and optional supportedGym. Each public Pokémon exposes only its instance ID, species ID, level, shiny variant, and current value in SOL. A direct lookup must return the requested wallet exactly; 404 means no profile. Return only information approved for public display, not the private `AppSnapshot`, unpublished rewards, or balances. The backend owns registration, wallet identity, visibility policy, and search rate limits.
+
+Without an API origin, the directory searches the current demo account and two named fixture trainers. Arbitrary blockchain addresses are not automatically indexed. Errors from a configured API are shown rather than replaced with sample trainers. The public route is `#/trainer/<wallet>`.
+
+## Analytics and community activity
+
+`src/pages/Analytics.tsx` derives its totals from the coins in `AppSnapshot`: combined market cap, reported volume, active-coin count, free reward pools, and reward-mode counts. These cover the available snapshot, not a complete platform ledger or a historical time series. Volume is the snapshot's reported amount; the current contract has no explicit measurement-window field. Aggregate market figures use USD only if every returned coin has both finite USD quote fields; otherwise both totals consistently use SOL. Free reward-pool totals include `Coin.vault` only and exclude outstanding Pokémon values and evolution allocations.
+
+The account feed maps `AppSnapshot.activity` to display events. A separate, explicitly labelled community preview contains fixed examples of hatches, pack openings, marketplace purchases, evolutions, and launches. These examples are never added to metrics and do not represent settled transactions. The live adapter defaults to account activity, although the labelled example view remains available.
+
+There is no analytics endpoint or event subscription wired into this revision. A production service should supply a dedicated aggregate response with coverage, measurement windows, quote currency and timestamp, plus a paginated public event feed or stream. Events need stable IDs, server timestamps, explicit event kinds, public trainer identity, coin/instance references, outcome visibility, and settlement status. Send only completed public reveals and confirmed purchases to that feed; keep unopened outcomes and private account events private. Replace the example provider without mixing fixtures into live totals.
 
 ## Actions represented by the frontend
 
@@ -98,9 +124,11 @@ pokemon.declineMove permanently resolves the opportunity and suppresses later of
 
 coin.create accepts name, ticker, description, mode, optional pokemonInstanceId, image, and socials. If inventory contains Pokémon, the selected instance must be owned, unlisted, and unlocked. Trainer fallback is permitted only when inventory is empty, not when all owned Pokémon happen to be unavailable.
 
-The launch Pokémon and coin image are independent. Demo uploads accept PNG/JPEG/WebP/GIF data URLs up to approximately 2 MiB. Social links support website, X, Telegram, and Discord with complete http/https URLs and no embedded credentials. Production should validate and store media through its own upload pipeline; never use an unrestricted remote URL fetch to process user content.
+The ticker input preserves case, printable punctuation, and internal spaces. It accepts 1–10 characters using the browser's input-length convention, requires non-whitespace content, and rejects ASCII control characters. Submission trims surrounding whitespace and does not uppercase the result. Duplicate tickers are allowed: coin IDs and contract addresses identify coins. The ten-character input limit matches the public [Pump creation form](https://pump.fun/create) inspected on 20 October 2026; this does not establish a universal Solana metadata byte limit. The future token-creation service must validate its chosen mint/metadata program's encoded limits and return any error before signing, without silently rewriting the ticker.
 
-Created coins are local drafts with an empty reward pool, not deployed tokens. Trainer-launched coins use launchKind=trainer, pokemonId=0, and a trainer appearance snapshot. Display uploaded art first, otherwise the appropriate Pokémon or trainer.
+The launch Pokémon and coin image are independent. The coin snapshots the selected species and shiny appearance in `pokemonId` and `pokemonShiny`, so its mascot matches the chosen instance. Demo uploads accept PNG/JPEG/WebP/GIF data URLs up to approximately 2 MiB. Social links support website, X, Telegram, and Discord with complete http/https URLs and no embedded credentials. Production should validate and store media through its own upload pipeline; never use an unrestricted remote URL fetch to process user content.
+
+Created coins are local drafts with an empty reward pool, not deployed tokens. Trainer-launched coins use launchKind=trainer, pokemonId=0, and a trainer appearance snapshot. The token avatar uses uploaded art or a neutral monogram; the Pokémon or trainer remains a separate mascot presentation. Mascot previews animate during the launch wizard, subject to reduced-motion preferences.
 
 Profile.artStyle is pixel or drawn, defaulting to pixel. Character, accessory colour, and display name are persisted preferences. The sidebar partner remains a pixel sprite. The account editor previews preferences immediately and sends debounced `profile.update` actions automatically; the API must support repeated idempotent preference updates. The five-step launch wizard still submits one final `coin.create` action. These presentation changes do not add token deployment or financial authority.
 
@@ -122,7 +150,9 @@ Production needs server-owned health, status, nature/IV/EV policy, progression, 
 
 ## Battles
 
-The local practice engine uses simplified damage, a curated move set, HP, PP, switching, and results. It is not a complete Gen 1 battle simulator, and its result must never authorize settlement.
+`src/battle/engine.ts` runs local offline practice with one to three Pokémon, a curated move set, type effectiveness, same-type attack bonuses, physical/special damage, speed/priority order, PP, switching, selected status effects, stat stages, healing, and move-specific trade-offs. Easy, Medium, Hard, and Master generate different-species rival teams targeting approximately 0.76×, 1×, 1.2×, and 1.42× the player's team strength. Level and practice stat scaling support those targets; stronger bots also make more tactical move and switching choices. These are demo balancing settings, not the original cartridge's complete rules.
+
+Battle state and the practice win streak are local to the screen. Offline matches do not dispatch ownership or balance changes, issue rewards, charge stakes, or persist damage. The Online tab exposes friendly, SOL, token, and Pokémon setup controls, but its matchmaking button is disabled and it sends no matchmaking request or escrow instruction. No local battle result may authorize a payout or transfer.
 
 The backend needs full rules and learnsets, eligible-instance checks, match formats, timeouts, disconnect policy, sequencing, and finality. In Pokémon wagers, all selected losing instances transfer together, including their attached funding records. Unevolved starter instances are excluded by this demo policy.
 

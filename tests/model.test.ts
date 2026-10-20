@@ -384,6 +384,7 @@ test('starter eligibility is strictly above 1% and future value is funded', () =
 });
 test('coin launches require an owned eligible instance, support an independent image and safe social links', () => {
   const s = createInitialState(now);
+  s.pokemon.find((pokemon) => pokemon.id === 'blastoise')!.shiny = true;
   const action: Action = {
     type: 'coin.create',
     name: 'Squirtle Club',
@@ -397,10 +398,14 @@ test('coin launches require an owned eligible instance, support an independent i
   const next = applyAction(s, action, now),
     coin = next.coins[0];
   assert.equal(coin.pokemonId, 9);
+  assert.equal(coin.pokemonShiny, true);
   assert.equal(coin.launchPokemonId, 'blastoise');
   assert.equal(coin.image, action.image);
   assert.equal(coin.socials?.website, 'https://example.com/');
   assert.equal(coin.vault, 0);
+  assert.equal(coin.launchedAt, now);
+  assert.equal(coin.marketCapUsd, 0);
+  assert.equal(coin.volumeUsd, 0);
   assert.ok(gymRankings(next).some((g) => g.coin.id === coin.id && g.score === 0));
   assert.throws(
     () => applyAction(s, { ...action, pokemonInstanceId: 'not-owned' }, now),
@@ -425,6 +430,27 @@ test('coin launches require an owned eligible instance, support an independent i
   assert.equal(trainer.launchKind, 'trainer');
   assert.equal(trainer.pokemonId, 0);
   assert.equal(trainer.trainer?.character, s.profile.character);
+});
+test('coin tickers preserve case and spaces, allow repeated symbols, and reject invalid text', () => {
+  const initial = createInitialState(now);
+  const action: Action = {
+    type: 'coin.create',
+    name: 'Moon Club',
+    ticker: 'moon club',
+    description: '',
+    pokemonInstanceId: 'blastoise',
+    mode: 'Packs',
+  };
+  for (const ticker of ['moon club', 'MiXeD Case', 'x', 'poke', '$moon!', 'éclair']) {
+    const created = applyAction(initial, { ...action, ticker }, now).coins[0];
+    assert.equal(created.ticker, ticker);
+  }
+  const duplicate = applyAction(initial, { ...action, ticker: initial.coins[0].ticker }, now);
+  assert.equal(duplicate.coins[0].ticker, initial.coins[0].ticker);
+  assert.notEqual(duplicate.coins[0].id, initial.coins[0].id);
+  for (const ticker of ['', '   ', 'abcdefghijk', 'bad\nname', 'null\u0000']) {
+    assert.throws(() => applyAction(initial, { ...action, ticker }, now), /1–10 printable/);
+  }
 });
 test('profile defaults to pixel style and legacy saves migrate without minting evolution backing', () => {
   let s = createInitialState(now);

@@ -6,6 +6,7 @@ import { createInitialState } from '../src/data/demo';
 import { STORAGE_KEY } from '../src/state/model';
 import { pokemonById } from '../src/data/pokemon';
 import { getPokemonHealth } from '../src/data/stats';
+import { DEMO_TRAINERS } from '../src/services/trainers';
 import type { AppSnapshot } from '../src/types';
 
 async function mountApp(path = '/discover', prepare?: (state: AppSnapshot) => void) {
@@ -120,7 +121,7 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     assert.ok(document.querySelector('.equipped-mini .pokemon-art.normalized-art'));
     assert.equal(document.querySelector('.equipped-mini .pokemon-headshot'), null);
     await click(document.querySelector('.search-trigger'));
-    await fill('[aria-label="Search coins by name, ticker or contract address"]', 'GENG');
+    await fill('.coin-search-field input', 'GENG');
     assert.equal(document.querySelectorAll('.search-dialog-result').length, 1);
     await click(document.querySelector('[aria-label="Close search"]'));
     await app.until(() => !document.querySelector('.coin-search-dialog'), 'Search closes');
@@ -131,6 +132,8 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
 
     for (const path of [
       '/explore',
+      '/analytics',
+      '/trainer/' + DEMO_TRAINERS[0].wallet,
       '/coin/char',
       '/create',
       '/portfolio',
@@ -243,37 +246,107 @@ test('coin search supports keyboard access, exact addresses, empty results and f
   }
 });
 
-test('the animated handbook has three pages and the sidebar Pokémon reacts to petting', async () => {
+test('wallet search opens a registered trainer and unknown wallets remain not found', async () => {
+  const app = await mountApp();
+  try {
+    const trainer = DEMO_TRAINERS[0];
+    await app.click(app.document.querySelector('.search-trigger'));
+    await app.fill('.coin-search-field input', trainer.wallet);
+    assert.equal(app.document.querySelectorAll('.trainer-search-result').length, 1);
+    await app.click(app.document.querySelector('.trainer-search-result'));
+    await app.until(
+      () => !!app.document.querySelector('.trainer-public-header'),
+      'Search navigates to the trainer profile',
+    );
+    assert.equal(app.dom.window.location.hash, '#/trainer/' + trainer.wallet);
+    assert.equal(
+      app.document.querySelector('.trainer-public-identity h1')?.textContent,
+      trainer.displayName,
+    );
+    assert.equal(
+      app.document.querySelectorAll('.trainer-public-pokemon').length,
+      trainer.pokemon.length,
+    );
+    await app.go('/trainer/11111111111111111111111111111111');
+    await app.until(
+      () => app.text().includes('Trainer not found'),
+      'Unknown wallets do not create a profile',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('coin watchlists, shiny PC filtering, and analytics categories stay usable together', async () => {
+  const app = await mountApp();
+  const { document, click, go } = app;
+  try {
+    const card = document.querySelector('.market-coin-card[data-coin-id="char"]')!;
+    assert.ok(card.querySelector('.coin-avatar .coin-image'));
+    assert.equal(card.querySelector('.coin-avatar .pokemon-art'), null);
+    assert.ok(card.querySelector('.market-mascot-stage .pokemon-art'));
+    assert.match(card.querySelector('.market-cap-figure')?.textContent || '', /Market cap\$/);
+    assert.doesNotMatch(card.querySelector('.market-cap-figure')?.textContent || '', /SOL/);
+    await click(card.querySelector('.coin-watch-button'));
+    assert.equal(card.querySelector('.coin-watch-button')?.getAttribute('aria-pressed'), 'true');
+    await click(document.querySelector('.watchlist-tab'));
+    assert.equal(document.querySelectorAll('.market-coin-card').length, 1);
+    assert.equal(document.querySelector('.market-coin-card')?.getAttribute('data-coin-id'), 'char');
+    await go('/pokemon');
+    await click(app.button('Shiny'));
+    const shinyCards = document.querySelectorAll('.pc-slot');
+    assert.equal(shinyCards.length, app.saved().pokemon.filter((pokemon) => pokemon.shiny).length);
+    assert.ok(shinyCards.length > 0);
+    assert.ok([...shinyCards].every((item) => item.getAttribute('data-variant') === 'shiny'));
+    await go('/analytics');
+    await click(app.button('Hatches', document.querySelector('.analytics-event-filters')!));
+    assert.ok(document.querySelectorAll('.analytics-event').length > 0);
+    assert.ok(
+      [...document.querySelectorAll('.analytics-event')].every((item) =>
+        item.classList.contains('event-egg'),
+      ),
+    );
+    await click(app.button('Your activity'));
+    assert.match(
+      document.querySelector('.analytics-feed-note')?.textContent || '',
+      /YOUR DEMO ACCOUNT/,
+    );
+    await go('/discover');
+    await click(document.querySelector('.watchlist-tab'));
+    assert.equal(
+      document.querySelectorAll('.market-coin-card').length,
+      1,
+      'Watchlist survives navigation',
+    );
+    await click(document.querySelector('.coin-watch-button'));
+    assert.equal(document.querySelectorAll('.market-coin-card').length, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('the how-to supports categories and search, and the sidebar Pokémon reacts to petting', async () => {
   const app = await mountApp('/guide');
   const { document, click } = app;
   try {
-    assert.equal(document.querySelectorAll('.manual-page-tabs button').length, 3);
-    assert.match(document.querySelector('.manual-writing h2')?.textContent || '', /Choose a coin/);
-    assert.equal(
-      document.querySelector<HTMLButtonElement>('[aria-label="Previous handbook page"]')?.disabled,
-      true,
-    );
-    await click(document.querySelector('[aria-label="Next handbook page"]'));
-    assert.match(document.querySelector('.manual-writing h2')?.textContent || '', /Hatch eggs/);
-    assert.equal(
-      document.querySelector('[aria-label="Handbook page 2"]')?.getAttribute('aria-current'),
-      'page',
-    );
-    await act(async () => {
-      document.body.dispatchEvent(
-        new app.dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
-      );
-    });
+    assert.equal(document.querySelectorAll('.howto-topic-button').length, 9);
+    await click(app.button('Offline & online battles'));
+    assert.match(document.querySelector('.howto-article')?.textContent || '', /Master/);
     assert.match(
-      document.querySelector('.manual-writing h2')?.textContent || '',
-      /Train, evolve, and battle/,
+      document.querySelector('.howto-article')?.textContent || '',
+      /Offline is always for fun/,
     );
-    assert.equal(
-      document.querySelector<HTMLButtonElement>('[aria-label="Next handbook page"]')?.disabled,
-      true,
+    assert.equal(app.dom.window.location.hash, '#/guide?topic=battles');
+    await app.fill('[aria-label="Search the how-to"]', '50 / 50');
+    assert.equal(document.querySelectorAll('.howto-topic-button').length, 1);
+    assert.match(
+      document.querySelector('.howto-article')?.textContent || '',
+      /creator fees equally/,
     );
-    await click(document.querySelector('[aria-label="Handbook page 1"]'));
-    assert.match(document.querySelector('.manual-writing h2')?.textContent || '', /Choose a coin/);
+    await app.fill('[aria-label="Search the how-to"]', 'unfindable-topic');
+    assert.ok(document.querySelector('.howto-no-results'));
+    await click(app.button('Show all topics'));
+    assert.equal(document.querySelectorAll('.howto-topic-button').length, 9);
     await click(document.querySelector('[aria-label="Pet Charmander"]'));
     assert.ok(document.querySelector('.sidebar-buddy.mood-petted'));
     assert.match(
@@ -455,9 +528,14 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
       'A name shorter than three characters cannot advance',
     );
     await fill('#coin-name', 'Moonstone Club');
-    await fill('#coin-ticker', 'POKE');
-    assert.equal(app.button('Next: Pokémon').disabled, true, 'Existing tickers cannot advance');
-    await fill('#coin-ticker', 'MOON');
+    await fill('#coin-ticker', '   ');
+    assert.equal(app.button('Next: Pokémon').disabled, true, 'A blank ticker cannot advance');
+    await fill('#coin-ticker', 'moon club');
+    assert.equal(
+      app.button('Next: Pokémon').disabled,
+      false,
+      'Lowercase and internal spaces are accepted',
+    );
     // Stub image decoding only. FileReader and wizard state are exercised normally.
     Object.defineProperty(globalThis, 'Image', {
       configurable: true,
@@ -499,7 +577,7 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
     await click(choices.find((button) => button.textContent?.includes('Eevee'))!);
     await click(app.button('Back'));
     assert.equal(document.querySelector<HTMLInputElement>('#coin-name')?.value, 'Moonstone Club');
-    assert.equal(document.querySelector<HTMLInputElement>('#coin-ticker')?.value, 'MOON');
+    assert.equal(document.querySelector<HTMLInputElement>('#coin-ticker')?.value, 'moon club');
     assert.ok(document.querySelector('img[alt="Your coin image"]'));
     await click(app.button('Next: Pokémon'));
     assert.match(
@@ -535,7 +613,7 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
     await click(app.button('Review coin'));
     await click(app.button('Create coin draft'));
     const saved = app.saved();
-    const coin = saved.coins.find((coin) => coin.ticker === 'MOON')!;
+    const coin = saved.coins.find((coin) => coin.ticker === 'moon club')!;
     assert.ok(coin);
     assert.equal(coin.launchKind, 'pokemon');
     assert.equal(coin.launchPokemonId, 'eevee');

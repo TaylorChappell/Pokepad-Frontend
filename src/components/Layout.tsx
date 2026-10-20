@@ -7,14 +7,16 @@ import { SidebarBuddy } from './SidebarBuddy';
 import { SearchDialog } from './SearchDialog';
 const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/discover', label: 'Discover', icon: 'Compass' },
+  { path: '/analytics', label: 'Analytics', icon: 'Activity' },
   { path: '/create', label: 'Create coin', icon: 'Plus' },
   { path: '/portfolio', label: 'My portfolio', icon: 'Wallet' },
   { path: '/rewards', label: 'Rewards', icon: 'Gift' },
-  { path: '/pokemon', label: 'My PC', icon: 'Heart', group: 'TRAINER' },
+  { path: '/pokemon', label: 'My PC', icon: 'Pokeball', group: 'TRAINER' },
   { path: '/pokedex', label: 'Pokédex', icon: 'BookOpen' },
   { path: '/marketplace', label: 'Marketplace', icon: 'Grid2X2' },
   { path: '/battles', label: 'Battle arena', icon: 'Swords', group: 'LEAGUE' },
   { path: '/gyms', label: 'Gyms', icon: 'Shield' },
+  { path: '/guide', label: 'How-to', icon: 'BookOpen' },
 ];
 export function Layout({ path, children }: { path: string; children: ReactNode }) {
   const { state, act, mode } = useApp(),
@@ -86,7 +88,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
         <div className="topbar-actions">
           <button
             className="search-trigger"
-            aria-label="Search coins"
+            aria-label="Search coins and trainers"
             aria-haspopup="dialog"
             aria-expanded={searchOpen}
             onClick={() => {
@@ -95,8 +97,10 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               setSearchOpen(true);
             }}
           >
-            <Icon name="Search" size={18} />
-            <span>Search coins</span>
+            <span className="search-trigger-lens" aria-hidden="true">
+              <i />
+            </span>
+            <span>Search Poképad</span>
             <kbd>⌘ / Ctrl K</kbd>
           </button>
           <button
@@ -124,7 +128,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             }}
           >
             <span className="avatar-wrap">
-              <Avatar profile={state.profile} size={44} />
+              <Avatar profile={state.profile} size={54} />
               {equipped && (
                 <span className="equipped-mini">
                   <PokemonArt

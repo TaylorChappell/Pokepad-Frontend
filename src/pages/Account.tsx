@@ -48,17 +48,15 @@ export function PortfolioPage() {
           <strong>
             {sol(value)} <small>SOL</small>
           </strong>
-          <small>Illustrative token prices</small>
         </div>
         <div className="stat-card pale-green">
           <span>
-            <Icon name="Heart" />
+            <Icon name="Pokeball" />
             Pokémon value
           </span>
           <strong>
             {sol(collectionValue(state))} <small>SOL</small>
           </strong>
-          <small>{state.pokemon.length} Pokémon in your inventory</small>
         </div>
         <div className="stat-card pale-yellow">
           <span>
@@ -68,7 +66,6 @@ export function PortfolioPage() {
           <strong>
             {Math.max(0, ...held.map((c) => c.holdingDays))} <small>days</small>
           </strong>
-          <small>Without selling</small>
         </div>
       </div>
       <div className="section-heading">

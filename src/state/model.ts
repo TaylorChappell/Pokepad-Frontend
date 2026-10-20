@@ -16,6 +16,10 @@ export function shortWallet(wallet: string) {
 export function profileName(s: AppSnapshot) {
   return s.profile.displayName.trim() || shortWallet(s.profile.wallet);
 }
+/** Pump's creation form limits ticker text to ten characters without forcing uppercase. */
+export function isValidCoinTicker(value: string) {
+  return value.trim().length > 0 && value.length <= 10 && !/[\u0000-\u001f\u007f]/.test(value);
+}
 export function collectionValue(s: AppSnapshot) {
   return fromLamports(s.pokemon.reduce((sum, p) => sum + lamports(p.backing), 0));
 }
@@ -356,14 +360,12 @@ export function applyAction(
   }
   if (action.type === 'coin.create') {
     const name = action.name.trim(),
-      ticker = action.ticker.toUpperCase();
-    if (name.length < 3 || name.length > 32 || !/^[A-Z0-9]{2,10}$/.test(ticker))
-      throw new Error('Use a name of 3–32 characters and a ticker of 2–10 letters or numbers.');
+      ticker = action.ticker.trim();
+    if (name.length < 3 || name.length > 32 || !isValidCoinTicker(action.ticker))
+      throw new Error('Use a name of 3–32 characters and a ticker of 1–10 printable characters.');
     if (action.description.length > 280)
       throw new Error('Keep the description under 281 characters.');
     if (!['Eggs', 'Packs', 'Mixed'].includes(action.mode)) throw new Error('Choose a reward mode.');
-    if (s.coins.some((c) => c.ticker === ticker))
-      throw new Error('That ticker is already used in this preview.');
     let launchPokemon: OwnedPokemon | undefined;
     if (s.pokemon.length) {
       if (!action.pokemonInstanceId) throw new Error('Choose a Pokémon from your inventory.');
@@ -386,6 +388,7 @@ export function applyAction(
       ticker,
       ca: 'Demo' + crypto.randomUUID().replaceAll('-', ''),
       pokemonId: launchPokemon?.speciesId || 0,
+      pokemonShiny: !!launchPokemon?.shiny,
       launchKind: launchPokemon ? 'pokemon' : 'trainer',
       launchPokemonId: launchPokemon?.id,
       trainer: { character: s.profile.character, accessoryColor: s.profile.accessoryColor },
@@ -396,7 +399,10 @@ export function applyAction(
       price: 0,
       change: 0,
       marketCap: 0,
+      marketCapUsd: 0,
       volume: 0,
+      volumeUsd: 0,
+      launchedAt: now,
       totalSupply: 1000000000,
       holders: 0,
       vault: 0,

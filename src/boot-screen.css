@@ -11,38 +11,6 @@
 .boot-stage {
   isolation: isolate;
 }
-.boot-orbit {
-  position: absolute;
-  inset: 18px;
-  border: 1px solid #e3e8ef;
-  border-radius: 50%;
-  animation: boot-orbit 5s linear infinite;
-}
-.boot-orbit::after {
-  content: '';
-  position: absolute;
-  left: 22px;
-  top: 22px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #f0847b;
-  box-shadow: 0 0 0 5px #f0847b12;
-}
-.boot-orbit-outer {
-  inset: 0;
-  border-color: #e8ecf280;
-  animation-direction: reverse;
-  animation-duration: 8s;
-}
-.boot-orbit-outer::after {
-  left: 30px;
-  top: 26px;
-  width: 5px;
-  height: 5px;
-  background: #8da9cd;
-  box-shadow: 0 0 0 4px #8da9cd10;
-}
 .boot-ball {
   animation: boot-catch 1.8s cubic-bezier(0.45, 0, 0.3, 1) infinite;
   filter: drop-shadow(0 5px 0 #25354b08);
@@ -87,7 +55,6 @@
 }
 .boot-screen.is-stalled .boot-ball,
 .boot-screen.is-stalled .boot-ball-button,
-.boot-screen.is-stalled .boot-orbit,
 .boot-screen.is-stalled .boot-shadow {
   animation-play-state: paused;
 }
@@ -128,11 +95,6 @@
   58% {
     fill: #ffd576;
     stroke: #efa55c;
-  }
-}
-@keyframes boot-orbit {
-  to {
-    transform: rotate(360deg);
   }
 }
 @keyframes boot-shadow {
@@ -180,12 +142,6 @@
     width: 76px;
     height: 76px;
   }
-  .boot-orbit {
-    inset: 6px;
-  }
-  .boot-orbit-outer {
-    inset: 0;
-  }
   .boot-shadow {
     bottom: 12px;
     width: 54px;
@@ -202,7 +158,6 @@
   }
   .boot-ball,
   .boot-ball-button,
-  .boot-orbit,
   .boot-shadow {
     animation: none;
   }
@@ -213,7 +168,6 @@ html[data-motion='reduced'] .boot-content {
 }
 html[data-motion='reduced'] .boot-ball,
 html[data-motion='reduced'] .boot-ball-button,
-html[data-motion='reduced'] .boot-orbit,
 html[data-motion='reduced'] .boot-shadow {
   animation: none;
 }

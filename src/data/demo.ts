@@ -1,6 +1,7 @@
 import type { Coin, Gym, AppSnapshot, Profile, OwnedPokemon } from '../types';
 import { pokemonById } from './pokemon';
 import { getPokemonStats } from './stats';
+import { decorateDemoCoins } from './coin-presentation';
 export const COINS: Coin[] = [
   {
     id: 'poke',
@@ -403,7 +404,7 @@ export function createInitialState(now = Date.now()): AppSnapshot {
   return {
     version: 2,
     profile,
-    coins: structuredClone(COINS),
+    coins: decorateDemoCoins(structuredClone(COINS), now),
     pokemon,
     discovered: [
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 18, 19, 21, 25, 26, 35, 37, 39, 43, 52, 54, 58, 63, 66,
