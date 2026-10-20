@@ -1,0 +1,476 @@
+.coin-search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(24px, 11vh, 100px) 20px 24px;
+  background: #1e2d4059;
+  backdrop-filter: blur(9px);
+  animation: search-backdrop-in 180ms ease both;
+}
+.coin-search-dialog {
+  width: min(620px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #e7645c;
+  border: 1px solid #b74e49;
+  border-radius: 25px;
+  box-shadow:
+    0 28px 90px #15263838,
+    inset 0 1px 0 #ffffff65,
+    0 5px 0 #ba4944;
+  overflow: hidden;
+  animation: search-device-in 240ms cubic-bezier(0.18, 0.8, 0.25, 1) both;
+  transform-origin: top center;
+}
+.coin-search-device-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px 13px;
+  flex-shrink: 0;
+}
+.search-device-lights {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.search-device-lens {
+  width: 31px;
+  height: 31px;
+  margin-right: 4px;
+  border: 3px solid #fff3dd;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 32% 26%,
+    white 0 8%,
+    #b7eafa 12%,
+    #69bfe3 45%,
+    #3689b8 100%
+  );
+  box-shadow: 0 2px 0 #9b3c3633;
+}
+.search-device-lights > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffc076;
+  box-shadow: inset 0 1px 1px #ffffff70;
+}
+.search-device-lights > i:nth-last-child(2) {
+  background: #fae49a;
+}
+.search-device-lights > i:last-child {
+  background: #9cd1a1;
+}
+.coin-search-close {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  color: #fff8ed;
+  border-radius: 10px;
+  background: #b7433c35;
+  transition:
+    background 140ms,
+    transform 140ms;
+}
+.coin-search-close:hover {
+  background: #a43a344f;
+  transform: rotate(5deg);
+}
+.coin-search-screen {
+  padding: 24px 24px 12px;
+  margin: 0 9px;
+  background: #fffefa;
+  border: 1px solid #be514a;
+  border-radius: 17px;
+  box-shadow: inset 0 2px 5px #25354b05;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.coin-search-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 18px;
+  flex-shrink: 0;
+}
+.coin-search-heading h2 {
+  margin: 0 0 6px;
+  font:
+    900 23px/1.2 Nunito,
+    sans-serif;
+  letter-spacing: -0.5px;
+}
+.coin-search-heading p {
+  margin: 0;
+  font-size: 13px;
+  color: #7b8391;
+  line-height: 1.5;
+}
+.coin-search-heading > .pokeball {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+.coin-search-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 15px;
+  background: #f0f3ec;
+  border-radius: 13px;
+  color: #5a7b74;
+  box-shadow: inset 0 1px 3px #273c3010;
+  transition:
+    background 170ms,
+    box-shadow 170ms;
+  flex-shrink: 0;
+}
+.coin-search-field:focus-within {
+  background: #eaf1e7;
+  box-shadow: inset 0 0 0 1px #9aba9f45;
+}
+.coin-search-field > svg {
+  flex-shrink: 0;
+}
+.coin-search-field input,
+.coin-search-field input:focus,
+.coin-search-field input:focus-visible {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 54px;
+  padding: 0;
+  margin: 0;
+  color: #2b443b;
+  font:
+    750 15px Nunito,
+    sans-serif;
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.coin-search-field input::placeholder {
+  color: #89998f;
+  font-weight: 600;
+}
+.coin-search-field input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+.coin-search-clear {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  color: #718578;
+  border-radius: 8px;
+}
+.coin-search-clear:hover {
+  background: #d5e2d4;
+}
+.coin-search-results-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 21px 4px 10px;
+  flex-shrink: 0;
+}
+.coin-search-results-heading > span {
+  font-size: 12px;
+  font-weight: 850;
+  color: #657168;
+}
+.coin-search-results-heading > small {
+  font-size: 11px;
+  color: #9ba39a;
+}
+.coin-search-results {
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #d4ddd2 transparent;
+  padding: 2px;
+  overscroll-behavior: contain;
+}
+.coin-search-result {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  padding: 10px 11px;
+  margin-bottom: 4px;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition:
+    background 140ms,
+    border-color 140ms;
+}
+.coin-search-result:last-child {
+  margin-bottom: 0;
+}
+.coin-search-result.is-active {
+  background: #f5f0e4;
+  border-color: #eae1cd;
+}
+.coin-search-result .coin-avatar {
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+.coin-search-result-name {
+  flex: 1;
+  min-width: 0;
+}
+.coin-search-result-name > strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 850;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coin-search-result-name > small {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #859182;
+  margin-top: 4px;
+  font-weight: 800;
+}
+.coin-search-result-name > small > span {
+  color: #a0a69d;
+  font-weight: 650;
+  padding-left: 8px;
+  border-left: 1px solid #d9ded5;
+}
+.coin-search-result-detail {
+  text-align: right;
+  padding: 0 3px;
+}
+.coin-search-result-detail > strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 800;
+}
+.coin-search-result-detail > small {
+  display: block;
+  font-size: 10px;
+  color: #a0a69d;
+  margin-top: 2px;
+}
+.coin-search-result-arrow {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  color: #b5b9ae;
+  transition:
+    transform 140ms,
+    color 140ms;
+}
+.coin-search-result.is-active .coin-search-result-arrow {
+  color: #b16a48;
+  transform: translateX(2px);
+}
+.coin-search-empty {
+  padding: 25px 14px 35px;
+  text-align: center;
+}
+.coin-search-empty > .pokeball {
+  margin: 0 auto 12px;
+  opacity: 0.6;
+}
+.coin-search-empty h3 {
+  font-size: 17px;
+  margin: 0 0 7px;
+}
+.coin-search-empty p {
+  max-width: 290px;
+  margin: 0 auto 17px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.coin-search-empty > button {
+  font-size: 12px;
+  font-weight: 850;
+  color: #bc6051;
+  background: #fff0e5;
+  border-radius: 9px;
+  padding: 9px 14px;
+}
+.coin-search-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px 23px 18px;
+  color: #fff1e8;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+.coin-search-footer > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.coin-search-footer kbd {
+  background: #b4463b45;
+  border: 1px solid #ffffff25;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font:
+    10px Nunito,
+    sans-serif;
+  min-width: 15px;
+  text-align: center;
+}
+.search-device-speaker {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  transform: skew(-16deg);
+}
+.search-device-speaker > i {
+  width: 4px;
+  height: 19px;
+  border-radius: 3px;
+  background: #a8433b65;
+  box-shadow: 1px 0 #ffffff20;
+}
+.coin-search-backdrop.is-closing {
+  animation: search-backdrop-out 160ms ease both;
+  pointer-events: none;
+}
+.coin-search-backdrop.is-closing .coin-search-dialog {
+  animation: search-device-out 160ms ease both;
+}
+@keyframes search-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes search-backdrop-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes search-device-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.975);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes search-device-out {
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+  }
+}
+.coin-search-backdrop[data-reduced-motion='true'],
+.coin-search-backdrop[data-reduced-motion='true'] .coin-search-dialog {
+  animation: none;
+}
+@media (max-width: 600px) {
+  .coin-search-backdrop {
+    padding: max(12px, env(safe-area-inset-top)) 10px max(18px, env(safe-area-inset-bottom));
+    align-items: flex-start;
+  }
+  .coin-search-dialog {
+    border-radius: 21px;
+    max-height: 100%;
+  }
+  .coin-search-device-top {
+    padding: 11px 14px;
+  }
+  .coin-search-screen {
+    margin: 0 6px;
+    padding: 20px 13px 10px;
+    border-radius: 15px;
+  }
+  .coin-search-heading h2 {
+    font-size: 22px;
+  }
+  .coin-search-heading p {
+    max-width: 230px;
+    font-size: 12px;
+  }
+  .coin-search-field {
+    gap: 9px;
+    padding: 0 12px;
+  }
+  .coin-search-field input,
+  .coin-search-field input:focus,
+  .coin-search-field input:focus-visible {
+    font-size: 16px;
+  }
+  .coin-search-result {
+    gap: 10px;
+    padding: 9px 7px;
+  }
+  .coin-search-result-name > strong {
+    font-size: 13px;
+  }
+  .coin-search-result-detail {
+    display: none;
+  }
+  .coin-search-result-arrow {
+    width: 20px;
+  }
+  .coin-search-footer {
+    padding: 14px 18px 16px;
+    gap: 12px;
+  }
+}
+@media (max-height: 650px) and (min-width: 601px) {
+  .coin-search-backdrop {
+    padding-top: 18px;
+  }
+  .coin-search-device-top {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .coin-search-screen {
+    padding-top: 17px;
+  }
+  .coin-search-heading {
+    padding-bottom: 13px;
+  }
+  .coin-search-results-heading {
+    padding-top: 14px;
+  }
+  .coin-search-footer {
+    padding-top: 12px;
+    padding-bottom: 13px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coin-search-backdrop,
+  .coin-search-dialog {
+    animation: none !important;
+  }
+  .coin-search-dialog *,
+  .coin-search-dialog *::before {
+    transition: none !important;
+  }
+}

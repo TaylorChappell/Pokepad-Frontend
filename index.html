@@ -10,9 +10,138 @@
     />
     <link rel="icon" type="image/svg+xml" href="./pokepad.svg" />
     <title>POKéPAD · Pokémon Launchpad</title>
+    <style>
+      body {
+        margin: 0;
+      }
+      body.is-booting {
+        overflow: hidden;
+      }
+      .boot-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: grid;
+        place-items: center;
+        background: #f8f9fb;
+        color: #25354b;
+        font-family: Arial, sans-serif;
+      }
+      .boot-content {
+        padding: 24px;
+        text-align: center;
+      }
+      .boot-stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        width: 220px;
+        height: 220px;
+        margin: 0 auto;
+      }
+      .boot-ball {
+        position: relative;
+        z-index: 2;
+        width: 128px;
+        height: 128px;
+      }
+      .boot-brand {
+        margin: 16px 0 12px;
+        font-size: 28px;
+        letter-spacing: 2px;
+      }
+      .boot-status {
+        margin: 0;
+        color: #66748a;
+        font-size: 14px;
+      }
+      .boot-reload {
+        display: none;
+        margin: 20px auto 0;
+        padding: 12px 22px;
+        border: 0;
+        border-radius: 12px;
+        background: #e45b52;
+        color: white;
+        font:
+          700 14px Arial,
+          sans-serif;
+        cursor: pointer;
+      }
+      .boot-screen.is-stalled .boot-reload {
+        display: inline-flex;
+      }
+    </style>
   </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+  <body class="is-booting">
+    <div
+      id="boot-screen"
+      class="boot-screen"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading Poképad"
+    >
+      <div class="boot-content">
+        <div class="boot-stage" aria-hidden="true">
+          <div class="boot-orbit"></div>
+          <div class="boot-orbit boot-orbit-outer"></div>
+          <svg class="boot-ball" viewBox="0 0 128 128" fill="none">
+            <circle cx="64" cy="64" r="55" fill="#fffefa" stroke="#25354b" stroke-width="5" />
+            <path d="M9 64a55 55 0 0 1 110 0Z" fill="#ef6359" />
+            <path
+              d="M25 41c7-13 18-19 32-21"
+              stroke="#ffb3a5"
+              stroke-width="7"
+              stroke-linecap="round"
+            />
+            <circle cx="64" cy="64" r="55" stroke="#25354b" stroke-width="5" />
+            <path d="M10 64h108" stroke="#25354b" stroke-width="7" />
+            <circle cx="64" cy="64" r="18" fill="#fffefa" stroke="#25354b" stroke-width="6" />
+            <circle
+              class="boot-ball-button"
+              cx="64"
+              cy="64"
+              r="9"
+              fill="#eef1f6"
+              stroke="#cbd3df"
+              stroke-width="2"
+            />
+          </svg>
+          <div class="boot-shadow"></div>
+        </div>
+        <h1 class="boot-brand">POKÉPAD</h1>
+        <p id="boot-status" class="boot-status">Loading your trainer…</p>
+        <button class="boot-reload" type="button" onclick="window.location.reload()">
+          Reload Poképad
+        </button>
+        <noscript><p>Enable JavaScript to open Poképad.</p></noscript>
+      </div>
+    </div>
+    <div id="root" inert aria-hidden="true"></div>
+    <script>
+      (() => {
+        const screen = document.getElementById('boot-screen');
+        screen.dataset.startedAt = String(performance.now());
+        const showRetry = (failed) => {
+          if (!screen.isConnected || screen.dataset.dismissing) return;
+          screen.classList.add('is-stalled');
+          document.getElementById('boot-status').textContent = failed
+            ? 'Poképad could not load. Please reload to try again.'
+            : 'Still loading. Check your connection or try reloading.';
+          screen.setAttribute('aria-label', 'Poképad loading help');
+        };
+        screen.dataset.retryTimer = String(setTimeout(() => showRetry(false), 12000));
+        window.__pokepadBootError = () => showRetry(true);
+        window.addEventListener(
+          'error',
+          (event) => {
+            if (event.target === window || event.target instanceof HTMLScriptElement)
+              showRetry(true);
+          },
+          true,
+        );
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx" onerror="window.__pokepadBootError?.()"></script>
   </body>
 </html>

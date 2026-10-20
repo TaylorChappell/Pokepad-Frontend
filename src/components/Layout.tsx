@@ -1,19 +1,10 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '../state/AppContext';
 import { profileName } from '../state/model';
-import {
-  Icon,
-  Pokeball,
-  PokepadLogo,
-  Wordmark,
-  Avatar,
-  PokemonArt,
-  PokemonPortrait,
-  CoinAvatar,
-  type IconName,
-} from './UI';
+import { Icon, Pokeball, PokepadLogo, Wordmark, Avatar, PokemonArt, type IconName } from './UI';
 import { navigate, relativeTime } from '../utils';
 import { SidebarBuddy } from './SidebarBuddy';
+import { SearchDialog } from './SearchDialog';
 const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/discover', label: 'Discover', icon: 'Compass' },
   { path: '/create', label: 'Create coin', icon: 'Plus' },
@@ -27,45 +18,35 @@ const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
 ];
 export function Layout({ path, children }: { path: string; children: ReactNode }) {
   const { state, act, mode } = useApp(),
-    [search, setSearch] = useState(''),
     [panel, setPanel] = useState<'notifications' | 'account' | null>(null),
     [mobile, setMobile] = useState(false),
-    [searchFocus, setSearchFocus] = useState(false);
+    [searchOpen, setSearchOpen] = useState(false);
+  const closeSearch = useCallback(() => setSearchOpen(false), []);
   const header = useRef<HTMLElement>(null);
   const equipped = state.pokemon.find((p) => p.id === state.profile.equippedId),
     unread = state.notifications.filter((n) => !n.read).length;
-  const results = search.trim()
-    ? state.coins
-        .filter(
-          (c) =>
-            c.ticker.toLowerCase().includes(search.trim().replace('$', '').toLowerCase()) ||
-            c.ca.toLowerCase().includes(search.trim().toLowerCase()),
-        )
-        .slice(0, 6)
-    : [];
   useEffect(() => {
     setPanel(null);
     setMobile(false);
-    setSearchFocus(false);
-    setSearch('');
+    setSearchOpen(false);
     window.scrollTo(0, 0);
   }, [path]);
   useEffect(() => {
     const click = (e: MouseEvent) => {
       if (!header.current?.contains(e.target as Node)) {
         setPanel(null);
-        setSearchFocus(false);
       }
     };
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setPanel(null);
-        setSearchFocus(false);
         setMobile(false);
       }
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        header.current?.querySelector<HTMLInputElement>('input')?.focus();
+        setPanel(null);
+        setMobile(false);
+        setSearchOpen(true);
       }
     };
     document.addEventListener('mousedown', click);
@@ -103,46 +84,21 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
         </div>
         <div className="topbar-middle" />
         <div className="topbar-actions">
-          <div className="global-search">
+          <button
+            className="search-trigger"
+            aria-label="Search coins"
+            aria-haspopup="dialog"
+            aria-expanded={searchOpen}
+            onClick={() => {
+              setPanel(null);
+              setMobile(false);
+              setSearchOpen(true);
+            }}
+          >
             <Icon name="Search" size={18} />
-            <input
-              aria-label="Search coins by ticker or contract address"
-              placeholder="Search ticker or contract address…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onFocus={() => {
-                setSearchFocus(true);
-                setPanel(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && results[0]) navigate('/coin/' + results[0].id);
-              }}
-            />
-            <kbd>⌘ K</kbd>
-            {searchFocus && search.trim() && (
-              <div className="search-results">
-                <span className="dropdown-label">COINS</span>
-                {results.length ? (
-                  results.map((c) => (
-                    <a href={'#/coin/' + c.id} key={c.id}>
-                      <CoinAvatar coin={c} />
-                      <span>
-                        <strong>{c.name}</strong>
-                        <small>{'$' + c.ticker}</small>
-                      </span>
-                      <Icon name="ArrowUpRight" size={16} />
-                    </a>
-                  ))
-                ) : (
-                  <div className="search-empty">
-                    <Icon name="Search" />
-                    <strong>No coins found</strong>
-                    <p>Try another ticker or contract address.</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+            <span>Search coins</span>
+            <kbd>⌘ / Ctrl K</kbd>
+          </button>
           <button
             className={
               'icon-button notification-button ' + (panel === 'notifications' ? 'selected' : '')
@@ -151,7 +107,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             aria-expanded={panel === 'notifications'}
             onClick={() => {
               setPanel(panel === 'notifications' ? null : 'notifications');
-              setSearchFocus(false);
+              setSearchOpen(false);
             }}
           >
             <Icon name="Bell" size={24} />
@@ -164,14 +120,20 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             aria-expanded={panel === 'account'}
             onClick={() => {
               setPanel(panel === 'account' ? null : 'account');
-              setSearchFocus(false);
+              setSearchOpen(false);
             }}
           >
             <span className="avatar-wrap">
-              <Avatar profile={state.profile} size={56} />
+              <Avatar profile={state.profile} size={44} />
               {equipped && (
                 <span className="equipped-mini">
-                  <PokemonPortrait id={equipped.speciesId} shiny={equipped.shiny} size={40} />
+                  <PokemonArt
+                    id={equipped.speciesId}
+                    shiny={equipped.shiny}
+                    animated={false}
+                    styleOverride="pixel"
+                    frameFill={88}
+                  />
                 </span>
               )}
             </span>
@@ -310,6 +272,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
           </a>
         </footer>
       </main>
+      {searchOpen && <SearchDialog coins={state.coins} onClose={closeSearch} />}
     </div>
   );
 }

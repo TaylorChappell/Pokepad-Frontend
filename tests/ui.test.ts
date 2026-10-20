@@ -113,15 +113,17 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     assert.equal(document.querySelector('.gym-spotlight-ribbon'), null);
     assert.equal(app.saved().profile.artStyle, 'pixel');
     assert.ok(document.querySelector('.equipped-mini'));
-    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
+    assert.equal(document.querySelector('.equipped-mini .sprite-pixels-moving'), null);
     assert.equal(document.querySelector('.sidebar a[href="#/settings"]'), null);
     assert.doesNotMatch(document.querySelector('.sidebar')?.textContent || '', /Frontend preview/);
     assert.ok(document.querySelector('.trainer-avatar.pixel-avatar'));
-    await act(async () =>
-      document.querySelector<HTMLInputElement>('.global-search input')!.focus(),
-    );
-    await fill('.global-search input', 'GENG');
-    assert.equal(document.querySelectorAll('.search-results>a').length, 1);
+    assert.ok(document.querySelector('.equipped-mini .pokemon-art.normalized-art'));
+    assert.equal(document.querySelector('.equipped-mini .pokemon-headshot'), null);
+    await click(document.querySelector('.search-trigger'));
+    await fill('[aria-label="Search coins by name, ticker or contract address"]', 'GENG');
+    assert.equal(document.querySelectorAll('.search-dialog-result').length, 1);
+    await click(document.querySelector('[aria-label="Close search"]'));
+    await app.until(() => !document.querySelector('.coin-search-dialog'), 'Search closes');
     await click(document.querySelector('.notification-button'));
     assert.ok(document.querySelector('.notification-dropdown'));
     await click(document.querySelector('.dropdown-heading button'));
@@ -173,13 +175,69 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     assert.equal(app.saved().profile.character, 'misty');
     assert.equal(app.saved().profile.artStyle, 'drawn');
     assert.match(document.querySelector('.account-name')?.textContent || '', /Kanto Taylor/);
-    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
+    assert.equal(document.querySelector('.equipped-mini .sprite-pixels-moving'), null);
     // The little interactive sidebar companion stays a game sprite in either art setting.
     assert.ok(document.querySelector('.buddy-pet .sprite-art'));
     await click(document.querySelector('.art-style-options>button:first-child'));
     await app.until(() => app.saved().profile.artStyle === 'pixel', 'Art preference auto-saves');
     assert.equal(app.saved().profile.artStyle, 'pixel');
-    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
+    assert.equal(document.querySelector('.equipped-mini .sprite-pixels-moving'), null);
+  } finally {
+    await app.close();
+  }
+});
+
+test('coin search supports keyboard access, exact addresses, empty results and focus restoration', async () => {
+  const app = await mountApp();
+  const { document, fill, click } = app;
+  const key = async (target: EventTarget, value: string, modifiers = {}) => {
+    await act(async () => {
+      target.dispatchEvent(
+        new app.dom.window.KeyboardEvent('keydown', {
+          key: value,
+          bubbles: true,
+          cancelable: true,
+          ...modifiers,
+        }),
+      );
+    });
+  };
+  try {
+    const trigger = document.querySelector<HTMLButtonElement>('.search-trigger')!;
+    trigger.focus();
+    await key(document, 'k', { ctrlKey: true });
+    const input = document.querySelector<HTMLInputElement>('.coin-search-field input')!;
+    assert.equal(document.activeElement, input);
+    assert.equal(document.getElementById('root')?.hasAttribute('inert'), true);
+    assert.equal(document.body.style.overflow, 'hidden');
+
+    const coin = app.initial.coins.find((entry) => entry.id === 'char')!;
+    await fill('.coin-search-field input', coin.ca);
+    assert.equal(document.querySelectorAll('.coin-search-result').length, 1);
+    assert.match(document.querySelector('.coin-search-result')?.textContent || '', /CHAR/);
+    await fill('.coin-search-field input', 'no-such-coin-12345');
+    assert.ok(document.querySelector('.coin-search-empty'));
+    await click(document.querySelector('.coin-search-clear'));
+    assert.ok(document.querySelectorAll('.coin-search-result').length > 1);
+    const before = input.getAttribute('aria-activedescendant');
+    await key(input, 'ArrowDown');
+    assert.notEqual(input.getAttribute('aria-activedescendant'), before);
+    await key(input, 'Escape');
+    assert.equal(document.querySelector('.coin-search-dialog'), null);
+    assert.equal(document.activeElement, trigger);
+    assert.equal(document.getElementById('root')?.hasAttribute('inert'), false);
+    assert.equal(document.body.style.overflow, '');
+
+    await click(trigger);
+    await fill('.coin-search-field input', '$CHAR');
+    await key(document.querySelector('.coin-search-field input')!, 'Enter');
+    await app.until(
+      () =>
+        app.dom.window.location.hash === '#/coin/char' &&
+        !document.querySelector('.coin-search-dialog'),
+      'Enter opens the matching coin and closes search',
+    );
+    assert.equal(document.getElementById('root')?.hasAttribute('inert'), false);
   } finally {
     await app.close();
   }
@@ -257,7 +315,7 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
     await go('/pokemon');
     assert.equal(app.saved().profile.equippedId, 'hatched-egg-ready');
     assert.ok(document.querySelector('.equipped-mini'));
-    assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
+    assert.equal(document.querySelector('.equipped-mini .sprite-pixels-moving'), null);
     await go('/rewards?tab=packs');
     assert.equal(
       document.querySelector('.pack-art .pokemon-art'),

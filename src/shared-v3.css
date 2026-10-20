@@ -46,20 +46,6 @@
   image-rendering: pixelated;
   pointer-events: none;
 }
-.pokemon-headshot {
-  display: inline-block;
-  position: relative;
-  flex-shrink: 0;
-  background: none;
-  overflow: visible;
-}
-.pokemon-headshot .headshot-pixels {
-  display: block;
-  position: absolute;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
-  pointer-events: none;
-}
 .shiny-glint {
   position: absolute;
   width: 11%;

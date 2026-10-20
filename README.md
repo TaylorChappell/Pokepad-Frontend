@@ -15,7 +15,7 @@ The preview starts with sample coins, Pokémon, eggs, and packs. No wallet is co
 
 ## What changed in v0.3
 
-The interface combines crisp game sprites with cleaner typography, stronger type badges, and larger Pokémon previews. The new Poképad emblem and correctly coloured wordmark sit beside a shoulder-cropped trainer portrait and a static partner headshot. Coin mascots use still poses; the home introduction and three-page handbook use static Pokémon illustrations instead of a game-map scene.
+The interface combines crisp game sprites with cleaner typography, stronger type badges, and larger Pokémon previews. The Poképad emblem and correctly coloured wordmark sit beside a shoulder-cropped trainer portrait and a small, complete partner sprite. Coin mascots use still poses; the home introduction and three-page handbook use static Pokémon illustrations instead of a game-map scene.
 
 Pokémon summaries now put HP, battle stats, moves, value, and evolution together. Owned Pokémon have normal or shiny appearances rather than inheriting their egg’s tier. Genuine shiny palettes identify the variant visually. Both eggs and packs draw from varied, funded Gen 1 pools, with legendary and mythical possibilities and distinct shiny values. Reward tiers affect odds; they do not become Pokémon variants.
 
@@ -44,7 +44,7 @@ Rare Candy still funds progression: evolution requires 1,000 Candy and sufficien
 | Account        | Autosaving trainer appearance, shoulder portrait, display name, art preference and notifications           |
 | Other          | Starter selection, creator console, wallet placeholder, three-page handbook and error states               |
 
-The desktop sidebar becomes a mobile drawer. Header search accepts ticker or contract address. Unread notifications show a red dot. A static partner headshot overlays the avatar’s bottom-left without a circular background. Settings are reached through the account menu.
+The sidebar fits the viewport and becomes a mobile drawer. The header search button opens a keyboard-accessible Pokédex-style panel for names, tickers, and contract addresses (Ctrl/⌘ K). Unread notifications show a red dot. A small, complete static partner sprite overlays the avatar’s bottom-left without a circular background. Settings are reached through the account menu. A Poké Ball startup screen appears on full page loads and clears after the account state is ready.
 
 ## Reward and evolution accounting
 

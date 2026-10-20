@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../services/api';
 import type { Action, AppSnapshot } from '../types';
+import { dismissBootScreen } from '../components/BootScreen';
 interface ContextValue {
   state: AppSnapshot;
   mode: 'demo' | 'live';
@@ -44,6 +45,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!state) return;
     document.documentElement.dataset.motion = state.profile.reducedMotion ? 'reduced' : 'normal';
   }, [state?.profile.reducedMotion]);
+  useEffect(() => {
+    if (state || error) dismissBootScreen({ immediate: Boolean(error) });
+  }, [state, error]);
   useEffect(() => {
     if (!state) return;
     const ready = state.rewards.some(

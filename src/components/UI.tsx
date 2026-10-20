@@ -13,7 +13,6 @@ import { asset, sol } from '../utils';
 import { PIXEL_ICONS } from '../data/icons';
 import { SPRITES } from '../data/sprites';
 import { ART_BOUNDS } from '../data/art-bounds';
-import { getPortraitLayout } from '../data/portrait-heads';
 import { useOptionalApp } from '../state/AppContext';
 export type IconName = keyof typeof PIXEL_ICONS;
 export function Icon({
@@ -142,6 +141,7 @@ export function PokemonArt({
   styleOverride,
   animated = true,
   shiny = false,
+  frameFill,
 }: {
   id: number;
   className?: string;
@@ -150,6 +150,8 @@ export function PokemonArt({
   styleOverride?: 'pixel' | 'drawn';
   animated?: boolean;
   shiny?: boolean;
+  /** Percentage occupied by the complete silhouette; useful for uniform thumbnails. */
+  frameFill?: number;
 }) {
   const app = useOptionalApp(),
     style = styleOverride || app?.state.profile.artStyle || 'pixel',
@@ -174,7 +176,7 @@ export function PokemonArt({
   const span = Math.max(box[2] - box[0], box[3] - box[1]);
   // Normalize transparent source canvases, using every animation frame's union.
   // The whole silhouette fits inside the art window, including wings and tails.
-  const fit = id === 146 ? 80 : 88;
+  const fit = frameFill ?? (id === 146 ? 80 : 88);
   const canvas = shiny ? bounds.shinyCanvas : moving ? bounds.canvas : bounds.staticCanvas;
   const centerX = (box[0] + box[2]) / 2;
   const centerY = (box[1] + box[3]) / 2;
@@ -263,45 +265,6 @@ export function PokemonArt({
       width={475}
       height={475}
     />
-  );
-}
-export function PokemonPortrait({
-  id,
-  shiny = false,
-  size = 42,
-  className = '',
-}: {
-  id: number;
-  shiny?: boolean;
-  size?: number;
-  className?: string;
-}) {
-  const { width, height, left, top, backgroundSize, backgroundPosition, url } = getPortraitLayout(
-    id,
-    shiny,
-    size,
-  );
-  return (
-    <span
-      className={'pokemon-headshot ' + className}
-      style={{ width: size, height: size }}
-      role="img"
-      aria-label={pokemonById(id).name + (shiny ? ', shiny colour variant' : '')}
-    >
-      <span
-        className="headshot-pixels"
-        aria-hidden="true"
-        style={{
-          width,
-          height,
-          left,
-          top,
-          backgroundSize,
-          backgroundPosition,
-          backgroundImage: 'url("' + asset(url) + '")',
-        }}
-      />
-    </span>
   );
 }
 export function TypeChip({ type }: { type: string }) {

@@ -17,6 +17,7 @@ import { GymsPage, GymDetailPage } from './pages/Community';
 import { CreateCoinPage } from './pages/CreateCoin';
 import { GuidePage } from './pages/Guide';
 import { BattlesPage } from './pages/Battles';
+import { dismissBootScreen } from './components/BootScreen';
 function useRoute() {
   const read = () => window.location.hash.slice(1) || '/discover';
   const [route, setRoute] = useState(read);
@@ -79,6 +80,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: boolean 
   state = { error: false };
   static getDerivedStateFromError() {
     return { error: true };
+  }
+  componentDidCatch() {
+    dismissBootScreen({ immediate: true });
   }
   render() {
     return this.state.error ? (
