@@ -1,4 +1,4 @@
-# Backend integration boundary · interface v6
+# Backend integration boundary · interface v7
 
 The static frontend deploys to GitHub Pages using hash routes. The backend belongs in a separate repository and can deploy to Railway. Production balances, funding, movement, progression, random outcomes, and settlement must be server-authoritative. This package implements none of those backend services.
 
@@ -30,11 +30,13 @@ src/types.ts is a view-model contract, not a database or ledger schema. Return o
 
 Bootstrap, actions, and the two public trainer routes have client adapters. Wallet signing and live event subscription remain future work. Errors should use non-2xx JSON with a user-safe message and stable machine-readable code.
 
-## Market quotes, launch age and watchlists
+## Market quotes, price history, launch age and watchlists
 
 `Coin.marketCap` and `Coin.volume` retain their existing SOL units. `Coin.marketCapUsd?: number` and `Coin.volumeUsd?: number` are independent USD display quotes. Supply finite values from the market-data service; do not reinterpret the SOL fields as dollars. Coin cards use each available USD quote or an explicitly labelled SOL fallback. `Coin.launchedAt?: number` is the original launch timestamp in Unix milliseconds, not the time of the latest fetch. Coins without a timestamp show unavailable age; new local drafts receive the current time.
 
 `src/data/coin-presentation.ts` decorates only initial demo data and migrated local saves. It uses the fixed illustrative `DEMO_SOL_USD = 150` to fill absent USD fields, supplies fixture ages for known sample coins, and supplies their separate token artwork. This is not a price oracle. The HTTP adapter does not decorate live responses. New local coin drafts have zero SOL/USD market figures and an empty reward pool.
+
+`Coin.priceHistory?: number[]` supplies ordered price samples for the compact coin-card trend. The renderer requires at least two finite, non-negative values; constant histories render as a flat line. These unlabelled trends do not imply a specific currency or time window. Supply samples consistently from the market-data service, and introduce explicit time/currency metadata before presenting axis labels or a named interval. Without valid history, live cards show an empty trend area. Only the eight known demo coin IDs can receive deterministic sample curves, and those graphics are labelled as demo samples in their accessible text. New coin drafts do not receive invented history. Hover playback and chart display do not alter price, ownership, or rewards.
 
 Watchlists are local preferences in `pokepad-watchlist-v1:<wallet>`, storing coin IDs and responding to browser storage events. They do not buy tokens, update the account snapshot, or submit an API action. A future synchronized watchlist needs its own authenticated endpoint; this version does not imply cross-device persistence.
 
@@ -56,21 +58,21 @@ There is no analytics endpoint or event subscription wired into this revision. A
 
 ## Actions represented by the frontend
 
-| Action                | Required server checks                                                                                    |
-| --------------------- | --------------------------------------------------------------------------------------------------------- |
-| profile.update        | Account ownership, character/colour allowlists, display name, pixel/drawn preference                      |
-| notification.read     | Notification belongs to account                                                                           |
-| reward.open           | Ownership, server timer, unopened state, funded allocations, atomic authoritative reveal                  |
-| pokemon.equip         | Ownership, no listing/battle lock                                                                         |
-| pokemon.evolve        | Ownership, earned Rare Candy, eligible species, no locks, fully funded increase, server random branch     |
-| pokemon.learn         | Pending earned offer ID, level/learnset, unconsumed opportunity, valid replacement slot                   |
-| pokemon.declineMove   | Pending earned offer ID; durable permanent decline for that instance and move                             |
-| pokemon.list / unlist | Ownership, non-starter, compatible locks, valid price                                                     |
-| pokemon.redeem        | Ownership, non-starter, backed claim, atomic removal and payout, unused-budget release                    |
-| gym.support           | Active coin held, one supported gym, server eligibility                                                   |
-| starter.choose        | Main-token holding, one claim, Pikachu strictly above 1% of supply                                        |
-| coin.create           | Owned eligible Pokémon or empty-inventory trainer fallback, validated content, token creation transaction |
-| sync                  | Reconcile server-owned state                                                                              |
+| Action                | Required server checks                                                                                |
+| --------------------- | ----------------------------------------------------------------------------------------------------- |
+| profile.update        | Account ownership, character/colour allowlists, display name, pixel/drawn preference                  |
+| notification.read     | Notification belongs to account                                                                       |
+| reward.open           | Ownership, server timer, unopened state, funded allocations, atomic authoritative reveal              |
+| pokemon.equip         | Ownership, no listing/battle lock                                                                     |
+| pokemon.evolve        | Ownership, earned Rare Candy, eligible species, no locks, fully funded increase, server random branch |
+| pokemon.learn         | Pending earned offer ID, level/learnset, unconsumed opportunity, valid replacement slot               |
+| pokemon.declineMove   | Pending earned offer ID; durable permanent decline for that instance and move                         |
+| pokemon.list / unlist | Ownership, non-starter, compatible locks, valid price                                                 |
+| pokemon.redeem        | Ownership, non-starter, backed claim, atomic removal and payout, unused-budget release                |
+| gym.support           | Active coin held, one supported gym, server eligibility                                               |
+| starter.choose        | Main-token holding, one claim, Pikachu strictly above 1% of supply                                    |
+| coin.create           | Explicit trainer or owned eligible Pokémon choice, validated content, token creation transaction      |
+| sync                  | Reconcile server-owned state                                                                          |
 
 walk.progress and demo.reset are demo-only actions; reject them on the live API. Start and finish verified walking sessions through a separate backend interface. Never accept client distance as authoritative.
 
@@ -88,7 +90,7 @@ Split actually collected creator fees 50/50 between creator and holder rewards. 
 - Future evolution budgets in unopened rewards and owned Pokémon, represented by evolutionReserve.
 - Completed redemptions and any other explicitly authorized outflows.
 
-The accounting invariant is: collected holder allocation equals free funds plus outstanding base values plus evolution reserves plus completed outflows. Creator allocation is separate. The Creator console illustrates the outstanding buckets for the sample account; it is not a complete all-holder ledger or fee history.
+The accounting invariant is: collected holder allocation equals free funds plus outstanding base values plus evolution reserves plus completed outflows. Creator allocation is separate.
 
 The local demo draws on opening from `src/data/rewardPools.ts`. It combines the reward’s existing `backing` and `evolutionReserve` with the originating `Coin.vault`, filters out outcomes whose value plus next-evolution reserve exceed that budget, then draws by the remaining normalized weights. It returns surplus to that coin’s free pool and transfers the chosen allocations to the new instance. Other rewards’ reserves are excluded. If no outcome is affordable, the action leaves the original state unchanged.
 
@@ -122,7 +124,9 @@ pokemon.declineMove permanently resolves the opportunity and suppresses later of
 
 ## Coin creation and profile preferences
 
-coin.create accepts name, ticker, description, mode, optional pokemonInstanceId, image, and socials. If inventory contains Pokémon, the selected instance must be owned, unlisted, and unlocked. Trainer fallback is permitted only when inventory is empty, not when all owned Pokémon happen to be unavailable.
+`coin.create` accepts name, ticker, description, mode, `launchKind`, optional `pokemonInstanceId`, image, and socials. The current wizard sends an explicit `launchKind` of `trainer` or `pokemon`. A trainer launch is allowed with any inventory size and must omit `pokemonInstanceId`. A Pokémon launch must identify an owned, unlisted, unlocked instance; conflicting trainer-plus-instance input is rejected. The local action type keeps `launchKind` optional for compatibility with older actions: an instance selects Pokémon mode, while an empty inventory without an instance can retain the old trainer default. New clients should use the explicit choice.
+
+The wizard has four steps: Details, Partner, Rewards, and Review. Coin and Links are subpanels within Details, and all provided links must validate before advancing. Back/Next controls stay outside the step’s scrollable content region. The UI submits one final action rather than separate partial token-creation requests.
 
 The ticker input preserves case, printable punctuation, and internal spaces. It accepts 1–10 characters using the browser's input-length convention, requires non-whitespace content, and rejects ASCII control characters. Submission trims surrounding whitespace and does not uppercase the result. Duplicate tickers are allowed: coin IDs and contract addresses identify coins. The ten-character input limit matches the public [Pump creation form](https://pump.fun/create) inspected on 20 October 2026; this does not establish a universal Solana metadata byte limit. The future token-creation service must validate its chosen mint/metadata program's encoded limits and return any error before signing, without silently rewriting the ticker.
 
@@ -130,17 +134,19 @@ The launch Pokémon and coin image are independent. The coin snapshots the selec
 
 Created coins are local drafts with an empty reward pool, not deployed tokens. Trainer-launched coins use launchKind=trainer, pokemonId=0, and a trainer appearance snapshot. The token avatar uses uploaded art or a neutral monogram; the Pokémon or trainer remains a separate mascot presentation. Mascot previews animate during the launch wizard, subject to reduced-motion preferences.
 
-Profile.artStyle is pixel or drawn, defaulting to pixel. Character, accessory colour, and display name are persisted preferences. The sidebar partner remains a pixel sprite. The account editor previews preferences immediately and sends debounced `profile.update` actions automatically; the API must support repeated idempotent preference updates. The five-step launch wizard still submits one final `coin.create` action. These presentation changes do not add token deployment or financial authority.
+Profile.artStyle is pixel or drawn, defaulting to pixel. Character, accessory colour, and display name are persisted preferences. The sidebar partner remains a pixel sprite. The account editor previews preferences immediately and sends debounced `profile.update` actions automatically; the API must support repeated idempotent preference updates. Brock and Blue garment colours are rendered with pixel-aligned SVG overlays over the original PNGs; this presentation helper does not add profile fields. The header no longer displays the equipped Pokémon, while the sidebar companion remains. These presentation changes do not add token deployment or financial authority.
 
 ## Gyms, walking and holding
 
-Each trainer supports one active gym. Preview scores sum current Pokémon backing, never asking prices or unused evolution budgets, and include sample aggregates for other trainers. Replace those fixtures with current server-calculated inventory across eligible supporters. Prevent double attribution and define escrow/listing treatment and snapshot timing. If no gym qualifies, feature the main token.
+Each trainer supports one active gym. Preview scores sum current Pokémon backing, never asking prices or unused evolution budgets, and include sample aggregates for other trainers. Replace those fixtures with current server-calculated inventory across eligible supporters. Prevent double attribution and define escrow/listing treatment and snapshot timing. If no gym qualifies, use the main token as the fallback on the Gyms page. The redesigned leader and contribution panels are view-only; available trainer roster entries link to public profiles without changing support eligibility.
 
 Demo walking removes two hours from egg timers per kilometre. This is a configurable preview parameter. Real verification needs server sessions, device signals, route/speed plausibility, and duplicate detection. A browser cannot supply cheat-proof GPS evidence; show pending/accepted/rejected progress without allowing local timers to mint rewards.
 
 Balances, sales/transfers, active-coin eligibility, holding streaks, and Rare Candy accrual require a chain indexer and explicit server policy. Preview values are samples, not ongoing verified earnings.
 
 ## Pokémon variants, stats and health
+
+The Pokémon summary organizes Stats, Moves, Evolution, and Details through a button menu while keeping identity, HP, value, and primary actions visible. Its move-ready control opens the same earned-offer workflow; selecting a panel does not change stats, learn moves, or allocate funding.
 
 `OwnedPokemon.shiny?: boolean` identifies the colour variant; absent means normal. It is independent of reward tier, persists through evolution and transfer, and changes the provisional reward value, not combat stats. `OwnedPokemon.rarity` is retained only for compatibility and should not define a variant. Never infer shiny status from a legacy Rare/Epic label or reprice an existing funded instance without an explicit funded operation.
 
@@ -152,7 +158,7 @@ Production needs server-owned health, status, nature/IV/EV policy, progression, 
 
 `src/battle/engine.ts` runs local offline practice with one to three Pokémon, a curated move set, type effectiveness, same-type attack bonuses, physical/special damage, speed/priority order, PP, switching, selected status effects, stat stages, healing, and move-specific trade-offs. Easy, Medium, Hard, and Master generate different-species rival teams targeting approximately 0.76×, 1×, 1.2×, and 1.42× the player's team strength. Level and practice stat scaling support those targets; stronger bots also make more tactical move and switching choices. These are demo balancing settings, not the original cartridge's complete rules.
 
-Battle state and the practice win streak are local to the screen. Offline matches do not dispatch ownership or balance changes, issue rewards, charge stakes, or persist damage. The Online tab exposes friendly, SOL, token, and Pokémon setup controls, but its matchmaking button is disabled and it sends no matchmaking request or escrow instruction. No local battle result may authorize a payout or transfer.
+The lobby displays a labelled possible matchup and an editable party preview, with challenge choices beside the arena. These previews use the same relative-strength generation policy; opening the lobby does not start a match. Battle state and the practice win streak are local to the screen. Offline matches do not dispatch ownership or balance changes, issue rewards, charge stakes, or persist damage. The Online tab exposes friendly, SOL, token, and Pokémon setup controls, but its matchmaking button is disabled and it sends no matchmaking request or escrow instruction. No local battle result may authorize a payout or transfer.
 
 The backend needs full rules and learnsets, eligible-instance checks, match formats, timeouts, disconnect policy, sequencing, and finality. In Pokémon wagers, all selected losing instances transfer together, including their attached funding records. Unevolved starter instances are excluded by this demo policy.
 

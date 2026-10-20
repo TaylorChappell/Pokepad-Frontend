@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useId, useMemo, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { POKEMON } from '../data/pokemon';
 import { collectionValue } from '../state/model';
@@ -44,6 +44,79 @@ function MarketValue({ coin, field }: { coin: Coin; field: 'marketCap' | 'volume
         ? '$' + compact(usd)
         : compact(coin[field]) + ' SOL'}
     </>
+  );
+}
+const demoChartCoins = new Set([
+  'poke',
+  'char',
+  'geng',
+  'squirt',
+  'bulb',
+  'eevee',
+  'snorlax',
+  'drago',
+]);
+function CoinTrend({ coin, demo }: { coin: Coin; demo: boolean }) {
+  const gradientId = useId();
+  const history = useMemo(() => {
+    if (
+      coin.priceHistory &&
+      coin.priceHistory.length > 1 &&
+      coin.priceHistory.every((value) => Number.isFinite(value) && value >= 0)
+    )
+      return { values: coin.priceHistory, sample: false };
+    if (!demo || !demoChartCoins.has(coin.id) || coin.price <= 0) return null;
+    const seed = [...coin.id].reduce((value, character) => value + character.charCodeAt(0), 0);
+    return {
+      sample: true,
+      values: Array.from({ length: 36 }, (_, index) => {
+        const progress = index / 35;
+        const movement = Math.sin(index * 0.49 + seed) * 7 + Math.sin(index * 1.71 + seed) * 3;
+        return 100 + progress * coin.change * 0.55 + Math.sin(progress * Math.PI) * movement;
+      }),
+    };
+  }, [coin.id, coin.price, coin.change, coin.priceHistory, demo]);
+  if (!history)
+    return <div className="market-trend-empty" aria-label="Price history is not available yet" />;
+  const low = Math.min(...history.values),
+    high = Math.max(...history.values),
+    spread = high - low;
+  const points = history.values.map((value, index) => [
+    2 + (index / (history.values.length - 1)) * 296,
+    spread > 0 ? 40 - ((value - low) / spread) * 32 : 24,
+  ]);
+  const line = points
+    .map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(2)} ${y.toFixed(2)}`)
+    .join(' ');
+  const rising = history.values.at(-1)! >= history.values[0];
+  return (
+    <div className={'market-coin-trend ' + (rising ? 'trend-up' : 'trend-down')}>
+      <svg
+        viewBox="0 0 300 52"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`${coin.name} price trend${history.sample ? ' · demo sample' : ''}`}
+      >
+        <title>{history.sample ? 'Sample price history' : 'Price history'}</title>
+        <defs>
+          <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="currentColor" stopOpacity=".15" />
+            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={line + ' L298 52 L2 52Z'} fill={`url(#${gradientId})`} />
+        <path
+          d={line}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
+        <circle cx="298" cy={points.at(-1)![1]} r="2.3" fill="currentColor" />
+      </svg>
+    </div>
   );
 }
 function CoinSocials({ coin }: { coin: Coin }) {
@@ -109,7 +182,7 @@ export function CoinCard({
   watched: boolean;
   onToggleWatch: () => void;
 }) {
-  const { toast } = useApp();
+  const { toast, mode } = useApp();
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const copyAddress = async () => {
@@ -180,10 +253,12 @@ export function CoinCard({
               id={coin.pokemonId}
               shiny={coin.pokemonShiny}
               animated={hovered || focused}
+              stableFrames
             />
           )}
         </div>
       </div>
+      <CoinTrend coin={coin} demo={mode === 'demo'} />
       <div className="market-coin-stats">
         <div>
           <span>24h volume</span>

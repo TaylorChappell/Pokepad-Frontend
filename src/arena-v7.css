@@ -1,0 +1,654 @@
+/* The arena is a compact match desk: a court, a party, and a choice of rival. */
+.arena-v7.arena-lobby {
+  max-width: 1240px;
+  margin-inline: auto;
+}
+.arena-lobby-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin: 4px 0 26px;
+}
+.arena-lobby-heading h1 {
+  margin: 0;
+  font-size: clamp(24px, 2.3vw, 32px);
+  color: #2b4059;
+  line-height: 1.55;
+}
+.arena-lobby-heading p {
+  color: #8090a2;
+  margin: 7px 0 0;
+  font-size: 13px;
+}
+.arena-v7 .arena-mode-tabs {
+  margin: 0;
+  padding: 4px;
+  border-radius: 13px;
+  background: #eaf0f5;
+  border-color: #e0e7ee;
+  flex-shrink: 0;
+  gap: 3px;
+}
+.arena-v7 .arena-mode-tabs > button {
+  padding: 10px 17px;
+  font-size: 12px;
+  border-radius: 9px;
+}
+.arena-v7 .arena-mode-tabs > button.active {
+  color: #2f635c;
+}
+.arena-training-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  gap: 22px;
+  align-items: start;
+}
+.arena-v7 .arena-hero.practice-arena-board {
+  min-height: 0;
+  padding: 0;
+  border: 1px solid #dce6e8;
+  border-radius: 22px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 24px #24415305;
+}
+.arena-board-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #e7eeeb;
+}
+.arena-board-topline h2 {
+  font-size: 16px;
+  font-weight: 900;
+  color: #3d5b61;
+  margin: 0;
+}
+.arena-board-topline .practice-chip {
+  min-height: 24px;
+  border: 0;
+  background: #edf6f1;
+  color: #508469;
+  font-size: 10px;
+}
+.arena-preview-court {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
+  align-items: center;
+  padding: 24px 32px 32px;
+  min-height: 278px;
+  background: radial-gradient(ellipse at 50% 35%, #f8fcf9, #e8f2ed);
+  overflow: hidden;
+}
+.arena-court-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: #afc9bd;
+  stroke-width: 2;
+  opacity: 0.38;
+  z-index: -1;
+  pointer-events: none;
+}
+.arena-court-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.arena-court-trainer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #6d8980;
+  font-size: 11px;
+  font-weight: 850;
+}
+.arena-court-trainer .trainer-avatar {
+  border-radius: 9px;
+  border-color: #d0e1d7;
+}
+.arena-court-sprite {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: min(164px, 100%);
+  aspect-ratio: 1;
+  margin-top: 3px;
+}
+.arena-court-sprite::before {
+  content: '';
+  position: absolute;
+  width: 76%;
+  height: 24%;
+  bottom: 7%;
+  border: 1px solid #9fbeaa5c;
+  border-radius: 50%;
+  background: #d1e4d4b3;
+  box-shadow: 0 6px 0 #b7d1be25;
+}
+.away-side .arena-court-sprite::before {
+  background: #d5e3edb3;
+  border-color: #b6c9d558;
+  box-shadow: 0 6px 0 #afc6d225;
+}
+.arena-court-sprite > .pokemon-art {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  position: relative;
+  max-width: none;
+  overflow: visible;
+  z-index: 1;
+}
+.arena-court-side > strong {
+  color: #46665a;
+  font-size: 13px;
+  font-weight: 900;
+  margin-top: 1px;
+}
+.away-side > strong {
+  color: #536d83;
+}
+.arena-court-vs {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #f7fcf9;
+  border: 1px solid #c7dcd1;
+  color: #759789;
+  font-size: 10px;
+  font-weight: 1000;
+  box-shadow: 0 4px 0 #9ebcaa14;
+}
+.arena-court-preview-label {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #8ba598;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.arena-party-preview {
+  padding: 19px 22px;
+  border-top: 1px solid #dfe9e2;
+}
+.arena-party-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+.arena-party-heading > strong {
+  font-size: 12px;
+  color: #435b70;
+}
+.arena-party-heading > span {
+  font-size: 10px;
+  color: #8c9baa;
+}
+.arena-party-lineup {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.arena-party-place {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 68px;
+  padding: 5px 8px;
+  border: 1px dashed #d9e2ea;
+  border-radius: 11px;
+  color: #92a3b2;
+  background: #fbfcfd;
+  font-size: 10px;
+  text-align: left;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.arena-party-place.occupied {
+  border-style: solid;
+  border-color: #e2e9ef;
+  color: #48617b;
+  background: #f7fafc;
+}
+.arena-party-place:hover {
+  background: #edf4f9;
+  border-color: #aabfd2;
+}
+.arena-party-place > .pokemon-art {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+}
+.arena-party-place > span:not(.pokemon-art) {
+  min-width: 0;
+}
+.arena-party-place strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 850;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.arena-party-place small {
+  display: block;
+  color: #9aabba;
+  margin-top: 3px;
+  font-size: 9px;
+}
+.arena-board-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 17px 22px;
+  border-top: 1px solid #e8edf1;
+  background: #fcfdfd;
+}
+.arena-board-footer > span > strong,
+.arena-board-footer > span > small {
+  display: block;
+}
+.arena-board-footer > span > strong {
+  font-size: 11px;
+  color: #647b87;
+}
+.arena-board-footer > span > small {
+  font-size: 10px;
+  color: #98a5b1;
+  margin-top: 4px;
+}
+.arena-board-footer > .button {
+  flex-shrink: 0;
+  min-height: 42px;
+  padding: 11px 17px;
+  font-size: 12px;
+  border-radius: 11px;
+}
+.arena-challenge-panel {
+  border: 1px solid #e0e7ed;
+  border-radius: 20px;
+  background: #fff;
+  padding: 22px;
+}
+.arena-challenge-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.arena-challenge-heading h2 {
+  font-size: 16px;
+  margin: 0;
+  color: #344d65;
+}
+.arena-challenge-heading > span {
+  font-size: 10px;
+  color: #99a7b6;
+}
+.arena-v7 .difficulty-picker.challenge-rows {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.arena-v7 .challenge-rows > button {
+  flex-direction: row;
+  align-items: center;
+  gap: 11px;
+  padding: 10px;
+  border: 1px solid #e4eaf0;
+  border-radius: 12px;
+  background: #fbfcfd;
+  color: #5b7188;
+  transform: none;
+  text-align: left;
+  transition:
+    border-color 0.18s,
+    background 0.18s,
+    box-shadow 0.18s;
+}
+.arena-v7 .challenge-rows > button.selected {
+  color: #3e7465;
+  border-color: #91b7a6;
+  background: #f0f8f4;
+  box-shadow: 0 0 0 1px #91b7a622;
+}
+.arena-v7 .challenge-rows > button:last-child.selected {
+  color: #805a89;
+  border-color: #baa0c1;
+  background: #faf3fb;
+  box-shadow: 0 0 0 1px #baa0c122;
+}
+.arena-v7 .challenge-rows > button:hover {
+  border-color: #a3bacb;
+  background: #f4f8fb;
+}
+.challenge-row-copy {
+  flex: 1;
+  min-width: 0;
+}
+.challenge-row-copy > strong {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+}
+.challenge-row-copy em {
+  color: #9aa9b7;
+  font-size: 10px;
+  font-weight: 650;
+  font-style: normal;
+}
+.challenge-row-copy > small {
+  display: block;
+  color: #8a9aab;
+  font-size: 10px;
+  margin-top: 5px;
+  white-space: normal;
+}
+.challenge-row-check {
+  display: grid;
+  place-items: center;
+  flex: 0 0 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #d4dfe7;
+  color: white;
+}
+.selected .challenge-row-check {
+  border-color: currentColor;
+  background: #77a58f;
+}
+.challenge-rows > button:last-child.selected .challenge-row-check {
+  background: #ad8eb8;
+}
+.arena-rival-note {
+  margin-top: 18px;
+  padding: 16px 0;
+  border-top: 1px solid #e8edf2;
+}
+.arena-rival-note > strong {
+  color: #536b80;
+  font-size: 11px;
+}
+.arena-rival-note p {
+  margin: 6px 0 8px;
+  font-size: 11px;
+  line-height: 1.65;
+  color: #8497a7;
+}
+.arena-rival-note > span {
+  font-size: 9px;
+  line-height: 1.5;
+  color: #a0acb7;
+}
+.arena-guide-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #e8edf2;
+  padding-top: 16px;
+  color: #7193af;
+  font-size: 11px;
+  font-weight: 800;
+}
+.arena-guide-link > svg:last-child {
+  margin-left: auto;
+}
+.arena-session-streak {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 15px;
+  font-size: 11px;
+  color: #b08748;
+}
+.arena-v7 .arena-back {
+  border-radius: 10px;
+  margin-bottom: 18px;
+}
+.arena-v7 .duel-team-card {
+  background: #fff;
+  border-radius: 15px;
+}
+.arena-v7 .duel-party-slots > div {
+  border-radius: 14px;
+  min-height: 155px;
+  background: #f5f8fa;
+}
+.arena-v7 .duel-party-slots > div.filled {
+  background: #eef7f2;
+}
+.arena-v7 .duel-team-review {
+  border-radius: 19px;
+  box-shadow: 0 6px 22px #2d496206;
+}
+.arena-v7 .duel-online-card {
+  max-width: 920px;
+  margin-inline: auto;
+  border-radius: 22px;
+  padding: 28px;
+}
+.arena-v7 .duel-online-heading h2 {
+  font-size: 23px;
+}
+.arena-v7 .duel-online-art {
+  background: #eef5f1;
+  border-color: #dae7df;
+}
+@media (max-width: 1180px) {
+  .arena-training-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 16px;
+  }
+  .arena-challenge-panel {
+    padding: 18px;
+  }
+  .arena-preview-court {
+    padding-inline: 20px;
+  }
+  .arena-party-place {
+    gap: 4px;
+    padding-inline: 3px;
+  }
+  .arena-party-place > .pokemon-art {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+  }
+  .arena-party-place strong {
+    font-size: 10px;
+  }
+  .arena-board-footer > span > small {
+    max-width: 145px;
+    line-height: 1.5;
+  }
+}
+@media (max-width: 980px) {
+  .arena-training-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .arena-challenge-panel {
+    padding: 20px;
+  }
+  .arena-v7 .difficulty-picker.challenge-rows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .arena-challenge-heading {
+    margin-bottom: 12px;
+  }
+  .arena-rival-note {
+    padding: 12px 0;
+    margin-top: 12px;
+  }
+  .arena-rival-note p {
+    display: inline;
+    margin-left: 8px;
+  }
+  .arena-rival-note > span {
+    display: block;
+    margin-top: 5px;
+  }
+  .arena-guide-link {
+    padding-top: 12px;
+  }
+  .arena-lobby-heading {
+    gap: 14px;
+  }
+  .arena-v7 .arena-mode-tabs > button {
+    padding: 9px 12px;
+  }
+  .arena-lobby-heading h1 {
+    font-size: 24px;
+  }
+  .arena-party-place > .pokemon-art {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+  }
+  .arena-party-place strong {
+    font-size: 11px;
+  }
+}
+@media (max-width: 600px) {
+  .arena-lobby-heading {
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 18px;
+  }
+  .arena-lobby-heading h1 {
+    font-size: 22px;
+  }
+  .arena-lobby-heading p {
+    font-size: 12px;
+  }
+  .arena-v7 .arena-mode-tabs {
+    width: 100%;
+  }
+  .arena-v7 .arena-mode-tabs > button {
+    flex: 1;
+    padding: 9px 13px;
+  }
+  .arena-board-topline {
+    padding: 15px 17px;
+  }
+  .arena-preview-court {
+    min-height: 230px;
+    padding: 18px 12px 28px;
+    grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+  }
+  .arena-court-sprite {
+    width: min(140px, 100%);
+  }
+  .arena-court-vs {
+    width: 30px;
+    height: 30px;
+    font-size: 8px;
+  }
+  .arena-court-side > strong {
+    font-size: 11px;
+  }
+  .arena-court-trainer {
+    font-size: 10px;
+  }
+  .arena-party-preview {
+    padding: 16px;
+  }
+  .arena-party-heading > span {
+    font-size: 9px;
+  }
+  .arena-party-heading > strong {
+    font-size: 11px;
+  }
+  .arena-party-lineup {
+    gap: 6px;
+  }
+  .arena-party-place {
+    flex-direction: column;
+    gap: 2px;
+    padding: 7px 3px;
+    text-align: center;
+    min-height: 91px;
+  }
+  .arena-party-place > .pokemon-art {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+  .arena-party-place strong {
+    font-size: 10px;
+  }
+  .arena-party-place small {
+    font-size: 8px;
+    margin-top: 2px;
+  }
+  .arena-board-footer {
+    padding: 15px 16px;
+    gap: 10px;
+  }
+  .arena-board-footer > span > strong {
+    font-size: 10px;
+  }
+  .arena-board-footer > span > small {
+    font-size: 9px;
+  }
+  .arena-board-footer > .button {
+    padding: 10px 12px;
+    font-size: 11px;
+    gap: 6px;
+  }
+  .arena-challenge-panel {
+    padding: 17px;
+  }
+  .arena-v7 .challenge-rows > button {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 7px;
+    padding: 8px;
+    position: relative;
+  }
+  .challenge-row-copy > strong {
+    font-size: 11px;
+    display: block;
+  }
+  .challenge-row-copy em {
+    display: none;
+  }
+  .challenge-row-copy > small {
+    font-size: 8px;
+    margin-top: 4px;
+  }
+  .challenge-row-check {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    right: -4px;
+    top: -4px;
+    background: #fff;
+  }
+  .challenge-row-check svg {
+    width: 9px;
+    height: 9px;
+  }
+  .arena-v7 .duel-online-card {
+    padding: 22px 18px;
+  }
+}

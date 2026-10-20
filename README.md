@@ -1,4 +1,4 @@
-# Poképad frontend · interface v6
+# Poképad frontend · interface v7
 
 A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
 
@@ -13,47 +13,47 @@ For development, use Node.js 24:
 
 The preview starts with sample coins, Pokémon, eggs, and packs. No wallet is connected. Trading, wagering, redemption, and walking use labelled preview flows.
 
-## What changed in interface v6
+## What changed in interface v7
 
-Discover now gives each coin a separate token image, a Pokémon mascot that animates on hover or keyboard focus, market cap, social links, launch age, and a watchlist button. The main token stays prominent; gym rankings live on the Gyms page. Watchlists are saved on this device for each trainer wallet. Market cap and volume use explicit USD quote fields when available, with correctly labelled SOL fallbacks.
+Discover cards keep the token image separate from its Pokémon mascot. Hover and keyboard-focus animation retain a stable sprite frame and scale, and a compact line graph sits below the mascot. Cards show market cap, social links, launch age, reward mode, volume, holders, and a wallet-scoped watchlist. Price history is supplied explicitly for live coins; only known demo fixtures receive illustrative trends.
 
-The Pokédex-style search panel finds coins and registered trainer profiles by wallet or name. Its orange, yellow, and green lights animate in sequence. The startup screen uses a single Poké Ball, while cleaner Poké Ball icons, a brighter Electric badge, centered collection sprites, and fuller trainer portraits improve the shared interface.
+The header now uses a wider Pokédex-style search button with a magnifying-glass lens, and the trainer portrait no longer carries a Pokémon overlay. The first navigation destinations are Discover, Create Coin, Portfolio, Rewards, and Analytics. Reward, gym, and battle icons follow the shared outline style. Brock and Blue have stronger clothing colour changes while preserving their original face, hair, pose, and source PNGs.
 
-Analytics shows market and reward-pool totals from the available account snapshot, plus separate account activity and clearly labelled community examples. The expanded How-to guide groups explanations by topic and includes links to the relevant screens. Community examples illustrate pack openings, hatches, purchases, and evolutions; they are not real transactions or inputs to the totals.
+Pokémon summaries use a compact identity and action panel beside a button menu for Stats, Moves, Evolution, and Details. A dedicated move-ready prompt opens the existing learn, replace, or permanently decline flow. Normal and shiny appearances remain visually distinct; owned Pokémon do not inherit their egg or pack tier.
 
-Offline battles now offer Easy, Medium, Hard, and Master bot teams scaled to the selected party, with different species, type matchups, status effects, setup moves, PP, switching, and turn feedback. These matches are for fun and never change owned Pokémon or balances. Online friendly and wager formats have a preparation screen, but matchmaking and settlement remain disconnected.
+Create coin is a four-step wizard: Details, Partner, Rewards, and Review. Details includes Coin and Links subpanels. Choose either an eligible owned Pokémon or your own trainer, regardless of inventory size. The wizard keeps Back and Next controls in a separate footer, contains reward artwork within the choices, and uses an internally scrollable step region only where content needs more space. Tickers keep case and internal spaces within a ten-character input limit.
 
-Pokémon summaries now put HP, battle stats, moves, value, and evolution together. Owned Pokémon have normal or shiny appearances rather than inheriting their egg’s tier. Genuine shiny palettes identify the variant visually. Both eggs and packs draw from varied, funded Gen 1 pools, with legendary and mythical possibilities and distinct shiny values. Reward tiers affect odds; they do not become Pokémon variants.
+Gyms now use a compact league-leader panel, a current-gym contribution panel, a cleaner leaderboard, and matching gym detail pages instead of the pixel-building scene. The Battle arena previews a possible matchup and the current collection beside clear difficulty choices. Offline Easy, Medium, Hard, and Master battles preserve the strategic practice engine and never change owned Pokémon or balances. Online friendly and wager setup remains disconnected from matchmaking and settlement.
 
-The launch page is a five-step wizard: details, Pokémon, rewards, links, and review. Choose an available Pokémon you own, or launch as your trainer when your inventory is empty. Mascot previews animate, and tickers keep case and internal spaces within a ten-character input limit. Uploaded coin images and website, X, Telegram, and Discord links remain independent of that Pokémon. Trainer preferences preview immediately and save automatically.
+Analytics and the categorized How-to remain available. Analytics distinguishes snapshot totals, recorded account actions, and labelled community examples. Creator console has been removed from the interface and routes.
 
-Rare Candy still funds progression: evolution requires 1,000 Candy and sufficient reward-pool funding for the value increase. Eevee’s three Kanto evolutions each have an equal one-third chance. Earned move prompts allow learning, replacing one of four moves, or permanently declining the opportunity.
+Rare Candy still funds progression: evolution requires 1,000 Candy and sufficient reward-pool funding for the value increase. Eevee’s three Kanto evolutions each have an equal one-third chance. Both eggs and packs retain varied funded Gen 1 outcomes, including legendary, mythical, and shiny possibilities.
 
 ## Pages and interactions
 
-| Area           | Included                                                                                                   |
-| -------------- | ---------------------------------------------------------------------------------------------------------- |
-| Discover       | Main token, market-cap cards, separate coin images and mascots, socials, launch age, watchlist and sorting |
-| Search         | Coin name/ticker/contract search, trainer name/wallet lookup, public trainer profiles                      |
-| Analytics      | Snapshot totals, volume ranking, reward-mode breakdown, account activity and labelled community examples   |
-| Coin           | Illustrative chart, trades, holders, rewards, gym, buy/sell review                                         |
-| Create coin    | Five-step wizard, owned Pokémon or trainer identity, separate image, social links and local draft          |
-| Portfolio      | Holdings, holding streaks, Pokémon value, equipped partner's Rare Candy                                    |
-| Rewards        | Eggs/Packs/Opened tabs, source coin badges, timers, walking equivalents, reward tables                     |
-| Reveals        | Animated pack opening, egg hatching and evolution, looping reveal stars, reduced-motion setting            |
-| Walking        | Illustrated map, partner, simulated sessions, egg timer acceleration                                       |
-| Inventory      | Current Pokémon, search, filters, equip action, evolution and move notifications                           |
-| Pokémon detail | HP, species/level stats, expandable move records, funded evolution, learn/forget/decline and sale previews |
-| Pokédex        | All 151 Gen 1 species and permanent discovery history                                                      |
-| Marketplace    | Sample listings, asking prices, own listings and purchase review                                           |
-| Battles        | Offline teams of up to three, four bot difficulties, type/status strategy, moves/PP/HP and switching       |
-| Online setup   | Friendly/SOL/token/Pokémon format selection, whole-team loss explanation; no matchmaking or settlement     |
-| Gyms           | One supported gym, ticker badges, inventory-value leaderboard and trainer views                            |
-| Account        | Autosaving trainer appearance, shoulder portrait, display name, art preference and notifications           |
-| How-to         | Categorized guide to coins, rewards, collection, progression, funding, gyms, battles and account settings  |
-| Other          | Starter selection, creator console, wallet placeholder, How-to in account help and error states            |
+| Area           | Included                                                                                                       |
+| -------------- | -------------------------------------------------------------------------------------------------------------- |
+| Discover       | Main token, market-cap cards, stable hover mascots, compact trends, socials, launch age, watchlist and sorting |
+| Search         | Coin name/ticker/contract search, trainer name/wallet lookup, public trainer profiles                          |
+| Analytics      | Snapshot totals, volume ranking, reward-mode breakdown, account activity and labelled community examples       |
+| Coin           | Illustrative chart, trades, holders, rewards, gym, buy/sell review                                             |
+| Create coin    | Four-step wizard, owned Pokémon or trainer choice, Details links, fixed step controls and local draft          |
+| Portfolio      | Holdings, holding streaks, Pokémon value, equipped partner's Rare Candy                                        |
+| Rewards        | Eggs/Packs/Opened tabs, source coin badges, timers, walking equivalents, reward tables                         |
+| Reveals        | Animated pack opening, egg hatching and evolution, looping reveal stars, reduced-motion setting                |
+| Walking        | Illustrated map, partner, simulated sessions, egg timer acceleration                                           |
+| Inventory      | Current Pokémon, search, filters, equip action, evolution and move notifications                               |
+| Pokémon detail | Persistent identity/actions, Stats/Moves/Evolution/Details menu, move-ready prompt and funded progression      |
+| Pokédex        | All 151 Gen 1 species and permanent discovery history                                                          |
+| Marketplace    | Sample listings, asking prices, own listings and purchase review                                               |
+| Battles        | Offline teams of up to three, four bot difficulties, type/status strategy, moves/PP/HP and switching           |
+| Online setup   | Friendly/SOL/token/Pokémon format selection, whole-team loss explanation; no matchmaking or settlement         |
+| Gyms           | League leader and contribution panels, one supported gym, ticker badges, rankings and trainer profiles         |
+| Account        | Autosaving trainer appearance, shoulder portrait, display name, art preference and notifications               |
+| How-to         | Categorized guide to coins, rewards, collection, progression, funding, gyms, battles and account settings      |
+| Other          | Starter selection, wallet placeholder, How-to in account help and error states                                 |
 
-The sidebar fits the viewport and becomes a mobile drawer. The header search button opens a keyboard-accessible Pokédex-style panel for coin names, tickers, contract addresses, and trainer names or wallets (Ctrl/⌘ K). Unread notifications show a red dot. A small, complete static partner sprite overlays the avatar’s bottom-left without a circular background. Settings are reached through the account menu. A Poké Ball startup screen appears on full page loads and clears after the account state is ready.
+The sidebar fits the viewport and becomes a mobile drawer. The header search button opens a keyboard-accessible Pokédex-style panel for coin names, tickers, contract addresses, and trainer names or wallets (Ctrl/⌘ K). Unread notifications show a red dot. The account portrait shows the trainer only; the equipped partner remains available in My PC and the sidebar companion. Settings are reached through the account menu. A Poké Ball startup screen appears on full page loads and clears after the account state is ready.
 
 ## Reward and evolution accounting
 
@@ -99,7 +99,7 @@ The snapshot and public trainer-directory adapters expect:
 - GET /v1/trainers?query=... → { trainers: PublicTrainer[] }.
 - GET /v1/trainers/:wallet → { trainer: PublicTrainer }, or 404.
 
-`Coin.marketCap` and `Coin.volume` remain SOL amounts. Optional `marketCapUsd` and `volumeUsd` are separate display quotes; `launchedAt` is a Unix timestamp in milliseconds. Local fixtures use `DEMO_SOL_USD = 150` solely to produce sample USD figures. The HTTP adapter never applies this fixture conversion. Analytics currently summarizes the snapshot rather than calling a platform analytics endpoint; live community events need a separate server feed.
+`Coin.marketCap` and `Coin.volume` remain SOL amounts. Optional `marketCapUsd` and `volumeUsd` are separate display quotes; `launchedAt` is a Unix timestamp in milliseconds. Optional `priceHistory` contains ordered numeric price samples for the card trend. Local fixtures use `DEMO_SOL_USD = 150` solely to produce sample USD figures. The HTTP adapter never applies this fixture conversion. Analytics currently summarizes the snapshot rather than calling a platform analytics endpoint; live community events need a separate server feed.
 
 See [docs/backend-contract.md](docs/backend-contract.md). VITE-prefixed environment variables are public browser configuration; backend secrets belong in Railway.
 

@@ -33,6 +33,18 @@ import {
 
 const difficultyNames = Object.keys(DIFFICULTIES) as Difficulty[];
 const trainerCharacters = { Easy: 'leaf', Medium: 'brock', Hard: 'blue', Master: 'red' } as const;
+const trainerColors = {
+  Easy: '#65b883',
+  Medium: '#efb13f',
+  Hard: '#4e9ee8',
+  Master: '#ef5357',
+} as const;
+const challengeLabels = {
+  Easy: 'A lighter team',
+  Medium: 'An even matchup',
+  Hard: 'A stronger rival',
+  Master: 'The toughest challenge',
+};
 const statusLabels = {
   burn: 'BRN',
   poison: 'PSN',
@@ -77,26 +89,56 @@ function Health({ fighter }: { fighter: Fighter }) {
 function DifficultyPicker({
   value,
   onChange,
+  detailed = false,
 }: {
   value: Difficulty;
   onChange: (value: Difficulty) => void;
+  detailed?: boolean;
 }) {
   return (
-    <div className="difficulty-picker" aria-label="Bot difficulty">
+    <div
+      className={'difficulty-picker' + (detailed ? ' challenge-rows' : '')}
+      aria-label="Bot difficulty"
+    >
       {difficultyNames.map((name, index) => (
         <button
           key={name}
+          aria-label={name + ' difficulty'}
           aria-pressed={value === name}
           onClick={() => onChange(name)}
           className={value === name ? 'selected' : ''}
         >
-          <span className="difficulty-pips" aria-hidden="true">
-            {[0, 1, 2, 3].map((pip) => (
-              <i key={pip} className={pip <= index ? 'lit' : ''} />
-            ))}
-          </span>
-          <strong>{name}</strong>
-          <small>{['Warm up', 'Matched', 'Challenge', 'Elite'][index]}</small>
+          {detailed ? (
+            <>
+              <Avatar
+                profile={{
+                  character: trainerCharacters[name],
+                  accessoryColor: trainerColors[name],
+                }}
+                size={48}
+              />
+              <span className="challenge-row-copy">
+                <strong>
+                  {name}
+                  <em>{DIFFICULTIES[name].trainer}</em>
+                </strong>
+                <small>{challengeLabels[name]}</small>
+              </span>
+              <span className="challenge-row-check" aria-hidden="true">
+                {value === name && <Icon name="Check" size={12} />}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="difficulty-pips" aria-hidden="true">
+                {[0, 1, 2, 3].map((pip) => (
+                  <i key={pip} className={pip <= index ? 'lit' : ''} />
+                ))}
+              </span>
+              <strong>{name}</strong>
+              <small>{['Warm up', 'Matched', 'Challenge', 'Elite'][index]}</small>
+            </>
+          )}
         </button>
       ))}
     </div>
@@ -134,6 +176,24 @@ export function BattlesPage() {
     [chosen, difficulty, matchSeed],
   );
   const ownPreview = useMemo(() => createPlayerTeam(chosen), [chosen]);
+  const lobbyParty = useMemo(
+    () =>
+      chosen.length
+        ? chosen
+        : state.pokemon
+            .filter((pokemon) => !pokemon.listed && !pokemon.locked)
+            .sort(
+              (a, b) =>
+                Number(b.id === state.profile.equippedId) -
+                Number(a.id === state.profile.equippedId),
+            )
+            .slice(0, 3),
+    [chosen, state.pokemon, state.profile.equippedId],
+  );
+  const lobbyRivals = useMemo(
+    () => generateRivalTeam(lobbyParty, difficulty, createSeededRandom(matchSeed)),
+    [lobbyParty, difficulty, matchSeed],
+  );
   const relativeStrength = ownPreview.length
     ? Math.round((teamStrength(rivals) / teamStrength(ownPreview)) * 100)
     : Math.round(DIFFICULTIES[difficulty].ratio * 100);
@@ -179,7 +239,7 @@ export function BattlesPage() {
     const exhausted = current.pp.every((value) => value <= 0);
     const lockedMove = current.charging;
     return (
-      <div className="battle-screen arena-v6">
+      <div className="battle-screen arena-v6 arena-v7">
         <div className="battle-page-heading duel-page-heading">
           <button className="button secondary" onClick={leave}>
             <Icon name="ArrowLeft" size={15} />
@@ -521,7 +581,7 @@ export function BattlesPage() {
 
   if (phase === 'team')
     return (
-      <div className="battle-screen arena-v6">
+      <div className="battle-screen arena-v6 arena-v7">
         <button className="button secondary arena-back" onClick={() => setPhase('lobby')}>
           <Icon name="ArrowLeft" size={16} />
           Back to arena
@@ -659,75 +719,173 @@ export function BattlesPage() {
     );
 
   return (
-    <div className="battle-screen arena-v6 arena-lobby">
-      <PageHeading
-        title="Battle arena"
-        description="Build your team. Read the matchup. Make every turn count."
-      />
-      <div className="arena-mode-tabs" aria-label="Battle mode">
-        <button
-          className={mode === 'offline' ? 'active' : ''}
-          aria-pressed={mode === 'offline'}
-          onClick={() => setMode('offline')}
-        >
-          <Icon name="Swords" size={18} />
-          Offline<span>Practice with a bot</span>
-        </button>
-        <button
-          className={mode === 'online' ? 'active' : ''}
-          aria-pressed={mode === 'online'}
-          onClick={() => setMode('online')}
-        >
-          <Icon name="Users" size={18} />
-          Online<span>Challenge a trainer</span>
-        </button>
-      </div>
+    <div className="battle-screen arena-v6 arena-v7 arena-lobby">
+      <header className="arena-lobby-heading">
+        <div>
+          <h1>Battle arena</h1>
+          <p>Your team. Your next challenge.</p>
+        </div>
+        <div className="arena-mode-tabs" aria-label="Battle mode">
+          <button
+            className={mode === 'offline' ? 'active' : ''}
+            aria-pressed={mode === 'offline'}
+            onClick={() => setMode('offline')}
+          >
+            <Icon name="Swords" size={18} />
+            Offline<span>Practice</span>
+          </button>
+          <button
+            className={mode === 'online' ? 'active' : ''}
+            aria-pressed={mode === 'online'}
+            onClick={() => setMode('online')}
+          >
+            <Icon name="Users" size={18} />
+            Online<span>Trainer battles</span>
+          </button>
+        </div>
+      </header>
       {mode === 'offline' ? (
-        <section className="duel-lobby-card">
-          <div className="arena-hero duel-lobby-art">
-            <div className="duel-lobby-pair">
-              <PokemonArt id={6} eager />
-              <span>VS</span>
-              <PokemonArt id={9} eager />
+        <div className="arena-training-layout">
+          <section className="arena-hero practice-arena-board">
+            <div className="arena-board-topline">
+              <h2>Practice arena</h2>
+              <span className="practice-chip">Just for fun</span>
             </div>
-            <div className="duel-lobby-copy">
-              <span className="practice-chip">Offline · Just for fun</span>
-              <h2>A fresh rival. Your next move.</h2>
-              <p>
-                Outsmart a team built around your strength. Try a new lead, find a type advantage,
-                or set up the perfect finish.
-              </p>
+            <div
+              className="arena-preview-court"
+              aria-label="A preview of a possible practice matchup"
+            >
+              <svg
+                className="arena-court-lines"
+                viewBox="0 0 600 270"
+                preserveAspectRatio="xMidYMid slice"
+                aria-hidden="true"
+              >
+                <rect x="32" y="22" width="536" height="226" rx="100" />
+                <path d="M300 22v226" />
+                <circle cx="300" cy="135" r="62" />
+                <circle cx="300" cy="135" r="21" />
+                <path d="M32 135h206m124 0h206" />
+              </svg>
+              <div className="arena-court-side home-side">
+                <div className="arena-court-trainer">
+                  <Avatar profile={state.profile} size={32} />
+                  <span>You</span>
+                </div>
+                <div className="arena-court-sprite">
+                  <PokemonArt
+                    id={lobbyParty[0]?.speciesId || 4}
+                    shiny={lobbyParty[0]?.shiny}
+                    eager
+                  />
+                </div>
+                <strong>
+                  {lobbyParty[0] ? pokemonById(lobbyParty[0].speciesId).name : 'Your next partner'}
+                </strong>
+              </div>
+              <div className="arena-court-vs" aria-hidden="true">
+                VS
+              </div>
+              <div className="arena-court-side away-side">
+                <div className="arena-court-trainer">
+                  <Avatar
+                    profile={{
+                      character: trainerCharacters[difficulty],
+                      accessoryColor: trainerColors[difficulty],
+                    }}
+                    size={32}
+                  />
+                  <span>{DIFFICULTIES[difficulty].trainer}</span>
+                </div>
+                <div className="arena-court-sprite">
+                  <PokemonArt id={lobbyRivals[0]?.speciesId || 7} eager />
+                </div>
+                <strong>
+                  {lobbyRivals[0] ? pokemonById(lobbyRivals[0].speciesId).name : 'A new rival'}
+                </strong>
+              </div>
+              <span className="arena-court-preview-label">Matchup preview</span>
+            </div>
+            <div className="arena-party-preview">
+              <div className="arena-party-heading">
+                <strong>{chosen.length ? 'Your selected party' : 'From your collection'}</strong>
+                <span>Choose 1–3 Pokémon</span>
+              </div>
+              <div className="arena-party-lineup">
+                {[0, 1, 2].map((index) => {
+                  const pokemon = lobbyParty[index];
+                  return (
+                    <button
+                      key={index}
+                      className={'arena-party-place' + (pokemon ? ' occupied' : '')}
+                      onClick={() => setPhase('team')}
+                      aria-label={
+                        pokemon
+                          ? 'Choose your battle party, including ' +
+                            pokemonById(pokemon.speciesId).name
+                          : 'Choose a Pokémon for your party'
+                      }
+                    >
+                      {pokemon ? (
+                        <>
+                          <PokemonArt
+                            id={pokemon.speciesId}
+                            shiny={pokemon.shiny}
+                            animated={false}
+                          />
+                          <span>
+                            <strong>{pokemonById(pokemon.speciesId).name}</strong>
+                            <small>Lv. {pokemon.level}</small>
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Pokeball size={26} />
+                          <span>Add Pokémon</span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="arena-board-footer">
+              <span>
+                <strong>Full HP for every match</strong>
+                <small>Practice leaves your collection unchanged.</small>
+              </span>
               <Button onClick={() => setPhase('team')}>
-                Build your party
+                {chosen.length ? 'Edit your party' : 'Build your party'}
                 <Icon name="ArrowRight" size={16} />
               </Button>
             </div>
-          </div>
-          <aside className="duel-lobby-settings">
-            <h3>Choose your challenge</h3>
-            <DifficultyPicker value={difficulty} onChange={setDifficulty} />
-            <div className="duel-coach">
-              <Avatar
-                profile={{ character: trainerCharacters[difficulty], accessoryColor: '#65b883' }}
-                size={56}
-              />
-              <div>
-                <strong>
-                  {DIFFICULTIES[difficulty].trainer} · {difficulty}
-                </strong>
-                <p>{DIFFICULTIES[difficulty].detail}</p>
-              </div>
+          </section>
+          <aside className="arena-challenge-panel">
+            <div className="arena-challenge-heading">
+              <h2>Choose a rival</h2>
+              <span>Difficulty</span>
             </div>
-            <p className="duel-offline-note">
-              No stakes, no rewards, no lost Pokémon. Try as many teams as you like.
-            </p>
+            <DifficultyPicker value={difficulty} onChange={setDifficulty} detailed />
+            <div className="arena-rival-note">
+              <strong>{DIFFICULTIES[difficulty].trainer}’s approach</strong>
+              <p>{DIFFICULTIES[difficulty].detail}</p>
+              <span>Team strength scales to your selected party.</span>
+            </div>
             {streak > 0 && (
-              <span className="duel-streak">
-                {streak} practice win{streak === 1 ? '' : 's'} in a row
-              </span>
+              <div className="arena-session-streak">
+                <Pokeball size={20} />
+                <span>
+                  <strong>{streak}</strong> practice win{streak === 1 ? '' : 's'} in a row
+                </span>
+              </div>
             )}
+            <a className="arena-guide-link" href="#/guide?topic=battles">
+              <Icon name="BookOpen" size={16} />
+              Battle guide
+              <Icon name="ArrowUpRight" size={14} />
+            </a>
           </aside>
-        </section>
+        </div>
       ) : (
         <section className="duel-online-card">
           <div className="duel-online-heading">
@@ -811,20 +969,6 @@ export function BattlesPage() {
           </div>
         </section>
       )}
-      <section className="duel-tactics">
-        <div>
-          <strong>Know your types</strong>
-          <p>A favourable switch can turn the whole battle around.</p>
-        </div>
-        <div>
-          <strong>Use your setup moves</strong>
-          <p>Lower Attack, raise Speed, or create an opening with status.</p>
-        </div>
-        <div>
-          <strong>Make your PP count</strong>
-          <p>Big attacks have trade-offs. Keep a reliable move in reserve.</p>
-        </div>
-      </section>
     </div>
   );
 }

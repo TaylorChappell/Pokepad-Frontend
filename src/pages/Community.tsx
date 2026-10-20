@@ -1,7 +1,8 @@
 import { useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
-import { collectionValue, profileName } from '../state/model';
+import { collectionValue } from '../state/model';
 import { gymRankings } from '../state/gyms';
+import { DEMO_TRAINERS, ownTrainer } from '../services/trainers';
 import {
   Avatar,
   Badge,
@@ -10,309 +11,411 @@ import {
   EmptyState,
   Icon,
   Modal,
-  PageHeading,
   PokemonArt,
   SolValue,
 } from '../components/UI';
-import { sol } from '../utils';
+import { compact, sol } from '../utils';
+
+type Gym = ReturnType<typeof gymRankings>[number];
+function GymPartner({ gym }: { gym: Gym }) {
+  const { state } = useApp();
+  return (
+    <div className="league-partner-stage" aria-label={gym.name + ' partner'}>
+      <div className="league-stage-ring" aria-hidden="true" />
+      {gym.coin.pokemonId > 0 ? (
+        <PokemonArt id={gym.coin.pokemonId} shiny={gym.coin.pokemonShiny} animated={false} />
+      ) : (
+        <Avatar profile={gym.coin.trainer || state.profile} size={110} />
+      )}
+    </div>
+  );
+}
+
 export function GymsPage() {
-  const { state } = useApp(),
-    ranked = gymRankings(state),
-    champion = ranked.find((g) => g.score > 0) || ranked.find((g) => g.coin.main)!,
-    [filter, setFilter] = useState('All gyms');
+  const { state } = useApp();
+  const ranked = gymRankings(state);
+  const champion =
+    ranked.find((gym) => gym.score > 0) || ranked.find((gym) => gym.coin.main) || ranked[0];
+  const supported = ranked.find((gym) => gym.coinId === state.profile.supportedGym);
+  const [filter, setFilter] = useState('All gyms');
   const rows = ranked.filter(
-    (g) =>
+    (gym) =>
       filter === 'All gyms' ||
-      (filter === 'My gym' && g.coinId === state.profile.supportedGym) ||
-      (filter === 'My communities' && g.coin.holding > 0),
+      (filter === 'My gym' && gym.coinId === state.profile.supportedGym) ||
+      (filter === 'My communities' && gym.coin.holding > 0),
   );
   return (
-    <div className="gym-screen">
-      <PageHeading
-        title="Gyms"
-        description="Support one coin’s gym with the Pokémon in your inventory."
-      />
-      <section className="gym-spotlight">
-        <div className="gym-spotlight-copy">
-          <span className="gym-hall-plate">CHAMPION GYM</span>
-          <h1>{champion.name}</h1>
-          <p>Gym rankings are based on the Pokémon value supported by their trainers.</p>
-          <div className="featured-stats">
-            <span>
-              <strong>{sol(champion.score)} SOL</strong>supported inventory
-            </span>
-            <span>
-              <strong>{champion.supporters}</strong>supporters
-            </span>
-          </div>
-          <a className="button primary" href={'#/gym/' + champion.coinId}>
-            Visit the gym
-            <Icon name="ArrowRight" size={16} />
-          </a>
+    <div className="league-page">
+      <header className="league-page-heading">
+        <div>
+          <h1>Gyms</h1>
+          <p>Choose your community. Put your collection behind it.</p>
         </div>
-        <div className="gym-illustration">
-          <div className="gym-cloud" />
-          <div className="gym-building">
-            <div className="gym-roof" />
-            <div className="gym-sign">GYM</div>
-            <div className="gym-window left" />
-            <div className="gym-window right" />
-            <div className="gym-door" />
-            <Badge label={champion.badge} color={champion.color} size={72} />
+        <a className="league-help-link" href="#/guide?topic=gyms">
+          How gyms work <Icon name="ArrowUpRight" size={15} />
+        </a>
+      </header>
+      {champion && (
+        <div className="league-overview">
+          <section
+            className="league-champion"
+            style={{ '--league-color': champion.color } as CSSProperties}
+          >
+            <div className="league-champion-copy">
+              <span className="league-leader-label">
+                <Icon name="Trophy" size={15} /> Leading gym
+              </span>
+              <div className="league-champion-name">
+                <Badge label={champion.badge} color={champion.color} size={58} />
+                <div>
+                  <h2>{champion.name}</h2>
+                  <span>${champion.coin.ticker} community</span>
+                </div>
+              </div>
+              <div className="league-champion-stats">
+                <div>
+                  <SolValue amount={champion.score} />
+                  <small>Supported Pokémon value</small>
+                </div>
+                <div>
+                  <strong>{compact(champion.supporters)}</strong>
+                  <small>Trainers</small>
+                </div>
+              </div>
+              <a className="league-visit-link" href={'#/gym/' + champion.coinId}>
+                Visit the gym <Icon name="ArrowRight" size={16} />
+              </a>
+            </div>
+            <GymPartner gym={champion} />
+          </section>
+          <aside className="league-your-gym">
+            <span className="league-section-label">Your gym</span>
+            {supported ? (
+              <>
+                <div className="league-support-identity">
+                  <Badge label={supported.badge} color={supported.color} size={48} />
+                  <div>
+                    <strong>{supported.name}</strong>
+                    <span>Rank #{ranked.indexOf(supported) + 1}</span>
+                  </div>
+                  <span className="league-support-check">
+                    <Icon name="Check" size={14} />
+                  </span>
+                </div>
+                <div className="league-your-contribution">
+                  <span>Your contribution</span>
+                  <SolValue amount={collectionValue(state)} />
+                </div>
+                <a href={'#/gym/' + supported.coinId}>
+                  Open your gym <Icon name="ArrowRight" size={15} />
+                </a>
+              </>
+            ) : (
+              <>
+                <div className="league-no-support">
+                  <Icon name="Pokeball" size={32} />
+                  <strong>Find your team</strong>
+                </div>
+                <p>
+                  Support one of the coins you hold. Your Pokémon collection counts towards its
+                  rank.
+                </p>
+                <button onClick={() => setFilter('My communities')}>
+                  See my communities <Icon name="ArrowRight" size={15} />
+                </button>
+              </>
+            )}
+          </aside>
+        </div>
+      )}
+      <section className="league-board" aria-labelledby="league-board-title">
+        <header className="league-board-heading">
+          <div>
+            <h2 id="league-board-title">Gym leaderboard</h2>
+            <span>{ranked.length} active communities</span>
           </div>
-          {champion.coin.pokemonId > 0 ? (
-            <PokemonArt id={champion.coin.pokemonId} animated={false} />
-          ) : (
-            <Avatar profile={champion.coin.trainer || state.profile} size={150} />
+          <div className="league-filters" aria-label="Filter gyms">
+            {['All gyms', 'My communities', 'My gym'].map((item) => (
+              <button
+                key={item}
+                className={filter === item ? 'active' : ''}
+                aria-pressed={filter === item}
+                onClick={() => setFilter(item)}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </header>
+        <div className="league-table">
+          <div className="league-table-heading" aria-hidden="true">
+            <span>Rank</span>
+            <span>Community</span>
+            <span>Trainers</span>
+            <span>Pokémon value</span>
+            <span />
+          </div>
+          {rows.map((gym) => (
+            <a
+              className={
+                'league-row' + (gym.coinId === state.profile.supportedGym ? ' is-supported' : '')
+              }
+              href={'#/gym/' + gym.coinId}
+              key={gym.coinId}
+            >
+              <span className={'league-rank' + (ranked.indexOf(gym) === 0 ? ' is-first' : '')}>
+                {String(ranked.indexOf(gym) + 1).padStart(2, '0')}
+              </span>
+              <div className="league-row-community">
+                <Badge label={gym.badge} color={gym.color} size={45} />
+                <span>
+                  <strong>{gym.name}</strong>
+                  <small>
+                    ${gym.coin.ticker}
+                    {state.profile.supportedGym === gym.coinId && <em>Your gym</em>}
+                  </small>
+                </span>
+              </div>
+              <span className="league-row-trainers">
+                <Icon name="Users" size={14} />
+                {compact(gym.supporters)}
+              </span>
+              <div className="league-row-value">
+                <SolValue amount={gym.score} />
+                <span className="league-score-track" aria-hidden="true">
+                  <i
+                    style={{
+                      width:
+                        (champion?.score ? Math.max(0, (gym.score / champion.score) * 100) : 0) +
+                        '%',
+                    }}
+                  />
+                </span>
+              </div>
+              <Icon name="ChevronRight" size={16} />
+            </a>
+          ))}
+          {!rows.length && (
+            <EmptyState
+              title="No gyms match this filter"
+              description="Hold an active coin and choose the gym you’d like to support."
+            />
           )}
-          <span className="gym-bush bush-one" />
-          <span className="gym-bush bush-two" />
         </div>
       </section>
-      <div className="gym-rule-strip">
-        <span>
-          Each trainer supports one gym. Your Pokémon’s funded value counts towards its rank.
-        </span>
-        <a href="#/guide">
-          How it works
-          <Icon name="ArrowRight" size={14} />
-        </a>
-      </div>
-      <div className="section-heading">
-        <h2>Gym leaderboard</h2>
-        <div className="filter-pills">
-          {['All gyms', 'My communities', 'My gym'].map((f) => (
-            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="panel gym-leaderboard">
-        <div className="gym-table-header">
-          <span>RANK</span>
-          <span>COMMUNITY</span>
-          <span>TRAINERS</span>
-          <span>SUPPORTED INVENTORY</span>
-          <span />
-        </div>
-        {rows.map((g) => (
-          <a
-            className={
-              'gym-leaderboard-row ' + (g.coinId === state.profile.supportedGym ? 'my-gym' : '')
-            }
-            href={'#/gym/' + g.coinId}
-            key={g.coinId}
-          >
-            <span className={'rank ' + (ranked.indexOf(g) === 0 ? 'gold' : '')}>
-              {String(ranked.indexOf(g) + 1).padStart(2, '0')}
-            </span>
-            <div className="gym-row-name">
-              <Badge label={g.badge} color={g.color} size={50} />
-              <span>
-                <strong>{g.name}</strong>
-                <small>
-                  {'$' + g.coin.ticker}
-                  {state.profile.supportedGym === g.coinId && <em>Your gym</em>}
-                </small>
-              </span>
-            </div>
-            <span>
-              <Icon name="Users" size={14} />
-              {g.supporters}
-            </span>
-            <SolValue amount={g.score} />
-            <Icon name="ChevronRight" size={18} />
-          </a>
-        ))}
-        {!rows.length && (
-          <EmptyState
-            title="No gyms match this filter"
-            description="Hold an active coin and choose the gym you’d like to support."
-          />
-        )}
-      </div>
-      <p className="ranking-note">
+      <p className="league-ranking-note">
         <Icon name="Info" size={14} />
-        Ranked by the funded SOL backing of current supporter inventories. Listing prices don’t
-        count. If no gym qualifies, $POKE takes the spotlight.
+        One trainer, one gym. Rankings use Pokémon’s funded value; listing prices do not change the
+        score.
       </p>
     </div>
   );
 }
+
 export function GymDetailPage({ id }: { id: string }) {
-  const { state, act, busy, toast } = useApp(),
-    ranked = gymRankings(state),
-    gym = ranked.find((g) => g.coinId === id),
-    [tab, setTab] = useState('Overview'),
-    [confirm, setConfirm] = useState(false);
+  const { state, mode, act, busy, toast } = useApp();
+  const ranked = gymRankings(state);
+  const gym = ranked.find((item) => item.coinId === id);
+  const [tab, setTab] = useState('Overview');
+  const [confirm, setConfirm] = useState(false);
   if (!gym)
     return (
       <EmptyState
         title="Gym unavailable"
-        description="Only active coin communities can compete for the spotlight."
+        description="This coin does not currently have an active gym."
       >
         <a href="#/gyms" className="button primary">
           Explore gyms
         </a>
       </EmptyState>
     );
-  const supporting = state.profile.supportedGym === id,
-    rank = ranked.indexOf(gym) + 1;
+  const supporting = state.profile.supportedGym === id;
+  const rank = ranked.indexOf(gym) + 1;
+  const trainers = [
+    ...(supporting ? [ownTrainer(state, mode === 'demo')] : []),
+    ...(mode === 'demo'
+      ? DEMO_TRAINERS.filter(
+          (trainer) => trainer.supportedGym === id && trainer.wallet !== state.profile.wallet,
+        )
+      : []),
+  ];
   return (
-    <div className="gym-screen">
-      <a className="button secondary arena-back" href="#/gyms">
+    <div className="league-page league-detail-page">
+      <a className="league-back-link" href="#/gyms">
         <Icon name="ArrowLeft" size={16} />
         Back to gyms
       </a>
-      <section className="gym-detail-hero" style={{ '--gym-color': gym.color } as CSSProperties}>
-        <Badge label={gym.badge} color={gym.color} size={96} />
-        <div>
-          <span className="gym-hall-plate">{rank === 1 ? 'CHAMPION GYM' : 'KANTO GYM'}</span>
-          <h1>{gym.name}</h1>
-          <p>{'$' + gym.coin.ticker} community gym</p>
-          <span className="status-tag">
-            <Icon name="Trophy" size={13} />
-            Rank #{rank}
-          </span>
-        </div>
-        {gym.coin.pokemonId > 0 ? (
-          <PokemonArt id={gym.coin.pokemonId} animated={false} />
-        ) : (
-          <Avatar profile={gym.coin.trainer || state.profile} size={150} />
-        )}
-        <Button
-          variant={supporting ? 'secondary' : 'primary'}
-          disabled={supporting || !gym.coin.holding}
-          onClick={() => setConfirm(true)}
-        >
-          <Icon name={supporting ? 'Check' : 'Heart'} size={16} />
-          {supporting
-            ? 'Your gym'
-            : gym.coin.holding
-              ? 'Support this gym'
-              : 'Hold $' + gym.coin.ticker + ' to support'}
-        </Button>
-      </section>
-      <div className="stats-grid panels-margin">
-        <div className="stat-card">
-          <span>
-            <Icon name="Heart" />
-            Supported inventory
-          </span>
-          <strong>
-            {sol(gym.score)} <small>SOL</small>
-          </strong>
-          <small>Funded backing of supporters’ Pokémon</small>
-        </div>
-        <div className="stat-card">
-          <span>
-            <Icon name="Users" />
-            Our community
-          </span>
-          <strong>{gym.supporters}</strong>
-          <small>Current supporters</small>
-        </div>
-        <div className="stat-card">
-          <span>
-            <Icon name="Shield" />
-            Your contribution
-          </span>
-          <strong>
-            {supporting ? sol(collectionValue(state)) : '0'} <small>SOL</small>
-          </strong>
-          <small>
-            {supporting ? 'Your current Pokémon inventory' : 'Choose this gym to contribute'}
-          </small>
-        </div>
-      </div>
-      <div className="tab-bar">
-        {['Overview', 'Trainers', 'Gym badge'].map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={tab === t ? 'active' : ''}>
-            {t}
-          </button>
-        ))}
-      </div>
-      {tab === 'Overview' ? (
-        <div className="two-column panels-margin">
-          <div className="panel inset">
-            <h2>About this gym</h2>
-            <p>{gym.coin.description}</p>
-            <p>
-              Support one gym at a time. Your current Pokémon collection contributes its reserved
-              SOL value to that team. Changing teams moves your contribution with you.
-            </p>
-            <a className="gym-coin-link" href={'#/coin/' + gym.coinId}>
-              <CoinAvatar coin={gym.coin} />
-              <span>
-                <strong>{gym.coin.name}</strong>
-                <small>{'$' + gym.coin.ticker}</small>
-              </span>
-              <Icon name="ArrowUpRight" />
+      <section
+        className="league-team-header"
+        style={{ '--league-color': gym.color } as CSSProperties}
+      >
+        <div className="league-team-identity">
+          <Badge label={gym.badge} color={gym.color} size={78} />
+          <div>
+            <span className="league-leader-label">
+              <Icon name="Trophy" size={14} />
+              Rank #{rank}
+              {rank === 1 ? ' · Leading gym' : ''}
+            </span>
+            <h1>{gym.name}</h1>
+            <a href={'#/coin/' + gym.coinId}>
+              ${gym.coin.ticker} community <Icon name="ArrowUpRight" size={13} />
             </a>
           </div>
-          <div className="panel inset gym-badge-panel">
-            <Badge label={gym.badge} color={gym.color} size={110} />
-            <h2>The {gym.badge} badge</h2>
-            <p>Displayed on the profiles of this gym’s supporters.</p>
-            <Button variant="secondary" onClick={() => setTab('Gym badge')}>
-              View badge
-              <Icon name="Eye" size={15} />
-            </Button>
+        </div>
+        <GymPartner gym={gym} />
+        <div className="league-team-action">
+          <Button
+            variant={supporting ? 'secondary' : 'primary'}
+            disabled={supporting || !gym.coin.holding}
+            onClick={() => setConfirm(true)}
+          >
+            <Icon name={supporting ? 'Check' : 'Plus'} size={16} />
+            {supporting ? 'Your gym' : 'Support this gym'}
+          </Button>
+          <small>
+            {supporting
+              ? 'Your collection is supporting this team.'
+              : gym.coin.holding
+                ? 'Choose this team as your one supported gym.'
+                : 'Hold $' + gym.coin.ticker + ' to support this gym.'}
+          </small>
+        </div>
+        <div className="league-team-metrics">
+          <div>
+            <span>Supported Pokémon value</span>
+            <SolValue amount={gym.score} />
+          </div>
+          <div>
+            <span>Supporting trainers</span>
+            <strong>{compact(gym.supporters)}</strong>
+          </div>
+          <div>
+            <span>Your contribution</span>
+            <SolValue amount={supporting ? collectionValue(state) : 0} />
           </div>
         </div>
-      ) : tab === 'Trainers' ? (
-        <div className="panel gym-trainers panels-margin">
-          {[...(supporting ? [profileName(state)] : []), 'Leaf', 'Red', 'Misty', 'Brock'].map(
-            (n, i) => (
-              <div className="trainer-row" key={n + i}>
-                <span className="rank">{i + 1}</span>
-                <Avatar
-                  profile={{
-                    character: (['leaf', 'red', 'misty', 'brock'] as const)[i % 4],
-                    accessoryColor: ['#65b883', '#ef5357', '#efb13f', '#4e9ee8'][i % 4],
-                  }}
-                />
-                <span>
-                  <strong>{n}</strong>
-                  <small>
-                    {supporting && i === 0 ? 'Your contribution' : 'Sample community trainer'}
-                  </small>
-                </span>
-                <SolValue
-                  amount={
-                    supporting && i === 0 ? collectionValue(state) : [12.4, 9.8, 8.6, 7.2, 4.8][i]
-                  }
-                />
+      </section>
+      <nav className="league-detail-tabs" aria-label="Gym information">
+        {['Overview', 'Trainers', 'Gym badge'].map((item) => (
+          <button
+            key={item}
+            onClick={() => setTab(item)}
+            className={tab === item ? 'active' : ''}
+            aria-pressed={tab === item}
+          >
+            {item}
+          </button>
+        ))}
+      </nav>
+      {tab === 'Overview' ? (
+        <div className="league-detail-content league-about-grid">
+          <section className="league-about">
+            <h2>About {gym.name}</h2>
+            <p>{gym.coin.description}</p>
+            <div className="league-contribution-note">
+              <Icon name="Pokeball" size={22} />
+              <div>
+                <strong>Your collection makes the difference</strong>
+                <p>
+                  Support one gym at a time. Your Pokémon’s current funded value counts towards its
+                  rank. Changing gyms moves your contribution with you.
+                </p>
               </div>
-            ),
+            </div>
+            <a className="league-coin-link" href={'#/coin/' + gym.coinId}>
+              <CoinAvatar coin={gym.coin} size={40} />
+              <span>
+                <strong>{gym.coin.name}</strong>
+                <small>${gym.coin.ticker}</small>
+              </span>
+              <Icon name="ArrowUpRight" size={17} />
+            </a>
+          </section>
+          <aside className="league-badge-preview">
+            <Badge label={gym.badge} color={gym.color} size={88} />
+            <div>
+              <h2>The {gym.badge} badge</h2>
+              <p>Your team identity, displayed on your trainer profile.</p>
+              <button onClick={() => setTab('Gym badge')}>
+                View badge <Icon name="ArrowRight" size={15} />
+              </button>
+            </div>
+          </aside>
+        </div>
+      ) : tab === 'Trainers' ? (
+        <section className="league-detail-content league-roster">
+          <header>
+            <h2>Supporting trainers</h2>
+            <span>
+              {mode === 'demo'
+                ? 'Trainers available in this preview'
+                : 'Available trainer profiles'}
+            </span>
+          </header>
+          {trainers.map((trainer) => (
+            <a
+              className="league-trainer-row"
+              key={trainer.wallet}
+              href={
+                trainer.wallet === state.profile.wallet
+                  ? '#/profile'
+                  : '#/trainer/' + encodeURIComponent(trainer.wallet)
+              }
+            >
+              <Avatar profile={trainer} size={46} />
+              <span>
+                <strong>
+                  {trainer.displayName}
+                  {trainer.wallet === state.profile.wallet && <em>You</em>}
+                </strong>
+                <small>
+                  {trainer.wallet.slice(0, 6)}…{trainer.wallet.slice(-4)}
+                </small>
+              </span>
+              <SolValue amount={trainer.pokemon.reduce((sum, pokemon) => sum + pokemon.value, 0)} />
+              <Icon name="ChevronRight" size={15} />
+            </a>
+          ))}
+          {!trainers.length && (
+            <EmptyState
+              title="No trainer profiles to show yet"
+              description="Support this gym to add your trainer profile to the roster."
+            />
           )}
-        </div>
+        </section>
       ) : (
-        <div className="panel badge-detail panels-margin">
-          <Badge label={gym.badge} color={gym.color} size={170} />
-          <h2>{gym.badge} badge</h2>
-          <p>
-            Every coin has a gym badge based on its ticker. Your supported gym appears on your
-            trainer profile.
-          </p>
-          <a href="#/profile" className="button secondary">
-            View trainer profile
-            <Icon name="ArrowRight" size={15} />
-          </a>
-        </div>
+        <section className="league-detail-content league-badge-detail">
+          <div
+            className="league-badge-display"
+            style={{ '--league-color': gym.color } as CSSProperties}
+          >
+            <Badge label={gym.badge} color={gym.color} size={148} />
+          </div>
+          <div>
+            <span className="league-section-label">${gym.coin.ticker} community</span>
+            <h2>{gym.badge} badge</h2>
+            <p>
+              Every coin has a badge based on its ticker. Support this gym to show its identity on
+              your trainer profile.
+            </p>
+            <a className="button secondary" href="#/profile">
+              View trainer profile <Icon name="ArrowRight" size={15} />
+            </a>
+          </div>
+        </section>
       )}
       {confirm && (
         <Modal title={'Join ' + gym.name + '?'} onClose={() => setConfirm(false)}>
-          <div className="modal-body support-modal">
-            <Badge label={gym.badge} color={gym.color} size={94} />
-            <h3>Change supported gym</h3>
+          <div className="modal-body support-modal league-support-modal">
+            <Badge label={gym.badge} color={gym.color} size={80} />
+            <h3>{state.profile.supportedGym ? 'Change supported gym' : 'Choose your gym'}</h3>
             <p>
-              Your {sol(collectionValue(state))} SOL of Pokémon backing will support {gym.name}.
-              Your previous gym will lose that contribution.
+              Your {sol(collectionValue(state))} SOL of Pokémon value will support {gym.name}.
+              {state.profile.supportedGym ? ' Your previous gym will lose that contribution.' : ''}
             </p>
-            <div className="notice">
-              <Icon name="Heart" />
+            <div className="league-modal-note">
+              <Icon name="Pokeball" size={18} />
               Your Pokémon stay in your inventory.
             </div>
             <Button
@@ -325,8 +428,7 @@ export function GymDetailPage({ id }: { id: string }) {
                 }
               }}
             >
-              Support this gym
-              <Icon name="Check" size={16} />
+              Support this gym <Icon name="Check" size={16} />
             </Button>
           </div>
         </Modal>

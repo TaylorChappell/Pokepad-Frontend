@@ -406,6 +406,19 @@ test('coin launches require an owned eligible instance, support an independent i
   assert.equal(coin.launchedAt, now);
   assert.equal(coin.marketCapUsd, 0);
   assert.equal(coin.volumeUsd, 0);
+  const selfCoin = applyAction(
+    s,
+    { ...action, launchKind: 'trainer', pokemonInstanceId: undefined },
+    now,
+  ).coins[0];
+  assert.equal(selfCoin.launchKind, 'trainer');
+  assert.equal(selfCoin.pokemonId, 0);
+  assert.equal(selfCoin.launchPokemonId, undefined);
+  assert.equal(selfCoin.trainer?.character, s.profile.character);
+  assert.throws(
+    () => applyAction(s, { ...action, launchKind: 'trainer' }, now),
+    /either your trainer or a Pokémon/,
+  );
   assert.ok(gymRankings(next).some((g) => g.coin.id === coin.id && g.score === 0));
   assert.throws(
     () => applyAction(s, { ...action, pokemonInstanceId: 'not-owned' }, now),

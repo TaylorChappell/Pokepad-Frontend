@@ -366,14 +366,18 @@ export function applyAction(
     if (action.description.length > 280)
       throw new Error('Keep the description under 281 characters.');
     if (!['Eggs', 'Packs', 'Mixed'].includes(action.mode)) throw new Error('Choose a reward mode.');
+    if (action.launchKind !== undefined && !['pokemon', 'trainer'].includes(action.launchKind))
+      throw new Error('Choose your trainer or an owned Pokémon to represent this coin.');
     let launchPokemon: OwnedPokemon | undefined;
-    if (s.pokemon.length) {
-      if (!action.pokemonInstanceId) throw new Error('Choose a Pokémon from your inventory.');
+    if (action.launchKind === 'trainer') {
+      if (action.pokemonInstanceId) throw new Error('Choose either your trainer or a Pokémon.');
+    } else if (action.pokemonInstanceId) {
       launchPokemon = owned(action.pokemonInstanceId);
       if (launchPokemon.listed || launchPokemon.locked)
         throw new Error('Unlist this Pokémon or finish its battle before launching a coin.');
-    } else if (action.pokemonInstanceId)
-      throw new Error('This Pokémon is no longer in your inventory.');
+    } else if (s.pokemon.length || action.launchKind === 'pokemon') {
+      throw new Error('Choose a Pokémon from your inventory or launch as your trainer.');
+    }
     if (action.image) {
       if (!/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/]+=*$/.test(action.image))
         throw new Error('Upload a PNG, JPEG, WebP or GIF image.');

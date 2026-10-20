@@ -11,7 +11,6 @@ import {
   SettingsPage,
   ActivityPage,
   StarterPage,
-  CreatorPage,
 } from './pages/Account';
 import { GymsPage, GymDetailPage } from './pages/Community';
 import { CreateCoinPage } from './pages/CreateCoin';
@@ -63,7 +62,6 @@ function Routes() {
   else if (path === '/settings') page = <SettingsPage tab={params.get('tab') || 'profile'} />;
   else if (path === '/activity') page = <ActivityPage />;
   else if (path === '/starter') page = <StarterPage />;
-  else if (path === '/creator') page = <CreatorPage />;
   else
     page = (
       <EmptyState

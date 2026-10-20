@@ -14,7 +14,8 @@ import { PIXEL_ICONS } from '../data/icons';
 import { SPRITES } from '../data/sprites';
 import { ART_BOUNDS } from '../data/art-bounds';
 import { useOptionalApp } from '../state/AppContext';
-export type IconName = keyof typeof PIXEL_ICONS | 'Pokeball';
+import { TrainerPalettePixels } from './TrainerPalette';
+export type IconName = keyof typeof PIXEL_ICONS | 'Pokeball' | 'Candy' | 'Gym';
 export function Icon({
   name,
   size = 18,
@@ -26,6 +27,39 @@ export function Icon({
   strokeWidth?: number;
 }) {
   if (name === 'Sparkles') return null;
+  if (name === 'Candy' || name === 'Gym' || name === 'Swords')
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={'trainer-nav-icon ' + className}
+        aria-hidden="true"
+      >
+        {name === 'Candy' ? (
+          <>
+            <path d="m7 8-4-1 1 4-2 2 5 1m10-4 5 1-2 2 1 4-4-1" />
+            <rect x="7" y="7" width="10" height="10" rx="3.5" transform="rotate(-35 12 12)" />
+            <path d="m10 10 2-1.2" />
+          </>
+        ) : name === 'Gym' ? (
+          <>
+            <path d="M3 10h18L12 3 3 10Zm2 0v11h14V10M2 21h20M9 21v-5h6v5" />
+            <circle cx="12" cy="8" r="1.5" />
+            <path d="M8 12h1m6 0h1" />
+          </>
+        ) : (
+          <>
+            <path d="m4 3 4 1 11 12-3 3L4 7 4 3Zm13 15 4 4M14 20l6-6M20 3l-4 1-3 4m7-5v4l-4 4M3 22l8-8M4 14l6 6" />
+          </>
+        )}
+      </svg>
+    );
   if (name === 'Pokeball')
     return (
       <svg
@@ -161,6 +195,7 @@ export function PokemonArt({
   animated = true,
   shiny = false,
   frameFill,
+  stableFrames = false,
 }: {
   id: number;
   className?: string;
@@ -171,6 +206,8 @@ export function PokemonArt({
   shiny?: boolean;
   /** Percentage occupied by the complete silhouette; useful for uniform thumbnails. */
   frameFill?: number;
+  /** Keep one sheet, scale and animation timeline when a hover starts or stops. */
+  stableFrames?: boolean;
 }) {
   const app = useOptionalApp(),
     style = styleOverride || app?.state.profile.artStyle || 'pixel',
@@ -191,15 +228,52 @@ export function PokemonArt({
     moving =
       animated && !shiny && !app?.state.profile.reducedMotion && visible && sprite.frames > 1;
   const bounds = ART_BOUNDS[id] || ART_BOUNDS[1];
-  const box = shiny ? bounds.shiny : moving ? bounds.animated : bounds.static;
+  const persistentSheet = stableFrames && !shiny && sprite.frames > 1 && !bounds.animatedUrl;
+  const usingSheet = moving || persistentSheet;
+  const box = shiny ? bounds.shiny : usingSheet ? bounds.animated : bounds.static;
   const span = Math.max(box[2] - box[0], box[3] - box[1]);
   // Normalize transparent source canvases, using every animation frame's union.
   // The whole silhouette fits inside the art window, including wings and tails.
   const fit = frameFill ?? (id === 146 ? 80 : 88);
-  const canvas = shiny ? bounds.shinyCanvas : moving ? bounds.canvas : bounds.staticCanvas;
+  const canvas = shiny ? bounds.shinyCanvas : usingSheet ? bounds.canvas : bounds.staticCanvas;
   const centerX = (box[0] + box[2]) / 2;
   const centerY = (box[1] + box[3]) / 2;
   const label = pokemonById(id).name + (shiny ? ', shiny colour variant' : '');
+  if (style === 'pixel' && !back && stableFrames && !shiny && bounds.animatedUrl) {
+    const layerStyle = (animatedLayer: boolean): CSSProperties => {
+      const layerBox = animatedLayer ? bounds.animated : bounds.static;
+      const layerCanvas = animatedLayer ? bounds.canvas : bounds.staticCanvas;
+      const layerSpan = Math.max(layerBox[2] - layerBox[0], layerBox[3] - layerBox[1]);
+      return {
+        width: (layerCanvas[0] / layerSpan) * fit + '%',
+        height: (layerCanvas[1] / layerSpan) * fit + '%',
+        left: 50 - ((layerBox[0] + layerBox[2]) / 2 / layerSpan) * fit + '%',
+        top: 50 - ((layerBox[1] + layerBox[3]) / 2 / layerSpan) * fit + '%',
+        opacity: Number(animatedLayer === moving),
+      };
+    };
+    return (
+      <span
+        ref={ref}
+        role="img"
+        aria-label={label}
+        className={'pokemon-art sprite-art normalized-art stable-sprite ' + className}
+      >
+        <img
+          className="sprite-gif sprite-crossfade"
+          alt=""
+          src={asset(bounds.staticUrl || sprite.staticUrl)}
+          style={layerStyle(false)}
+        />
+        <img
+          className="sprite-gif sprite-crossfade"
+          alt=""
+          src={asset(bounds.animatedUrl)}
+          style={layerStyle(true)}
+        />
+      </span>
+    );
+  }
   if (style === 'pixel' && !back)
     return (
       <span
@@ -225,7 +299,7 @@ export function PokemonArt({
         ) : (
           <span
             aria-hidden="true"
-            className={'sprite-pixels' + (moving ? ' sprite-pixels-moving' : '')}
+            className={'sprite-pixels' + (usingSheet ? ' sprite-pixels-moving' : '')}
             style={
               {
                 width: (canvas[0] / span) * fit + '%',
@@ -237,12 +311,13 @@ export function PokemonArt({
                   asset(
                     shiny
                       ? 'shiny/' + id + '.png'
-                      : moving
+                      : usingSheet
                         ? sprite.url
                         : bounds.staticUrl || sprite.staticUrl,
                   ) +
                   '")',
-                backgroundSize: moving ? sprite.frames * 100 + '% 100%' : '100% 100%',
+                backgroundSize: usingSheet ? sprite.frames * 100 + '% 100%' : '100% 100%',
+                animationPlayState: persistentSheet && !moving ? 'paused' : undefined,
                 '--sprite-frames': sprite.frames,
                 '--sprite-duration': sprite.frames * sprite.frameMs + 'ms',
                 '--sprite-end': (sprite.frames / (sprite.frames - 1)) * 100 + '%',
@@ -266,7 +341,10 @@ export function PokemonArt({
         'pokemon-art ' +
         (back
           ? 'pixel-art '
-          : 'drawn-art ' + (animated && !app?.state.profile.reducedMotion ? 'idle-drawn ' : '')) +
+          : 'drawn-art ' +
+            ((animated || stableFrames) && !app?.state.profile.reducedMotion
+              ? 'idle-drawn '
+              : '')) +
         className +
         (shiny ? ' shiny-art' : '')
       }
@@ -279,6 +357,7 @@ export function PokemonArt({
           : asset('pokemon/' + (back ? 'back/' : '') + id + '.png')
       }
       alt={label}
+      style={stableFrames && !animated ? { animationPlayState: 'paused' } : undefined}
       loading={eager ? 'eager' : 'lazy'}
       draggable={false}
       width={475}
@@ -399,6 +478,13 @@ export function Avatar({
       Math.floor((innerSize - 2) / crop.headHeight),
     ),
   );
+  const pixelStyle: CSSProperties = {
+    width: 64 * scale,
+    height: 64 * scale,
+    left: Math.round(innerSize / 2 - ((crop.left + crop.right) / 2) * scale),
+    top: 2 - crop.top * scale,
+    clipPath: `inset(${crop.top * scale}px 0 ${(64 - crop.top - 26) * scale}px 0)`,
+  };
   return (
     <span
       className={'trainer-avatar pixel-avatar trainer-portrait trainer-' + profile.character}
@@ -406,21 +492,29 @@ export function Avatar({
         { width: size, height: size, '--trainer-accent': profile.accessoryColor } as CSSProperties
       }
     >
-      <img
-        className="trainer-portrait-pixels"
-        style={{
-          width: 64 * scale,
-          height: 64 * scale,
-          left: Math.round(innerSize / 2 - ((crop.left + crop.right) / 2) * scale),
-          top: 2 - crop.top * scale,
-          clipPath: `inset(${crop.top * scale}px 0 ${(64 - crop.top - 26) * scale}px 0)`,
-        }}
-        src={asset(
-          'trainers/' + profile.character + '-' + profile.accessoryColor.replace('#', '') + '.png',
-        )}
-        alt={profile.character + ' trainer avatar'}
-        draggable={false}
-      />
+      {profile.character === 'brock' || profile.character === 'blue' ? (
+        <TrainerPalettePixels
+          character={profile.character}
+          color={profile.accessoryColor}
+          className="trainer-portrait-pixels"
+          style={pixelStyle}
+          label={profile.character + ' trainer avatar'}
+        />
+      ) : (
+        <img
+          className="trainer-portrait-pixels"
+          style={pixelStyle}
+          src={asset(
+            'trainers/' +
+              profile.character +
+              '-' +
+              profile.accessoryColor.replace('#', '') +
+              '.png',
+          )}
+          alt={profile.character + ' trainer avatar'}
+          draggable={false}
+        />
+      )}
     </span>
   );
 }

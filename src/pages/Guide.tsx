@@ -63,7 +63,7 @@ const topics: GuideTopic[] = [
         title: 'A coin image and a Pokémon have different jobs',
         text: [
           'The coin image is the token’s identity beside its name and ticker. Its Pokémon is the mascot on the card and launch preview. Upload an image independently of the Pokémon you choose.',
-          'When you own Pokémon, launching requires an available Pokémon from your inventory. Listed or locked Pokémon cannot be selected. If your inventory is empty, launch as your trainer instead.',
+          'Launch with an available Pokémon from your inventory or choose your own trainer. Listed or locked Pokémon cannot be selected. Your trainer is available even when you already own Pokémon.',
         ],
       },
       {
@@ -76,15 +76,12 @@ const topics: GuideTopic[] = [
       {
         title: 'Complete the launch wizard',
         text: [
-          'Enter the name, ticker, and description; select your Pokémon; choose rewards; add an image and social links; then review the launch. You can go back between steps before submitting.',
+          'The four steps are Details, Partner, Rewards, and Review. Details contains your name, ticker, image, description, and social links. Choose a Pokémon or trainer partner, select rewards, then review. You can go back before submitting.',
           'Website, X, Telegram, and Discord links are optional. Use full links and check them in the review. Here, completion creates a local coin draft. Actual token creation will require a wallet transaction.',
         ],
       },
     ],
-    links: [
-      { label: 'Create a coin', path: '/create' },
-      { label: 'Creator console', path: '/creator' },
-    ],
+    links: [{ label: 'Create a coin', path: '/create' }],
   },
   {
     id: 'rewards',

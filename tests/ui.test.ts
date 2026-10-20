@@ -113,13 +113,16 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     assert.equal(document.querySelectorAll('.coin-card').length, 8);
     assert.equal(document.querySelector('.gym-spotlight-ribbon'), null);
     assert.equal(app.saved().profile.artStyle, 'pixel');
-    assert.ok(document.querySelector('.equipped-mini'));
-    assert.equal(document.querySelector('.equipped-mini .sprite-pixels-moving'), null);
+    assert.equal(document.querySelector('.equipped-mini'), null);
+    assert.deepEqual(
+      [...document.querySelectorAll('.sidebar .nav-link')]
+        .slice(0, 5)
+        .map((link) => link.getAttribute('href')),
+      ['#/discover', '#/create', '#/portfolio', '#/rewards', '#/analytics'],
+    );
     assert.equal(document.querySelector('.sidebar a[href="#/settings"]'), null);
     assert.doesNotMatch(document.querySelector('.sidebar')?.textContent || '', /Frontend preview/);
     assert.ok(document.querySelector('.trainer-avatar.pixel-avatar'));
-    assert.ok(document.querySelector('.equipped-mini .pokemon-art.normalized-art'));
-    assert.equal(document.querySelector('.equipped-mini .pokemon-headshot'), null);
     await click(document.querySelector('.search-trigger'));
     await fill('.coin-search-field input', 'GENG');
     assert.equal(document.querySelectorAll('.search-dialog-result').length, 1);
@@ -129,6 +132,12 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     assert.ok(document.querySelector('.notification-dropdown'));
     await click(document.querySelector('.dropdown-heading button'));
     assert.equal(document.querySelector('.unread-dot'), null);
+    await click(document.querySelector('.account-button'));
+    assert.equal(document.querySelector('a[href="#/creator"]'), null);
+    assert.doesNotMatch(
+      document.querySelector('.account-dropdown')?.textContent || '',
+      /Creator console/,
+    );
 
     for (const path of [
       '/explore',
@@ -149,7 +158,6 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
       '/settings',
       '/activity',
       '/starter',
-      '/creator',
       '/battles',
       '/guide',
     ]) {
@@ -241,6 +249,57 @@ test('coin search supports keyboard access, exact addresses, empty results and f
       'Enter opens the matching coin and closes search',
     );
     assert.equal(document.getElementById('root')?.hasAttribute('inert'), false);
+  } finally {
+    await app.close();
+  }
+});
+
+test('coin hover preserves sprite geometry and pauses the same animation on exit', async () => {
+  const app = await mountApp('/discover', (state) => {
+    state.profile.reducedMotion = false;
+  });
+  try {
+    const card = app.document.querySelector('.market-coin-card[data-coin-id="char"]')!;
+    const sprite = card.querySelector<HTMLElement>('.sprite-pixels')!;
+    const geometry = () => [
+      sprite.style.width,
+      sprite.style.height,
+      sprite.style.left,
+      sprite.style.top,
+      sprite.style.backgroundImage,
+    ];
+    const before = geometry();
+    assert.equal(sprite.style.animationPlayState, 'paused');
+    assert.ok(card.querySelector('.market-coin-trend svg'));
+    await act(async () => {
+      card.dispatchEvent(
+        new app.dom.window.MouseEvent('mouseover', {
+          bubbles: true,
+          relatedTarget: app.document.body,
+        }),
+      );
+    });
+    assert.equal(
+      card.querySelector('.sprite-pixels'),
+      sprite,
+      'Hover retains the same sprite element',
+    );
+    assert.deepEqual(
+      geometry(),
+      before,
+      'Starting animation does not resize or reposition the source',
+    );
+    assert.notEqual(sprite.style.animationPlayState, 'paused');
+    await act(async () => {
+      card.dispatchEvent(
+        new app.dom.window.MouseEvent('mouseout', {
+          bubbles: true,
+          relatedTarget: app.document.body,
+        }),
+      );
+    });
+    assert.equal(sprite.style.animationPlayState, 'paused');
+    assert.deepEqual(geometry(), before);
   } finally {
     await app.close();
   }
@@ -387,7 +446,7 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
     await click(document.querySelector('.reveal-v3-actions button:first-child'));
     await go('/pokemon');
     assert.equal(app.saved().profile.equippedId, 'hatched-egg-ready');
-    assert.ok(document.querySelector('.equipped-mini'));
+    assert.equal(document.querySelector('.equipped-mini'), null);
     assert.equal(document.querySelector('.equipped-mini .sprite-pixels-moving'), null);
     await go('/rewards?tab=packs');
     assert.equal(
@@ -453,6 +512,7 @@ test('earned moves can be added or replace one move, while Eevee evolves to a fu
     assert.equal(learned.moveOffers[0].status, 'learned');
     assert.equal(document.querySelector('.pending-move-prompt'), null);
     await go('/pokemon/eevee');
+    await click(app.button('Evolution'));
     assert.match(
       document.querySelector('.evolution-funding-note')?.textContent || '',
       /0.075 SOL increase is already funded/,
@@ -501,6 +561,7 @@ test('declined moves stay dismissed on return and evolution is unavailable witho
       'Growl',
     ]);
     await go('/pokemon/bulbasaur');
+    await click(app.button('Evolution'));
     assert.equal(app.button('Evolve Pokémon').disabled, true);
     assert.match(document.querySelector('.evolution-unavailable')?.textContent || '', /fund/i);
     assert.equal(document.querySelector('[role="dialog"]'), null);
@@ -519,20 +580,20 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
   try {
     assert.equal(document.querySelectorAll('.wizard-step').length, 1);
     assert.equal(document.querySelector('.owned-pokemon-selector'), null);
-    assert.equal(app.button('Next: Pokémon').disabled, true);
+    assert.equal(app.button('Next: Partner').disabled, true);
     await fill('#coin-name', 'Mo');
     await fill('#coin-ticker', 'MOON');
     assert.equal(
-      app.button('Next: Pokémon').disabled,
+      app.button('Next: Partner').disabled,
       true,
       'A name shorter than three characters cannot advance',
     );
     await fill('#coin-name', 'Moonstone Club');
     await fill('#coin-ticker', '   ');
-    assert.equal(app.button('Next: Pokémon').disabled, true, 'A blank ticker cannot advance');
+    assert.equal(app.button('Next: Partner').disabled, true, 'A blank ticker cannot advance');
     await fill('#coin-ticker', 'moon club');
     assert.equal(
-      app.button('Next: Pokémon').disabled,
+      app.button('Next: Partner').disabled,
       false,
       'Lowercase and internal spaces are accepted',
     );
@@ -565,21 +626,28 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
         ?.getAttribute('src')
         ?.startsWith('data:image/png;base64,'),
     );
-    await click(app.button('Next: Pokémon'));
+    await click(document.querySelector('.creation-details-tabs button:nth-child(2)'));
+    await fill('#coin-social-x', 'javascript:alert(1)');
+    assert.equal(app.button('Next: Partner').disabled, true);
+    assert.equal(document.querySelector('#coin-social-x')?.getAttribute('aria-invalid'), 'true');
+    await fill('#coin-social-x', 'https://x.com/moonstone');
+    await fill('#coin-social-website', 'https://moonstone.example/');
+    await click(document.querySelector('.creation-details-tabs button:first-child'));
+    await click(app.button('Next: Partner'));
     assert.equal(
       document.querySelector('#coin-name'),
       null,
       'The previous step is not displayed below the current step',
     );
-    const choices = [...document.querySelectorAll('.owned-pokemon-selector button')];
-    assert.equal(choices.length, app.initial.pokemon.length - 1);
-    assert.ok(!choices.some((button) => button.textContent?.includes('Gengar')));
-    await click(choices.find((button) => button.textContent?.includes('Eevee'))!);
+    await fill('[aria-label="Find a launch Pokémon"]', 'Gengar');
+    assert.equal(document.querySelectorAll('.owned-pokemon-selector button').length, 0);
+    await fill('[aria-label="Find a launch Pokémon"]', 'Eevee');
+    await click(document.querySelector('.owned-pokemon-selector button'));
     await click(app.button('Back'));
     assert.equal(document.querySelector<HTMLInputElement>('#coin-name')?.value, 'Moonstone Club');
     assert.equal(document.querySelector<HTMLInputElement>('#coin-ticker')?.value, 'moon club');
     assert.ok(document.querySelector('img[alt="Your coin image"]'));
-    await click(app.button('Next: Pokémon'));
+    await click(app.button('Next: Partner'));
     assert.match(
       document.querySelector('.owned-pokemon-selector [aria-pressed="true"]')?.textContent || '',
       /Eevee/,
@@ -593,23 +661,22 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
       )!,
     );
     assert.match(rewardModes.querySelector('[aria-pressed="true"]')?.textContent || '', /Packs/);
-    await click(app.button('Next: Links'));
-    await fill('#coin-social-x', 'javascript:alert(1)');
-    assert.equal(app.button('Review coin').disabled, true);
-    assert.equal(document.querySelector('#coin-social-x')?.getAttribute('aria-invalid'), 'true');
-    await fill('#coin-social-x', 'https://x.com/moonstone');
-    await fill('#coin-social-website', 'https://moonstone.example/');
     await click(app.button('Review coin'));
     assert.match(
       document.querySelector('.wizard-review-identity')?.textContent || '',
       /Moonstone Club/,
     );
     assert.match(document.querySelector('.wizard-review-list')?.textContent || '', /Eevee/);
-    await click(app.button('Back'));
+    const linksReview = [...document.querySelectorAll('.wizard-review-list > div')].find(
+      (row) => row.querySelector('dt')?.textContent === 'Community links',
+    );
+    await click(linksReview?.querySelector('button') || null);
     assert.equal(
       document.querySelector<HTMLInputElement>('#coin-social-x')?.value,
       'https://x.com/moonstone',
     );
+    await click(app.button('Next: Partner'));
+    await click(app.button('Next: Rewards'));
     await click(app.button('Review coin'));
     await click(app.button('Create coin draft'));
     const saved = app.saved();
@@ -651,14 +718,13 @@ test('the launch wizard supports a trainer coin when the inventory is empty', as
   try {
     await app.fill('#coin-name', 'Trainer Club');
     await app.fill('#coin-ticker', 'TRAIN');
-    await app.click(app.button('Next: Pokémon'));
+    await app.click(app.button('Next: Partner'));
     assert.equal(app.document.querySelector('.owned-pokemon-selector'), null);
     assert.match(
       app.document.querySelector('main')?.textContent || '',
-      /coin will launch as your trainer/,
+      /Your trainer will represent this coin/,
     );
     await app.click(app.button('Next: Rewards'));
-    await app.click(app.button('Next: Links'));
     await app.click(app.button('Review coin'));
     await app.click(app.button('Create coin draft'));
     const coin = app.saved().coins.find((coin) => coin.ticker === 'TRAIN')!;
@@ -668,6 +734,28 @@ test('the launch wizard supports a trainer coin when the inventory is empty', as
       character: app.initial.profile.character,
       accessoryColor: app.initial.profile.accessoryColor,
     });
+  } finally {
+    await app.close();
+  }
+});
+
+test('a trainer launch is available with an owned collection and keeps that collection unchanged', async () => {
+  const app = await mountApp('/create');
+  try {
+    await app.fill('#coin-name', 'Trainer Club');
+    await app.fill('#coin-ticker', 'my trainer');
+    await app.click(app.button('Next: Partner'));
+    assert.ok(app.document.querySelector('.owned-pokemon-selector'));
+    await app.click(app.document.querySelector('.launch-partner-source button:nth-child(2)'));
+    assert.equal(app.document.querySelector('.owned-pokemon-selector'), null);
+    await app.click(app.button('Next: Rewards'));
+    await app.click(app.button('Review coin'));
+    await app.click(app.button('Create coin draft'));
+    const saved = app.saved();
+    const coin = saved.coins.find((entry) => entry.ticker === 'my trainer')!;
+    assert.equal(coin.launchKind, 'trainer');
+    assert.equal(coin.launchPokemonId, undefined);
+    assert.equal(saved.pokemon.length, app.initial.pokemon.length);
   } finally {
     await app.close();
   }
@@ -694,6 +782,18 @@ test('Pokémon summary exposes current HP and stats without individual reward-ti
     );
     assert.equal(app.document.querySelector('main .rarity-badge'), null);
     assert.ok(app.document.querySelector('main .pokemon-art'));
+    await app.click(app.button('Moves'));
+    assert.equal(
+      app.document.querySelector('.summary-stats'),
+      null,
+      'Only the selected information panel is shown',
+    );
+    assert.ok(app.document.querySelector('.summary-main-actions'));
+    assert.ok(app.document.querySelector('.pending-move-prompt'));
+    await app.click(app.button('Details'));
+    assert.ok(app.document.querySelector('.summary-main-actions'));
+    await app.click(app.button('Stats'));
+    assert.ok(app.document.querySelector('.summary-stats'));
   } finally {
     await app.close();
   }

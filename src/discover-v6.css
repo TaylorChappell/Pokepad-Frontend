@@ -97,7 +97,7 @@
 .coin-card.market-coin-card:focus-within {
   border-color: #bccfe3;
   box-shadow: 0 10px 26px #2746610c;
-  transform: translateY(-3px);
+  transform: none;
   translate: none;
 }
 .market-coin-header {
@@ -264,9 +264,36 @@
 .market-mascot-stage > .trainer-avatar {
   border-radius: 17px;
 }
+.market-coin-trend,
+.market-trend-empty {
+  height: 48px;
+  margin: -3px 0 8px;
+  pointer-events: none;
+}
+.market-coin-trend > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.market-coin-trend.trend-up {
+  color: #69af99;
+}
+.market-coin-trend.trend-down {
+  color: #df8a91;
+}
+.market-trend-empty {
+  height: 18px;
+  margin-top: 6px;
+  border-bottom: 1px dashed #e4eaf0;
+}
+.market-mascot-stage > .shiny-art {
+  animation: market-shiny-idle 1.6s ease-in-out infinite;
+  animation-play-state: paused;
+}
 .market-coin-card:hover .market-mascot-stage > .shiny-art,
 .market-coin-card:focus-within .market-mascot-stage > .shiny-art {
-  animation: market-shiny-idle 1.6s ease-in-out infinite;
+  animation-play-state: running;
 }
 @keyframes market-shiny-idle {
   0%,

@@ -1,0 +1,58 @@
+.account-button .avatar-wrap {
+  margin-left: 0;
+}
+.search-trigger {
+  width: clamp(280px, 25vw, 380px);
+  justify-content: flex-start;
+  padding: 0 18px;
+  gap: 15px;
+}
+.search-trigger kbd {
+  margin-left: auto;
+}
+.search-trigger .search-trigger-lens {
+  position: relative;
+  width: 19px;
+  height: 19px;
+  margin-right: 4px;
+}
+.search-trigger-lens::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 5px;
+  right: -7px;
+  bottom: -4px;
+  border: 1px solid #fff4df;
+  border-radius: 2px;
+  background: #4c9dc6;
+  transform: rotate(45deg);
+  box-shadow: 0 1px 0 #a54d4430;
+}
+.trainer-nav-icon {
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.normalized-art .sprite-crossfade {
+  transition: opacity 160ms ease-out;
+}
+@media (max-width: 1100px) {
+  .search-trigger {
+    width: clamp(210px, 26vw, 280px);
+  }
+}
+@media (max-width: 760px) {
+  .search-trigger {
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .normalized-art .sprite-crossfade {
+    transition: none;
+  }
+}
+[data-motion='reduced'] .normalized-art .sprite-crossfade {
+  transition: none;
+}

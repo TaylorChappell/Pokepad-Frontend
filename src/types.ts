@@ -29,6 +29,8 @@ export interface Coin {
   marketCapUsd?: number;
   volumeUsd?: number;
   launchedAt?: number;
+  /** Ordered price samples for the compact, unlabelled card trend. Never inferred in live mode. */
+  priceHistory?: number[];
   totalSupply: number;
   holders: number;
   vault: number;
@@ -170,6 +172,7 @@ export type Action =
   | { type: 'starter.choose'; speciesId: number }
   | {
       type: 'coin.create';
+      launchKind?: 'pokemon' | 'trainer';
       name: string;
       ticker: string;
       description: string;

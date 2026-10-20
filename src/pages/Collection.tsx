@@ -246,6 +246,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
   const { state, act, busy, toast } = useApp(),
     p = state.pokemon.find((p) => p.id === id),
     [dialog, setDialog] = useState<'learn' | 'evolve' | 'sell' | 'redeem' | null>(null),
+    [section, setSection] = useState<'stats' | 'moves' | 'evolution' | 'details'>('stats'),
     [replaceIndex, setReplaceIndex] = useState<number | null>(null),
     [declining, setDeclining] = useState(false),
     [price, setPrice] = useState(''),
@@ -335,16 +336,12 @@ export function PokemonDetailPage({ id }: { id: string }) {
     }
   };
   return (
-    <div className="pokemon-summary-page">
-      <a href="#/pokemon" className="pokemon-back-button">
-        <Icon name="ArrowLeft" size={19} />
-        Back to My Pokémon
-      </a>
-      <header className="summary-heading">
-        <div>
-          <span className="summary-eyebrow">POKÉMON SUMMARY</span>
-          <h1>{species.name}</h1>
-        </div>
+    <div className="pokemon-summary-page summary-v7">
+      <div className="summary-toolbar">
+        <a href="#/pokemon" className="pokemon-back-button">
+          <Icon name="ArrowLeft" size={18} />
+          Back to My PC
+        </a>
         <span
           className={
             'summary-battle-status ' + (unavailable || health.current === 0 ? 'unavailable' : '')
@@ -359,277 +356,376 @@ export function PokemonDetailPage({ id }: { id: string }) {
                 ? 'Needs healing'
                 : 'Ready for battle'}
         </span>
-      </header>
-      <div className="summary-device">
-        <div className="summary-device-body">
-          <section
-            className={'summary-mon-screen ' + (p.shiny ? 'variant-glow' : '')}
-            style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
-          >
-            <div className="summary-screen-label">
+      </div>
+      <div className="summary-workspace">
+        <section
+          className={'summary-mon-screen ' + (p.shiny ? 'variant-glow' : '')}
+          style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
+          aria-label={species.name + ' summary'}
+        >
+          <header className="summary-identity">
+            <div>
               <span>No. {String(species.id).padStart(3, '0')}</span>
-              <strong>Lv. {p.level}</strong>
+              <h1>{species.name}</h1>
             </div>
-            <div className="summary-pokemon-stage">
-              <div className="summary-pokeball-watermark" aria-hidden="true" />
-              <PokemonArt id={p.speciesId} shiny={p.shiny} eager />
-              <div className="summary-ground" />
-            </div>
-            <div className="summary-species-line">
-              {equipped && (
-                <span className="partner-label">
-                  <Icon name="Heart" size={14} />
-                  Your partner
-                </span>
-              )}
-              <SpeciesDistinction id={species.id} />
-            </div>
+            <strong>Lv. {p.level}</strong>
+          </header>
+          <div className="summary-pokemon-stage">
+            <div className="summary-pokeball-watermark" aria-hidden="true" />
+            <PokemonArt id={p.speciesId} shiny={p.shiny} eager />
+            <div className="summary-ground" />
+          </div>
+          <div className="summary-species-line">
             <div className="type-row">
-              {species.types.map((t) => (
-                <TypeChip type={t} key={t} />
+              {species.types.map((type) => (
+                <TypeChip type={type} key={type} />
               ))}
             </div>
-            <div className="summary-value">
-              <span>Pokémon value</span>
-              <SolValue amount={p.backing} />
-            </div>
-            <div className="summary-main-actions">
+            {equipped && (
+              <span className="summary-partner-mark">
+                <Icon name="Heart" size={13} />
+                Partner
+              </span>
+            )}
+            <SpeciesDistinction id={species.id} />
+          </div>
+          <HealthMeter pokemon={p} />
+          <div className="summary-value">
+            <span>Pokémon value</span>
+            <SolValue amount={p.backing} />
+          </div>
+          <div className="summary-main-actions">
+            <Button
+              disabled={equipped || unavailable || busy}
+              onClick={async () => {
+                if (await act({ type: 'pokemon.equip', id: p.id }))
+                  toast(species.name + ' equipped.');
+              }}
+            >
+              <Icon name="Heart" size={16} />
+              {equipped ? 'Equipped' : 'Equip Pokémon'}
+            </Button>
+            {p.listed ? (
               <Button
-                disabled={equipped || unavailable || busy}
+                variant="secondary"
+                disabled={busy}
                 onClick={async () => {
-                  if (await act({ type: 'pokemon.equip', id: p.id }))
-                    toast(species.name + ' equipped.');
+                  if (await act({ type: 'pokemon.unlist', id: p.id })) toast('Listing removed.');
                 }}
               >
-                <Icon name="Heart" size={17} />
-                {equipped ? 'Equipped' : 'Equip Pokémon'}
+                Unlist
               </Button>
-              {p.listed ? (
-                <Button
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={async () => {
-                    if (await act({ type: 'pokemon.unlist', id: p.id })) toast('Listing removed.');
-                  }}
-                >
-                  Unlist
-                </Button>
-              ) : (
-                <Button
-                  variant="secondary"
-                  disabled={!!p.starter || !!p.locked || busy}
-                  onClick={() => {
-                    setPrice(String(Math.round(p.backing * 1.2 * 100) / 100));
-                    setDialog('sell');
-                  }}
-                >
-                  Sell
-                </Button>
-              )}
-            </div>
-            {origin && (
-              <a href={'#/coin/' + origin.id} className="summary-origin">
-                <span>From</span>
-                <CoinAvatar coin={origin} size={26} />
-                <strong>{'$' + origin.ticker}</strong>
-                <Icon name="ArrowUpRight" size={14} />
-              </a>
+            ) : (
+              <Button
+                variant="secondary"
+                disabled={!!p.starter || !!p.locked || busy}
+                onClick={() => {
+                  setPrice(String(Math.round(p.backing * 1.2 * 100) / 100));
+                  setDialog('sell');
+                }}
+              >
+                Sell
+              </Button>
             )}
-            {p.starter && (
-              <p className="summary-starter-note">
-                Your starter becomes tradeable after a funded evolution.
-              </p>
-            )}
-          </section>
-          <div className="summary-data">
-            <section className="summary-stats">
-              <div className="summary-section-heading">
-                <div>
-                  <h2>Battle stats</h2>
+          </div>
+          {p.starter && (
+            <p className="summary-starter-note">
+              Your starter becomes tradeable after a funded evolution.
+            </p>
+          )}
+        </section>
+        <div className="summary-command-panel">
+          <nav className="summary-menu" aria-label="Pokémon information">
+            {(
+              [
+                { id: 'stats', label: 'Stats', icon: 'Activity' },
+                { id: 'moves', label: 'Moves', icon: 'Swords' },
+                { id: 'evolution', label: 'Evolution', icon: 'Sparkles' },
+                { id: 'details', label: 'Details', icon: 'Info' },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.id}
+                aria-pressed={section === item.id}
+                aria-controls={'summary-panel-' + id}
+                onClick={() => setSection(item.id)}
+              >
+                {item.id === 'evolution' ? <CandySprite /> : <Icon name={item.icon} size={17} />}
+                <span>{item.label}</span>
+                {item.id === 'moves' && offer && (
+                  <i className="summary-menu-dot" aria-label="New move available" />
+                )}
+                {item.id === 'evolution' && evoStatus.canEvolve && (
+                  <i className="summary-menu-dot" aria-label="Evolution ready" />
+                )}
+              </button>
+            ))}
+          </nav>
+          {offer && newMove && (
+            <button
+              className="pending-move-prompt"
+              aria-label={species.name + ' can learn ' + offer.move + '. Review move'}
+              disabled={unavailable || busy}
+              onClick={() => {
+                setReplaceIndex(null);
+                setDeclining(false);
+                setDialog('learn');
+              }}
+            >
+              <span className="move-prompt-symbol">
+                <Icon name="BookOpen" size={21} />
+              </span>
+              <span className="move-prompt-copy">
+                <small>Move ready at Lv. {offer.level}</small>
+                <strong>{offer.move}</strong>
+              </span>
+              <TypeChip type={newMove.type} />
+              <span className="move-prompt-review">
+                Review <Icon name="ChevronRight" size={15} />
+              </span>
+            </button>
+          )}
+          <div className="summary-information" id={'summary-panel-' + id}>
+            {section === 'stats' && (
+              <section className="summary-stats" aria-label="Battle stats">
+                <div className="summary-section-heading">
+                  <div>
+                    <h2>Battle stats</h2>
+                    <p>A closer look at your Pokémon’s strengths.</p>
+                  </div>
+                  <span className="stat-level">Lv. {p.level}</span>
                 </div>
-                <span className="stat-level">Lv. {p.level}</span>
-              </div>
-              <HealthMeter pokemon={p} />
-              <div className="stat-rows">
-                {statRows.map((stat) => (
-                  <div className="stat-row" key={stat.name}>
-                    <span>{stat.name}</span>
-                    <strong>{stat.value}</strong>
-                    <div>
-                      <i
-                        style={{
-                          width: (stat.value / statScale) * 100 + '%',
-                          background: stat.color,
-                        }}
-                      />
+                <div className="stat-rows">
+                  {statRows.map((stat) => (
+                    <div className="stat-row" key={stat.name}>
+                      <span>{stat.name}</span>
+                      <strong>{stat.value}</strong>
+                      <div>
+                        <i
+                          style={{
+                            width: (stat.value / statScale) * 100 + '%',
+                            background: stat.color,
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <p className="stat-note">Stats reflect this Pokémon’s species and current level.</p>
-            </section>
-            <section className="summary-candy">
-              <div className="row-between">
-                <h2>
+                  ))}
+                </div>
+                <div className="summary-training-strip">
                   <CandySprite />
-                  Rare Candy
-                </h2>
-                <strong>
-                  {p.rareCandy.toLocaleString()}
-                  <small>
-                    {species.evolvesTo.length
-                      ? ' / ' + EVOLUTION_CANDY.toLocaleString()
-                      : ' collected'}
-                  </small>
-                </strong>
-              </div>
-              {species.evolvesTo.length ? (
-                <>
-                  <Progress value={(p.rareCandy / EVOLUTION_CANDY) * 100} color="#7f8ddb" />
-                  <div className="evolution-funding-row">
-                    <span>After evolution</span>
-                    <SolValue amount={evoStatus.nextValue} />
-                  </div>
-                  <p className="evolution-funding-note">
-                    {evoStatus.fundingNeeded > 0
-                      ? sol(evoStatus.fundingNeeded) +
-                        ' SOL will come from this coin’s reward pool.'
-                      : 'The ' + sol(evoStatus.valueIncrease) + ' SOL increase is already funded.'}
-                  </p>
-                  <Button
-                    className="full-width evolve-action"
-                    disabled={!evoStatus.canEvolve || busy}
-                    onClick={() => {
-                      setEvolution({ from: p.speciesId, before: p.backing, phase: 'ready' });
-                      setDialog('evolve');
-                    }}
-                  >
-                    <CandySprite />
-                    Evolve Pokémon
-                  </Button>
-                  {!evoStatus.canEvolve && (
-                    <small className="evolution-unavailable">
-                      {evoStatus.reason || 'Evolution is not ready.'}
+                  <span>
+                    <strong>{p.rareCandy.toLocaleString()} Rare Candy</strong>
+                    <small>
+                      {equipped ? 'Your equipped partner' : 'Equip this Pokémon to collect Candy'}
                     </small>
-                  )}
-                </>
-              ) : (
-                <p>
-                  Final Kanto evolution. Your partner still collects Rare Candy while you hold
-                  active coins.
+                  </span>
+                  <button
+                    onClick={() => setSection('evolution')}
+                    aria-label="View evolution progress"
+                  >
+                    <Icon name="ArrowRight" size={18} />
+                  </button>
+                </div>
+                <p className="stat-note">Stats reflect this Pokémon’s species and current level.</p>
+              </section>
+            )}
+            {section === 'moves' && (
+              <section className="summary-moves" aria-label="Moves">
+                <div className="row-between">
+                  <h2>Move set</h2>
+                  <span className="move-count">{p.moves.length} / 4 moves</span>
+                </div>
+                <div className="summary-move-grid">
+                  {p.moves.map((name, index) => {
+                    const move = moveByName(name);
+                    return (
+                      <details
+                        className="summary-move-card"
+                        key={name}
+                        style={{ '--move-color': TYPE_COLORS[move.type] } as CSSProperties}
+                      >
+                        <summary>
+                          <div className="move-card-identity">
+                            <span className="move-slot">{index + 1}</span>
+                            <strong>{name}</strong>
+                            <Icon name="ChevronDown" size={16} />
+                          </div>
+                          <TypeChip type={move.type} />
+                          <dl>
+                            <div>
+                              <dt>POWER</dt>
+                              <dd>{move.power ?? '—'}</dd>
+                            </div>
+                            <div>
+                              <dt>ACCURACY</dt>
+                              <dd>{move.accuracy === null ? '—' : move.accuracy + '%'}</dd>
+                            </div>
+                            <div>
+                              <dt>PP</dt>
+                              <dd>{move.pp}</dd>
+                            </div>
+                          </dl>
+                        </summary>
+                        <p>{move.description}</p>
+                      </details>
+                    );
+                  })}
+                  {Array.from({ length: Math.max(0, 4 - p.moves.length) }, (_, index) => (
+                    <div className="summary-move-card empty" key={'empty' + index}>
+                      <span className="move-slot">{p.moves.length + index + 1}</span>
+                      <strong>Open move slot</strong>
+                      <p>For the next move you learn.</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="moves-footnote">
+                  Select a move for its effect. New moves appear when a level-up opportunity is
+                  earned.
                 </p>
-              )}
-            </section>
+              </section>
+            )}
+            {section === 'evolution' && (
+              <section className="summary-candy" aria-label="Evolution">
+                <div className="row-between">
+                  <h2>
+                    <CandySprite />
+                    Evolution
+                  </h2>
+                  <strong>
+                    {p.rareCandy.toLocaleString()}
+                    <small>
+                      {species.evolvesTo.length
+                        ? ' / ' + EVOLUTION_CANDY.toLocaleString()
+                        : ' Candy'}
+                    </small>
+                  </strong>
+                </div>
+                {species.evolvesTo.length ? (
+                  <>
+                    <Progress value={(p.rareCandy / EVOLUTION_CANDY) * 100} color="#7f8ddb" />
+                    <div className="evolution-line-sprites">
+                      <div>
+                        <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                        <strong>{species.name}</strong>
+                        <small>Current</small>
+                      </div>
+                      <span className="evolution-arrow">
+                        <Icon name="ArrowRight" size={18} />
+                      </span>
+                      {species.evolvesTo.map((next) => (
+                        <div key={next}>
+                          <PokemonArt id={next} shiny={p.shiny} animated={false} />
+                          <strong>{pokemonById(next).name}</strong>
+                          {species.evolvesTo.length > 1 && <small>33⅓%</small>}
+                        </div>
+                      ))}
+                    </div>
+                    {species.id === 133 && (
+                      <p className="summary-evolution-odds">
+                        Each evolution has an equal 1-in-3 chance.
+                      </p>
+                    )}
+                    <div className="evolution-funding-row">
+                      <span>After evolution</span>
+                      <SolValue amount={evoStatus.nextValue} />
+                    </div>
+                    <p className="evolution-funding-note">
+                      {evoStatus.fundingNeeded > 0
+                        ? sol(evoStatus.fundingNeeded) +
+                          ' SOL will come from this coin’s reward pool.'
+                        : 'The ' +
+                          sol(evoStatus.valueIncrease) +
+                          ' SOL increase is already funded.'}
+                    </p>
+                    <Button
+                      className="full-width evolve-action"
+                      disabled={!evoStatus.canEvolve || busy}
+                      onClick={() => {
+                        setEvolution({ from: p.speciesId, before: p.backing, phase: 'ready' });
+                        setDialog('evolve');
+                      }}
+                    >
+                      <CandySprite />
+                      Evolve Pokémon
+                    </Button>
+                    {!evoStatus.canEvolve && (
+                      <small className="evolution-unavailable">
+                        {evoStatus.reason || 'Evolution is not ready.'}
+                      </small>
+                    )}
+                  </>
+                ) : (
+                  <div className="summary-final-evolution">
+                    <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                    <h3>Fully evolved</h3>
+                    <p>
+                      This Pokémon has no further Kanto evolution. Your equipped partner can keep
+                      collecting Rare Candy from active coins.
+                    </p>
+                  </div>
+                )}
+              </section>
+            )}
+            {section === 'details' && (
+              <section className="summary-details" aria-label="Collection details">
+                <h2>Collection record</h2>
+                <dl>
+                  <div>
+                    <dt>Pokédex entry</dt>
+                    <dd>
+                      No. {String(species.id).padStart(3, '0')} · {species.name}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Joined your collection</dt>
+                    <dd>
+                      {new Date(p.acquiredAt).toLocaleDateString('en-GB', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                      })}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Status</dt>
+                    <dd>
+                      {p.listed
+                        ? 'Listed on marketplace'
+                        : p.locked
+                          ? 'In battle'
+                          : p.starter
+                            ? 'Starter Pokémon'
+                            : 'In your inventory'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>From</dt>
+                    <dd>
+                      {origin ? (
+                        <a href={'#/coin/' + origin.id} className="summary-origin">
+                          <CoinAvatar coin={origin} size={24} />
+                          <strong>${origin.ticker}</strong>
+                          <Icon name="ArrowUpRight" size={14} />
+                        </a>
+                      ) : (
+                        'Starter selection'
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+                <a href={'#/pokedex?species=' + species.id} className="summary-record-link">
+                  <Icon name="BookOpen" size={18} />
+                  Open Pokédex entry
+                  <Icon name="ArrowUpRight" size={15} />
+                </a>
+                <p>
+                  Your Pokédex remembers this species even after you sell or redeem this Pokémon.
+                </p>
+              </section>
+            )}
           </div>
         </div>
       </div>
-      <section className="summary-moves">
-        <div className="row-between">
-          <div>
-            <h2>Moves</h2>
-          </div>
-          <span className="move-count">{p.moves.length} / 4 moves</span>
-        </div>
-        {offer && (
-          <button
-            className="pending-move-prompt"
-            disabled={unavailable || busy}
-            onClick={() => {
-              setReplaceIndex(null);
-              setDeclining(false);
-              setDialog('learn');
-            }}
-          >
-            <span className="move-prompt-symbol">
-              <Icon name="BookOpen" size={23} />
-            </span>
-            <span>
-              <strong>
-                {species.name} wants to learn {offer.move}!
-              </strong>
-              <small>Available at Lv. {offer.level} · Choose to learn or skip</small>
-            </span>
-            <Icon name="ArrowRight" size={19} />
-          </button>
-        )}
-        <div className="summary-move-grid">
-          {p.moves.map((name, i) => {
-            const move = moveByName(name);
-            return (
-              <details
-                className="summary-move-card"
-                key={name}
-                style={{ '--move-color': TYPE_COLORS[move.type] } as CSSProperties}
-              >
-                <summary>
-                  <div className="move-card-identity">
-                    <span className="move-slot">{i + 1}</span>
-                    <strong>{name}</strong>
-                    <Icon name="ChevronDown" size={16} />
-                  </div>
-                  <TypeChip type={move.type} />
-                  <dl>
-                    <div>
-                      <dt>POWER</dt>
-                      <dd>{move.power ?? '—'}</dd>
-                    </div>
-                    <div>
-                      <dt>ACCURACY</dt>
-                      <dd>{move.accuracy === null ? '—' : move.accuracy + '%'}</dd>
-                    </div>
-                    <div>
-                      <dt>PP</dt>
-                      <dd>{move.pp}</dd>
-                    </div>
-                  </dl>
-                </summary>
-                <p>{move.description}</p>
-              </details>
-            );
-          })}
-          {Array.from({ length: Math.max(0, 4 - p.moves.length) }, (_, i) => (
-            <div className="summary-move-card empty" key={'empty' + i}>
-              <span className="move-slot">{p.moves.length + i + 1}</span>
-              <strong>Empty move slot</strong>
-              <p>A new move can be learned here when it becomes available.</p>
-            </div>
-          ))}
-        </div>
-        {!offer && (
-          <p className="moves-footnote">
-            New moves appear when a level-up opportunity is earned. Select a move to read what it
-            does.
-          </p>
-        )}
-      </section>
-      {species.evolvesTo.length > 0 && (
-        <section className="evolution-line">
-          <div>
-            <span className="summary-eyebrow">WHAT’S NEXT</span>
-            <h2>Evolution</h2>
-            {species.id === 133 ? (
-              <p>Each evolution has an equal 1-in-3 chance.</p>
-            ) : (
-              <p>Keep your partner equipped to collect Rare Candy.</p>
-            )}
-          </div>
-          <div className="evolution-line-sprites">
-            <div>
-              <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
-              <strong>{species.name}</strong>
-              <small>Current</small>
-            </div>
-            <span className="evolution-arrow">→</span>
-            {species.evolvesTo.map((next) => (
-              <div key={next}>
-                <PokemonArt id={next} shiny={p.shiny} animated={false} />
-                <strong>{pokemonById(next).name}</strong>
-                {species.evolvesTo.length > 1 && <small>33⅓%</small>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
       {dialog === 'learn' && offer && newMove && (
         <Modal
           title={declining ? 'Do not learn ' + offer.move + '?' : 'A new move!'}

@@ -7,15 +7,15 @@ import { SidebarBuddy } from './SidebarBuddy';
 import { SearchDialog } from './SearchDialog';
 const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/discover', label: 'Discover', icon: 'Compass' },
+  { path: '/create', label: 'Create Coin', icon: 'Plus' },
+  { path: '/portfolio', label: 'Portfolio', icon: 'Wallet' },
+  { path: '/rewards', label: 'Rewards', icon: 'Candy' },
   { path: '/analytics', label: 'Analytics', icon: 'Activity' },
-  { path: '/create', label: 'Create coin', icon: 'Plus' },
-  { path: '/portfolio', label: 'My portfolio', icon: 'Wallet' },
-  { path: '/rewards', label: 'Rewards', icon: 'Gift' },
   { path: '/pokemon', label: 'My PC', icon: 'Pokeball', group: 'TRAINER' },
   { path: '/pokedex', label: 'Pokédex', icon: 'BookOpen' },
   { path: '/marketplace', label: 'Marketplace', icon: 'Grid2X2' },
   { path: '/battles', label: 'Battle arena', icon: 'Swords', group: 'LEAGUE' },
-  { path: '/gyms', label: 'Gyms', icon: 'Shield' },
+  { path: '/gyms', label: 'Gyms', icon: 'Gym' },
   { path: '/guide', label: 'How-to', icon: 'BookOpen' },
 ];
 export function Layout({ path, children }: { path: string; children: ReactNode }) {
@@ -25,8 +25,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
     [searchOpen, setSearchOpen] = useState(false);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
   const header = useRef<HTMLElement>(null);
-  const equipped = state.pokemon.find((p) => p.id === state.profile.equippedId),
-    unread = state.notifications.filter((n) => !n.read).length;
+  const unread = state.notifications.filter((n) => !n.read).length;
   useEffect(() => {
     setPanel(null);
     setMobile(false);
@@ -129,17 +128,6 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
           >
             <span className="avatar-wrap">
               <Avatar profile={state.profile} size={54} />
-              {equipped && (
-                <span className="equipped-mini">
-                  <PokemonArt
-                    id={equipped.speciesId}
-                    shiny={equipped.shiny}
-                    animated={false}
-                    styleOverride="pixel"
-                    frameFill={88}
-                  />
-                </span>
-              )}
             </span>
             <span className="account-name">
               {profileName(state)}
@@ -210,10 +198,6 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               <a href="#/settings">
                 <Icon name="Settings" />
                 Settings & appearance
-              </a>
-              <a href="#/creator">
-                <Icon name="SlidersHorizontal" />
-                Creator console
               </a>
               <a href="#/activity">
                 <Icon name="Activity" />
