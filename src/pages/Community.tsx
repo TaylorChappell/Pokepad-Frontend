@@ -36,7 +36,7 @@ export function GymsPage() {
         <div className="gym-spotlight-copy">
           <span className="gym-hall-plate">CHAMPION GYM</span>
           <h1>{champion.name}</h1>
-          <p>The leading gym is featured on the Poképad homepage.</p>
+          <p>Gym rankings are based on the Pokémon value supported by their trainers.</p>
           <div className="featured-stats">
             <span>
               <strong>{sol(champion.score)} SOL</strong>supported inventory

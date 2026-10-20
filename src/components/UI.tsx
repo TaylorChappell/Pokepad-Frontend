@@ -13,6 +13,7 @@ import { asset, sol } from '../utils';
 import { PIXEL_ICONS } from '../data/icons';
 import { SPRITES } from '../data/sprites';
 import { ART_BOUNDS } from '../data/art-bounds';
+import { getPortraitLayout } from '../data/portrait-heads';
 import { useOptionalApp } from '../state/AppContext';
 export type IconName = keyof typeof PIXEL_ICONS;
 export function Icon({
@@ -26,6 +27,24 @@ export function Icon({
   strokeWidth?: number;
 }) {
   if (name === 'Sparkles') return null;
+  if (name === 'Bell')
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={'notification-bell ' + className}
+        aria-hidden="true"
+      >
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+        <path d="M10 21h4M12 2V1" />
+      </svg>
+    );
   if (name === 'Egg')
     return (
       <img
@@ -123,7 +142,6 @@ export function PokemonArt({
   styleOverride,
   animated = true,
   shiny = false,
-  portrait = false,
 }: {
   id: number;
   className?: string;
@@ -132,7 +150,6 @@ export function PokemonArt({
   styleOverride?: 'pixel' | 'drawn';
   animated?: boolean;
   shiny?: boolean;
-  portrait?: boolean;
 }) {
   const app = useOptionalApp(),
     style = styleOverride || app?.state.profile.artStyle || 'pixel',
@@ -151,21 +168,16 @@ export function PokemonArt({
   }, [style]);
   const sprite = SPRITES[id] || SPRITES[1],
     moving =
-      animated &&
-      !shiny &&
-      !portrait &&
-      !app?.state.profile.reducedMotion &&
-      visible &&
-      sprite.frames > 1;
+      animated && !shiny && !app?.state.profile.reducedMotion && visible && sprite.frames > 1;
   const bounds = ART_BOUNDS[id] || ART_BOUNDS[1];
   const box = shiny ? bounds.shiny : moving ? bounds.animated : bounds.static;
   const span = Math.max(box[2] - box[0], box[3] - box[1]);
   // Normalize transparent source canvases, using every animation frame's union.
   // The whole silhouette fits inside the art window, including wings and tails.
-  const fit = portrait ? 158 : id === 146 ? 80 : 88;
+  const fit = id === 146 ? 80 : 88;
   const canvas = shiny ? bounds.shinyCanvas : moving ? bounds.canvas : bounds.staticCanvas;
   const centerX = (box[0] + box[2]) / 2;
-  const centerY = portrait ? box[1] + (box[3] - box[1]) * 0.28 : (box[1] + box[3]) / 2;
+  const centerY = (box[1] + box[3]) / 2;
   const label = pokemonById(id).name + (shiny ? ', shiny colour variant' : '');
   if (style === 'pixel' && !back)
     return (
@@ -174,10 +186,7 @@ export function PokemonArt({
         role="img"
         aria-label={label}
         className={
-          'pokemon-art sprite-art normalized-art ' +
-          className +
-          (shiny ? ' shiny-art' : '') +
-          (portrait ? ' portrait-art' : '')
+          'pokemon-art sprite-art normalized-art ' + className + (shiny ? ' shiny-art' : '')
         }
       >
         {moving && bounds.animatedUrl ? (
@@ -220,7 +229,7 @@ export function PokemonArt({
             }
           />
         )}
-        {shiny && !portrait && (
+        {shiny && (
           <span
             className={
               'shiny-glint' + (!animated || app?.state.profile.reducedMotion ? ' static-glint' : '')
@@ -236,11 +245,9 @@ export function PokemonArt({
         'pokemon-art ' +
         (back
           ? 'pixel-art '
-          : 'drawn-art ' +
-            (animated && !portrait && !app?.state.profile.reducedMotion ? 'idle-drawn ' : '')) +
+          : 'drawn-art ' + (animated && !app?.state.profile.reducedMotion ? 'idle-drawn ' : '')) +
         className +
-        (shiny ? ' shiny-art' : '') +
-        (portrait ? ' portrait-art' : '')
+        (shiny ? ' shiny-art' : '')
       }
       src={
         shiny
@@ -269,9 +276,31 @@ export function PokemonPortrait({
   size?: number;
   className?: string;
 }) {
+  const { width, height, left, top, backgroundSize, backgroundPosition, url } = getPortraitLayout(
+    id,
+    shiny,
+    size,
+  );
   return (
-    <span className={'pokemon-headshot ' + className} style={{ width: size, height: size }}>
-      <PokemonArt id={id} shiny={shiny} portrait animated={false} styleOverride="pixel" />
+    <span
+      className={'pokemon-headshot ' + className}
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={pokemonById(id).name + (shiny ? ', shiny colour variant' : '')}
+    >
+      <span
+        className="headshot-pixels"
+        aria-hidden="true"
+        style={{
+          width,
+          height,
+          left,
+          top,
+          backgroundSize,
+          backgroundPosition,
+          backgroundImage: 'url("' + asset(url) + '")',
+        }}
+      />
     </span>
   );
 }
@@ -370,8 +399,10 @@ export function Avatar({
   profile: Pick<Profile, 'character' | 'accessoryColor'>;
   size?: number;
 }) {
-  const crops = { red: [31, 22], leaf: [32, 23], misty: [33, 17], brock: [31, 19], blue: [31, 20] };
+  const crops = { red: [31, 8], leaf: [36, 8], misty: [37, 2], brock: [31, 1], blue: [32, 6] };
   const [x, y] = crops[profile.character] || crops.red;
+  const scale = Math.max(1, Math.floor((size - 4) / 26));
+  const inset = Math.floor((size - 2 - 26 * scale) / 2);
   return (
     <span
       className={'trainer-avatar pixel-avatar trainer-portrait trainer-' + profile.character}
@@ -382,10 +413,11 @@ export function Avatar({
       <img
         className="trainer-portrait-pixels"
         style={{
-          width: '228.5714%',
-          height: '228.5714%',
-          left: 50 - (x / 28) * 100 + '%',
-          top: 50 - (y / 28) * 100 + '%',
+          width: 64 * scale,
+          height: 64 * scale,
+          left: inset - (x - 13) * scale,
+          top: inset - y * scale,
+          clipPath: `inset(${y * scale}px ${(64 - x - 13) * scale}px ${(64 - y - 26) * scale}px ${(x - 13) * scale}px)`,
         }}
         src={asset(
           'trainers/' + profile.character + '-' + profile.accessoryColor.replace('#', '') + '.png',

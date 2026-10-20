@@ -1,6 +1,6 @@
 # Design and preview notes · v0.2
 
-The updated theme combines warm cream, coral, soft green, sky blue, and yellow with pixel game artwork, framed game-like panels, and a persistent navigation rail. Discover uses an illustrated pixel scene to introduce the launchpad while keeping coin discovery, the main token, and the leading gym prominent. Search, notifications, and account access remain in the header.
+The updated theme combines warm cream, coral, soft green, sky blue, and yellow with pixel game artwork, framed game-like panels, and a persistent navigation rail. Discover uses illustrated Pokémon artwork to introduce the launchpad while keeping coin discovery and the main token prominent. Gym rankings live on the Gyms page. Search, notifications, and account access remain in the header.
 
 The custom Poképad mark is separate from the wordmark. The name uses existing Pokémon Solid and Hollow font files rather than newly drawn lettering. Pixel display fonts support labels while ordinary text stays readable. Solana values use the bundled Solana brand mark. Asset origins are recorded in public/assets/ASSET-SOURCES.md.
 

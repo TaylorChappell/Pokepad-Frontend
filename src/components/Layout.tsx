@@ -154,7 +154,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               setSearchFocus(false);
             }}
           >
-            <Icon name="Bell" size={21} />
+            <Icon name="Bell" size={24} />
             {unread > 0 && <span className="unread-dot" />}
           </button>
           <div className="header-separator" />
@@ -168,10 +168,10 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             }}
           >
             <span className="avatar-wrap">
-              <Avatar profile={state.profile} />
+              <Avatar profile={state.profile} size={56} />
               {equipped && (
                 <span className="equipped-mini">
-                  <PokemonPortrait id={equipped.speciesId} shiny={equipped.shiny} size={32} />
+                  <PokemonPortrait id={equipped.speciesId} shiny={equipped.shiny} size={40} />
                 </span>
               )}
             </span>

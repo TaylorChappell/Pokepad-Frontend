@@ -233,13 +233,13 @@ textarea::placeholder {
   margin-top: 2px;
 }
 .account-button .avatar-wrap {
-  margin-left: 12px;
+  margin-left: 20px;
 }
 .equipped-mini {
-  width: 34px;
-  height: 34px;
-  left: -17px;
-  bottom: -3px;
+  width: 40px;
+  height: 40px;
+  left: -24px;
+  bottom: -4px;
   background: transparent;
   border: 0;
   box-shadow: none;
@@ -249,7 +249,16 @@ textarea::placeholder {
   border-radius: 50%;
   width: 8px;
   height: 8px;
-  box-shadow: 0 0 0 3px white;
+  border: 0;
+  box-shadow: none;
+  background: #eb4f50;
+  top: 6px;
+  right: 6px;
+  pointer-events: none;
+}
+.notification-button .notification-bell {
+  display: block;
+  flex-shrink: 0;
 }
 .header-dropdown,
 .search-results {

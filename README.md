@@ -27,7 +27,7 @@ Rare Candy still funds progression: evolution requires 1,000 Candy and sufficien
 
 | Area           | Included                                                                                                   |
 | -------------- | ---------------------------------------------------------------------------------------------------------- |
-| Discover       | Illustrated introduction, main token, leading gym, coin discovery, reward-mode filters and sorting         |
+| Discover       | Illustrated introduction, main token, coin discovery, reward-mode filters and sorting                      |
 | Coin           | Illustrative chart, trades, holders, rewards, gym, buy/sell review                                         |
 | Create coin    | Five-step wizard, owned Pokémon or trainer identity, separate image, social links and local draft          |
 | Portfolio      | Holdings, holding streaks, Pokémon value, equipped partner's Rare Candy                                    |

@@ -51,15 +51,14 @@
   position: relative;
   flex-shrink: 0;
   background: none;
-  overflow: hidden;
+  overflow: visible;
 }
-.pokemon-headshot .pokemon-art {
-  width: 100%;
-  height: 100%;
-}
-.pokemon-art.portrait-art {
-  overflow: hidden;
-  background: none;
+.pokemon-headshot .headshot-pixels {
+  display: block;
+  position: absolute;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
 }
 .shiny-glint {
   position: absolute;

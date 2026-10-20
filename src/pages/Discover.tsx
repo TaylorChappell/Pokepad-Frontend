@@ -1,6 +1,5 @@
 import { useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
-import { gymRankings } from '../state/gyms';
 import { POKEMON } from '../data/pokemon';
 import { collectionValue } from '../state/model';
 import {
@@ -74,10 +73,7 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
     [mode, setMode] = useState('All'),
     [sort, setSort] = useState('Trending'),
     [view, setView] = useState<'grid' | 'list'>(explore ? 'list' : 'grid');
-  const ranked = gymRankings(state).filter((g) => g.score > 0);
-  const best =
-      state.coins.find((c) => c.id === ranked[0]?.coinId) || state.coins.find((c) => c.main)!,
-    main = state.coins.find((c) => c.main)!;
+  const main = state.coins.find((c) => c.main)!;
   let coins = state.coins.filter((c) => mode === 'All' || c.mode === mode);
   coins = [...coins].sort((a, b) =>
     sort === 'Top volume'
@@ -161,16 +157,6 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
               </span>
             </a>
           </div>
-          <a className="gym-spotlight-ribbon" href={'#/gym/' + best.id}>
-            <Badge label={best.ticker} size={43} />
-            <span>
-              <small>Featured gym</small>
-              <strong>Team {best.ticker}</strong>
-            </span>
-            <p>Top community by supported Pokémon value</p>
-            <SolValue amount={ranked[0]?.score || 0} />
-            <Icon name="ArrowRight" size={17} />
-          </a>
         </section>
       ) : (
         <PageHeading title="Explore coins">

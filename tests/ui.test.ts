@@ -110,6 +110,7 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
   try {
     assert.match(app.text(), /A launchpad for Pokémon trainers/);
     assert.equal(document.querySelectorAll('.coin-card').length, 8);
+    assert.equal(document.querySelector('.gym-spotlight-ribbon'), null);
     assert.equal(app.saved().profile.artStyle, 'pixel');
     assert.ok(document.querySelector('.equipped-mini'));
     assert.equal(document.querySelector('.equipped-mini .sprite-animated'), null);
