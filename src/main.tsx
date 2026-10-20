@@ -1,0 +1,8 @@
+import './styles.css';
+import './pixel-theme.css';
+import './collection-v2.css';
+import './create-coin.css';
+import './arena-v2.css';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+createRoot(document.getElementById('root')!).render(<App />);
