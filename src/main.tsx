@@ -22,6 +22,7 @@ import './gyms-v7.css';
 import './arena-v7.css';
 import './shared-v7.css';
 import './collection-v8.css';
+import './collection-v14.css';
 import './shared-v8.css';
 import './battle-screen-v8.css';
 import './brand-v10.css';

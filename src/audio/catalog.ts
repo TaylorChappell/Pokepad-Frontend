@@ -3,6 +3,8 @@ export interface SoundLayer {
   file: string;
   delay?: number;
   duration?: number;
+  /** Start within the original recording, in seconds. */
+  offset?: number;
   volume?: number;
 }
 const sample = (file: string, duration = 1.1, delay = 0, volume = 0.8): SoundLayer => ({
@@ -74,24 +76,69 @@ export const BATTLE_SOUNDS: Record<BattleSoundCue, readonly SoundLayer[]> = {
 };
 export type RevealKind = 'hatch' | 'pack' | 'evolve';
 export type RevealPhase = 'opening' | 'revealed';
-export const REVEAL_SOUNDS: Record<RevealKind, Record<RevealPhase, readonly SoundLayer[]>> = {
+export interface RevealCue {
+  atMs: number;
+  name: 'crack' | 'rustle' | 'rip' | 'charge' | 'flash';
+  layers: readonly SoundLayer[];
+}
+export interface RevealTimeline {
+  durationMs: number;
+  cues: readonly RevealCue[];
+  revealed: readonly SoundLayer[];
+}
+// These timestamps also sample the visual keyframes. No sound is tied to a network request.
+// EVT_Egg contains long intentional silences; its individual cracks use their original offsets.
+export const REVEAL_TIMELINES: Record<RevealKind, RevealTimeline> = {
   hatch: {
-    opening: [
-      sample('EVT_Egg_Single', 0.5),
-      sample('EVT_Egg_Single', 0.5, 0.75),
-      sample('EVT_Egg', 0.8, 1.45),
+    durationMs: 2400,
+    cues: [
+      { atMs: 350, name: 'crack', layers: [sample('EVT_Egg_Single', 0.13, 0, 0.9)] },
+      { atMs: 900, name: 'crack', layers: [{ ...sample('EVT_Egg', 0.15, 0, 0.9), offset: 1.2 }] },
+      {
+        atMs: 1500,
+        name: 'crack',
+        layers: [{ ...sample('EVT_Egg', 0.16, 0, 0.95), offset: 3.39 }],
+      },
+      { atMs: 2050, name: 'flash', layers: [sample('EVT_Egg_Hatch', 0.9, 0, 0.7)] },
     ],
-    revealed: [sample('EVT_Egg_Hatch', 1.25), sample('JoinTeam', 3.5, 0.35, 0.6)],
+    revealed: [sample('JoinTeam', 1.57, 0.2, 0.65)],
   },
   pack: {
-    // Packs are a Kanto feature: original rustle/treasure samples form this adapted cue.
-    opening: [sample('_UNK_DUN_Rustle', 0.6), sample('EVT_CH02_Box_Open', 1.2, 0.8)],
-    revealed: [sample('Treasure', 3, 0, 0.65)],
+    durationMs: 1800,
+    cues: [
+      { atMs: 100, name: 'rustle', layers: [sample('_UNK_DUN_Rustle', 0.45, 0, 0.75)] },
+      { atMs: 640, name: 'rip', layers: [sample('EVT_CH02_Box_Open', 0.23, 0, 0.85)] },
+      { atMs: 1350, name: 'flash', layers: [sample('DUN_Summon_Trap', 0.5, 0, 0.35)] },
+    ],
+    revealed: [sample('Treasure', 1.7, 0, 0.65)],
   },
   evolve: {
-    opening: [sample('EVT_Evolution_Start', 2.4)],
-    revealed: [sample('LevelUp', 3, 0, 0.65)],
+    durationMs: 4200,
+    cues: [
+      { atMs: 0, name: 'charge', layers: [sample('EVT_Evolution_Start', 1.07, 0, 0.75)] },
+      { atMs: 1250, name: 'charge', layers: [sample('DUN_Protect', 0.55, 0, 0.3)] },
+      { atMs: 2300, name: 'charge', layers: [sample('DUN_Protect', 0.55, 0, 0.4)] },
+      { atMs: 3250, name: 'flash', layers: [sample('DUN_Summon_Trap', 0.7, 0, 0.45)] },
+    ],
+    revealed: [sample('LevelUp', 1.81, 0, 0.65)],
   },
+};
+// Compatibility for callers that need an isolated phase; reveal screens use the shared timeline.
+function revealPhases(timeline: RevealTimeline): Record<RevealPhase, readonly SoundLayer[]> {
+  return {
+    opening: timeline.cues.flatMap((cue) =>
+      cue.layers.map((layer) => ({
+        ...layer,
+        delay: cue.atMs / 1000 + (layer.delay ?? 0),
+      })),
+    ),
+    revealed: timeline.revealed,
+  };
+}
+export const REVEAL_SOUNDS: Record<RevealKind, Record<RevealPhase, readonly SoundLayer[]>> = {
+  hatch: revealPhases(REVEAL_TIMELINES.hatch),
+  pack: revealPhases(REVEAL_TIMELINES.pack),
+  evolve: revealPhases(REVEAL_TIMELINES.evolve),
 };
 export const BATTLE_PRELOAD = [
   ...Object.values(MOVE_SOUNDS),

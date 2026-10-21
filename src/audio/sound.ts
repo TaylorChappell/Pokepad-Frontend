@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { asset } from '../utils';
-import { REVEAL_SOUNDS, type SoundLayer, type RevealKind, type RevealPhase } from './catalog';
+import {
+  REVEAL_SOUNDS,
+  REVEAL_TIMELINES,
+  type SoundLayer,
+  type RevealKind,
+  type RevealPhase,
+} from './catalog';
+import { runRevealTimeline, type RevealFrame, type RevealClock } from './reveal-timeline';
 
 const MUTE_KEY = 'kanto-audio-muted';
 const LEGACY_MUTE_KEY = 'pokepad-battle-muted';
@@ -110,6 +117,17 @@ export function useSoundEffects(active = true) {
     [ensureContext, load],
   );
 
+  const prepare = useCallback(
+    async (layers: readonly SoundLayer[]) => {
+      if (!unlocked.current || getMuted()) return false;
+      const ctx = ensureContext();
+      if (!ctx) return false;
+      const loaded = await Promise.all(layers.map((layer) => load(layer.file, ctx)));
+      return mounted.current && ctx.state === 'running' && loaded.every(Boolean);
+    },
+    [ensureContext, load],
+  );
+
   const play = useCallback(
     (layers: readonly SoundLayer[]) => {
       if (!unlocked.current || getMuted() || !activeRef.current || document.hidden) return;
@@ -135,7 +153,12 @@ export function useSoundEffects(active = true) {
           const source = ctx.createBufferSource();
           const envelope = ctx.createGain();
           const at = Math.max(ctx.currentTime, requestedAt + (layer.delay ?? 0));
-          const length = Math.min(buffer.duration, layer.duration ?? buffer.duration);
+          const offset = Math.max(0, layer.offset ?? 0);
+          const length = Math.min(
+            Math.max(0, buffer.duration - offset),
+            layer.duration ?? buffer.duration,
+          );
+          if (!length) return;
           source.buffer = buffer;
           const volume = layer.volume ?? 0.8;
           envelope.gain.setValueAtTime(volume, at);
@@ -149,7 +172,7 @@ export function useSoundEffects(active = true) {
             source.disconnect();
             envelope.disconnect();
           };
-          source.start(at);
+          source.start(at, offset);
           source.stop(at + length);
         });
       }
@@ -177,15 +200,47 @@ export function useSoundEffects(active = true) {
       buffers.current.clear();
     };
   }, [stop]);
-  return { muted, toggleMuted, unlock, play, stop };
+  return { muted, toggleMuted, unlock, prepare, play, stop };
 }
 
-/** Call unlock in the click handler, opening after success, and revealed at the visual reveal. */
+export interface RevealStartOptions {
+  reducedMotion?: boolean;
+  onFrame(frame: RevealFrame): void;
+  onReveal(): void;
+  /** Injectable clock for deterministic timing tests. */
+  clock?: RevealClock;
+}
+
+/** Unlock on the initiating gesture. Start only after the result and its scene are mounted. */
 export function useRevealAudio() {
-  const { unlock: unlockEffects, play: playEffects, stop, muted, toggleMuted } = useSoundEffects();
-  const unlock = useCallback(() => {
-    unlockEffects(Object.values(REVEAL_SOUNDS).flatMap((phases) => Object.values(phases).flat()));
-  }, [unlockEffects]);
+  const {
+    unlock: unlockEffects,
+    prepare,
+    play: playEffects,
+    stop: stopEffects,
+    muted,
+    toggleMuted,
+  } = useSoundEffects();
+  const sequence = useRef<ReturnType<typeof runRevealTimeline> | null>(null);
+  const generation = useRef(0);
+  const mounted = useRef(true);
+  const silent = useRef(false);
+  const cancelPreparation = useRef<(() => void) | null>(null);
+  const stop = useCallback(() => {
+    generation.current += 1;
+    cancelPreparation.current?.();
+    cancelPreparation.current = null;
+    sequence.current?.cancel();
+    sequence.current = null;
+    stopEffects();
+  }, [stopEffects]);
+  const unlock = useCallback(
+    (kind?: RevealKind) => {
+      const phases = kind ? [REVEAL_SOUNDS[kind]] : Object.values(REVEAL_SOUNDS);
+      unlockEffects(phases.flatMap((value) => Object.values(value).flat()));
+    },
+    [unlockEffects],
+  );
   const play = useCallback(
     (kind: RevealKind, phase: RevealPhase) => {
       stop();
@@ -193,5 +248,75 @@ export function useRevealAudio() {
     },
     [playEffects, stop],
   );
-  return { unlock, play, stop, muted, toggleMuted };
+  const start = useCallback(
+    async (kind: RevealKind, options: RevealStartOptions) => {
+      stop();
+      const token = generation.current;
+      silent.current = getMuted();
+      const layers = Object.values(REVEAL_SOUNDS[kind]).flat();
+      // Decode before the first frame so downloads cannot make a crack arrive after its visual.
+      // A slow/unavailable audio device never blocks the owned reward: continue the scene silently.
+      const ready = await new Promise<boolean>((resolve) => {
+        let settled = false;
+        const finish = (ok: boolean) => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          cancelPreparation.current = null;
+          resolve(ok);
+        };
+        const timeout = window.setTimeout(() => finish(false), 1200);
+        cancelPreparation.current = () => finish(false);
+        void prepare(layers).then(finish, () => finish(false));
+      });
+      if (!mounted.current || generation.current !== token) return false;
+      const reducedMotion =
+        options.reducedMotion ||
+        (typeof window.matchMedia === 'function' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      if (document.hidden) {
+        const durationMs = reducedMotion ? 180 : REVEAL_TIMELINES[kind].durationMs;
+        options.onFrame({ elapsedMs: durationMs, durationMs, progress: 1, revealed: true });
+        options.onReveal();
+        return true;
+      }
+      sequence.current = runRevealTimeline(
+        kind,
+        {
+          reducedMotion,
+          onFrame: options.onFrame,
+          onReveal: options.onReveal,
+          onSound: (cue) => {
+            if (ready && !silent.current && generation.current === token) playEffects(cue);
+          },
+        },
+        options.clock,
+      );
+      return true;
+    },
+    [prepare, playEffects, stop],
+  );
+  useEffect(() => {
+    // Muting cancels every remaining cue in this reveal. Unmuting cannot replay an old cue.
+    if (muted) {
+      silent.current = true;
+      stopEffects();
+    }
+  }, [muted, stopEffects]);
+  useEffect(() => {
+    mounted.current = true;
+    const visibility = () => {
+      if (!document.hidden) return;
+      silent.current = true;
+      stopEffects();
+      sequence.current?.finishSilently();
+    };
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      mounted.current = false;
+      document.removeEventListener('visibilitychange', visibility);
+      stop();
+    };
+  }, [stop, stopEffects]);
+  return { unlock, start, play, stop, muted, toggleMuted };
 }

@@ -435,3 +435,26 @@ test('HTTP handles nested server errors, omits signed-out credentials, and ignor
     setSessionEnabled(true);
   }
 });
+
+test('sign-only escrow transactions use the scoped battle submit route with the reviewed intent', async () => {
+  const f = fixture();
+  try {
+    await f.controller.connectWallet('Phantom');
+    delete f.features['solana:signAndSendTransaction'];
+    f.features['solana:signTransaction'] = {
+      version: '1.0.0',
+      signTransaction: async () => [{ signedTransaction: new Uint8Array(160).fill(2) }],
+    };
+    await f.controller.signAndSendPrepared(prepared, undefined, '/v1/battles/room-1/escrow/submit');
+    const submitted = f.requests.find((item) => item.path.endsWith('/escrow/submit'))!;
+    assert.equal(submitted.path, '/v1/battles/room-1/escrow/submit');
+    assert.equal((submitted.init.json as { intentId: string }).intentId, prepared.intentId);
+    assert.ok((submitted.init.json as { signedTransactionBase64: string }).signedTransactionBase64);
+    await assert.rejects(
+      f.controller.signAndSendPrepared(prepared, undefined, 'https://outside.example/submit'),
+      /Invalid transaction submission/,
+    );
+  } finally {
+    f.dispose();
+  }
+});

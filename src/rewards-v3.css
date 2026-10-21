@@ -554,13 +554,13 @@
   margin: 0;
 }
 .reveal-v3.is-opening .reveal-v3-object.is-confirmed > .egg-art {
-  animation: reveal-egg-wobble 2.4s ease-in-out both;
+  animation: reveal-egg-wobble var(--reveal-duration, 2400ms) linear both;
 }
 .reveal-v3.is-opening .reveal-v3-object.is-confirmed > .pack-art {
-  animation: reveal-pack-open 2.4s ease-in-out both;
+  animation: reveal-pack-open var(--reveal-duration, 1800ms) ease-in-out both;
 }
 .reveal-v3.is-opening .is-confirmed .pack-crimp.top {
-  animation: reveal-pack-tear 2.4s ease-out both;
+  animation: reveal-pack-tear var(--reveal-duration, 1800ms) linear both;
 }
 .reveal-v3.is-revealed .reveal-v3-object {
   animation: reveal-pokemon-arrives 0.6s cubic-bezier(0.15, 0.8, 0.2, 1) both;
@@ -570,7 +570,7 @@
   inset: 0;
   pointer-events: none;
   background: radial-gradient(circle, #fff 10%, #fff9 35%, transparent 65%);
-  animation: reveal-flash 2.4s ease-in both;
+  animation: reveal-flash var(--reveal-duration, 2400ms) linear both;
   z-index: 2;
 }
 .reveal-v3-stars {
@@ -729,28 +729,101 @@
   height: 62px;
   object-fit: contain;
 }
+/* Negative animation delay samples a paused animation from the same clock as its sound. */
+.reveal-v3[data-reveal-synced].is-opening .is-confirmed > .egg-art,
+.reveal-v3[data-reveal-synced].is-opening .is-confirmed > .pack-art,
+.reveal-v3[data-reveal-synced].is-opening .is-confirmed .pack-crimp.top,
+.reveal-v3[data-reveal-synced].is-opening .reveal-v3-flash,
+.reveal-v3[data-reveal-synced].is-opening .is-confirmed > .egg-art::after {
+  animation-play-state: paused;
+  animation-delay: var(--reveal-elapsed, 0ms);
+}
+.reveal-v3.is-opening .is-confirmed > .egg-art::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 21px);
+  top: 30%;
+  width: 42px;
+  height: 68px;
+  background: #685c51;
+  clip-path: polygon(
+    43% 0,
+    53% 0,
+    53% 22%,
+    76% 22%,
+    76% 43%,
+    57% 43%,
+    57% 63%,
+    34% 63%,
+    34% 83%,
+    10% 83%,
+    10% 77%,
+    26% 77%,
+    26% 56%,
+    49% 56%,
+    49% 35%,
+    67% 35%,
+    67% 29%,
+    43% 29%
+  );
+  animation: reveal-shell-crack var(--reveal-duration, 2400ms) steps(1) both;
+}
+@keyframes reveal-shell-crack {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.25);
+    transform-origin: 50% 0;
+  }
+  14.583% {
+    opacity: 0.8;
+    transform: scaleY(0.35);
+  }
+  37.5% {
+    opacity: 0.9;
+    transform: scaleY(0.65);
+  }
+  62.5%,
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
 @keyframes reveal-egg-wobble {
   0%,
-  20% {
+  12% {
     transform: translateY(0) rotate(0);
   }
-  30% {
-    transform: translateY(-5px) rotate(-7deg);
+  14.583% {
+    transform: translateY(-4px) rotate(-7deg);
   }
-  40% {
-    transform: rotate(8deg);
+  19% {
+    transform: rotate(6deg);
   }
-  50% {
-    transform: rotate(-10deg);
+  25%,
+  34% {
+    transform: rotate(0);
   }
-  60% {
-    transform: rotate(10deg);
+  37.5% {
+    transform: translateY(-5px) rotate(8deg);
   }
-  70% {
-    transform: scale(1.06) rotate(-8deg);
+  43% {
+    transform: rotate(-8deg);
   }
-  82% {
-    transform: scale(1.08) rotate(5deg);
+  49%,
+  59% {
+    transform: rotate(0);
+  }
+  62.5% {
+    transform: translateY(-6px) rotate(-10deg);
+  }
+  69% {
+    transform: rotate(9deg);
+  }
+  76% {
+    transform: scale(1.04) rotate(-5deg);
+  }
+  85.417% {
+    transform: scale(1.08);
     filter: brightness(1);
     opacity: 1;
   }
@@ -761,15 +834,21 @@
   }
 }
 @keyframes reveal-pack-open {
-  0%,
-  15% {
-    transform: scale(0.9) rotate(-4deg);
+  0% {
+    transform: scale(0.9) rotate(0);
   }
-  45% {
-    transform: scale(0.94) rotate(4deg);
+  5.556%,
+  25% {
+    transform: scale(0.92) rotate(-3deg);
   }
-  65% {
-    transform: scale(0.98) rotate(-2deg);
+  35.556% {
+    transform: scale(0.94) rotate(3deg);
+  }
+  52% {
+    transform: scale(0.96) rotate(0);
+  }
+  75% {
+    transform: scale(0.98);
     opacity: 1;
   }
   100% {
@@ -780,29 +859,67 @@
 }
 @keyframes reveal-pack-tear {
   0%,
-  30% {
+  35.5% {
     transform: none;
+    opacity: 1;
   }
-  70%,
+  48% {
+    transform: translate(18px, -22px) rotate(10deg);
+    opacity: 1;
+  }
+  68%,
   100% {
-    transform: translate(35px, -42px) rotate(18deg);
+    transform: translate(48px, -50px) rotate(22deg);
     opacity: 0;
   }
 }
 @keyframes reveal-flash {
   0%,
-  70% {
+  74.9% {
     opacity: 0;
     transform: scale(0.25);
   }
-  90% {
-    opacity: 1;
+  85.417% {
+    opacity: 0.7;
+    transform: scale(0.85);
+  }
+  93% {
+    opacity: 0.95;
     transform: scale(1.1);
   }
   100% {
     opacity: 0;
     transform: scale(1.2);
   }
+}
+.reveal-v3[data-reveal-kind='hatch'] .reveal-v3-flash {
+  animation-name: reveal-hatch-flash;
+}
+@keyframes reveal-hatch-flash {
+  0%,
+  85.4% {
+    opacity: 0;
+    transform: scale(0.25);
+  }
+  93% {
+    opacity: 0.95;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+.reveal-v3.reduce-motion .reveal-v3-object,
+.reveal-v3.reduce-motion .reveal-v3-object *,
+.reveal-v3.reduce-motion .reveal-v3-object *::after,
+.reveal-v3.reduce-motion .reveal-v3-stars *,
+.reveal-v3.reduce-motion .reveal-v3-flash {
+  animation: none !important;
+}
+.reveal-v3.reduce-motion .reveal-v3-flash,
+.reveal-v3.reduce-motion .egg-art::after {
+  display: none;
 }
 @keyframes reveal-pokemon-arrives {
   from {

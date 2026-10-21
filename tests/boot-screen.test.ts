@@ -10,7 +10,10 @@ test('startup shell provides load-failure help and releases the app when it is r
   Object.assign(globalThis, { window: dom.window, document: dom.window.document });
   const document = dom.window.document;
   try {
-    assert.ok(document.querySelector('#boot-screen svg'));
+    assert.match(
+      document.querySelector('#boot-screen .boot-emblem')?.getAttribute('src') || '',
+      /kanto-emblem\.png$/,
+    );
     assert.ok(document.getElementById('root')?.hasAttribute('inert'));
     (dom.window as unknown as { __pokepadBootError: () => void }).__pokepadBootError();
     assert.match(document.getElementById('boot-status')?.textContent || '', /could not load/);

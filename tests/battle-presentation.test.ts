@@ -175,3 +175,28 @@ test('charging, immune attacks and self recovery carry correct engine presentati
   const recovery = healingFrames.find((frame) => frame.event.text.includes('recovered'))!;
   assert.ok(recovery.displayState.player[0].hp > healingMove.displayState.player[0].hp);
 });
+
+test('faint playback finishes before the trainer selects a replacement and only then sends it out', () => {
+  const initial = battle(
+    [owned(4, ['Growl']), owned(7, ['Water Gun']), owned(25, ['Thunder Shock'])],
+    [owned(150, ['Quick Attack'])],
+  );
+  initial.player[0].hp = 1;
+  const pending = resolveTurn(initial, { kind: 'move', index: 0 }, calm);
+  const faintFrames = createBattlePlayback(initial, pending);
+  assert.ok(faintFrames.some((frame) => frame.cue?.kind === 'faint'));
+  assert.equal(
+    faintFrames.some((frame) => frame.switch),
+    false,
+  );
+  assert.equal(pending.active.player, 0);
+  const ready = resolveTurn(pending, { kind: 'replace', index: 2 }, calm);
+  const frames = createBattlePlayback(pending, ready);
+  assert.equal(frames.length, 1);
+  assert.equal(frames[0].switch?.forced, true);
+  assert.equal(frames[0].switch?.phase, 'sendout');
+  assert.equal(frames[0].displayState.active.player, 2);
+  assert.equal(frames[0].displayState.player[0].hp, 0);
+  assert.equal(frames[0].cue?.kind, 'switch');
+  assert.equal(ready.turn, pending.turn);
+});

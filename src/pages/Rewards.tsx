@@ -22,6 +22,8 @@ import {
 import type { AppSnapshot, Reward } from '../types';
 import { duration, navigate, relativeTime } from '../utils';
 import { useRevealAudio } from '../audio/sound';
+import { REVEAL_TIMELINES } from '../audio/catalog';
+import type { RevealFrame } from '../audio/reveal-timeline';
 
 const legendaryIds = [144, 145, 146, 150, 151];
 function SourceCoin({ id }: { id: string }) {
@@ -58,10 +60,16 @@ export function RewardOpening({
   audio: ReturnType<typeof useRevealAudio>;
 }) {
   const { state, act, busy } = useApp();
+  const kind = reward.kind === 'egg' ? 'hatch' : 'pack';
   const [phase, setPhase] = useState<'opening' | 'revealed'>('opening');
+  const [frame, setFrame] = useState<RevealFrame>({
+    elapsedMs: 0,
+    durationMs: REVEAL_TIMELINES[kind].durationMs,
+    progress: 0,
+    revealed: false,
+  });
   const [result, setResult] = useState<AppSnapshot | null>(null);
-  const openRequest = useRef<Promise<AppSnapshot | null> | null>(null),
-    timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const openRequest = useRef<Promise<AppSnapshot | null> | null>(null);
   useEffect(() => {
     let cancelled = false;
     openRequest.current ??= act({ type: 'reward.open', id: reward.id });
@@ -72,21 +80,21 @@ export function RewardOpening({
         return;
       }
       setResult(next);
-      audio.play(reward.kind === 'egg' ? 'hatch' : 'pack', 'opening');
-      timer.current = setTimeout(
-        () => {
-          setPhase('revealed');
-          audio.play(reward.kind === 'egg' ? 'hatch' : 'pack', 'revealed');
-        },
-        next.profile.reducedMotion ? 80 : 2400,
-      );
     });
     return () => {
       cancelled = true;
-      clearTimeout(timer.current);
       audio.stop();
     };
   }, []);
+  useEffect(() => {
+    if (!result) return;
+    void audio.start(kind, {
+      reducedMotion: result.profile.reducedMotion,
+      onFrame: setFrame,
+      onReveal: () => setPhase('revealed'),
+    });
+    return audio.stop;
+  }, [result, kind, audio.start, audio.stop]);
   const resolvedReward = result?.rewards.find((r) => r.id === reward.id);
   const owned = result?.pokemon.find(
     (p) => p.id === (resolvedReward?.pokemonInstanceId || 'hatched-' + reward.id),
@@ -106,13 +114,21 @@ export function RewardOpening({
       }
       onClose={onClose}
       wide
-      closeDisabled={!revealed}
     >
       <div
+        data-reveal-synced
+        data-reveal-kind={kind}
+        data-reveal-progress={frame.revealed ? 'complete' : 'opening'}
+        style={
+          {
+            '--reveal-elapsed': `-${frame.elapsedMs}ms`,
+            '--reveal-duration': `${frame.durationMs}ms`,
+          } as CSSProperties
+        }
         className={
           'reveal-v3 ' +
           (revealed ? 'is-revealed' : 'is-opening') +
-          (state.profile.reducedMotion ? ' reduce-motion' : '')
+          (state.profile.reducedMotion || frame.durationMs === 180 ? ' reduce-motion' : '')
         }
       >
         <div className="reveal-v3-stage">
@@ -200,7 +216,11 @@ export function RewardOpening({
                   : 'Who’s inside?'
                 : 'Getting your reward ready…'}
             </h3>
-            <p>{result ? 'Your new Pokémon is almost here.' : 'Please keep this window open.'}</p>
+            <p>
+              {result
+                ? 'Your new Pokémon is almost here.'
+                : 'You can close this window. Opened rewards are saved in your PC.'}
+            </p>
           </div>
         )}
       </div>
@@ -247,7 +267,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
       showDetail(r);
       return;
     }
-    revealAudio.unlock();
+    revealAudio.unlock(r.kind === 'egg' ? 'hatch' : 'pack');
     setDetail(null);
     setOpening(r);
   };

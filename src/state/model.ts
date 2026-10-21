@@ -4,6 +4,7 @@ import { pokemonById } from '../data/pokemon';
 import { MOVE_OPTIONS } from '../data/moves';
 import { drawReward } from '../data/rewardPools';
 import { getPokemonHealth, getPokemonStats } from '../data/stats';
+import { recordVariantDiscovery, variantDiscoveries } from './collection';
 export const EVOLUTION_CANDY = 1000;
 export const WALK_BOOST_MS_PER_KM = 2 * 60 * 60 * 1000;
 export const STORAGE_KEY = 'pokepad.frontend.v1';
@@ -123,6 +124,7 @@ export function assertSupportedAction(action: Action): void {
     'notification.read',
     'reward.open',
     'pokemon.equip',
+    'pokemon.favourite',
     'pokemon.evolve',
     'pokemon.learn',
     'pokemon.declineMove',
@@ -148,6 +150,7 @@ export function applyAction(
   assertSupportedAction(action);
   if (action.type === 'demo.reset') return createInitialState(now);
   const s = structuredClone(original);
+  s.discoveredVariants = variantDiscoveries(s);
   const activity = (entry: Omit<Activity, 'id' | 'createdAt'>) =>
     s.activity.unshift({ ...entry, id: crypto.randomUUID(), createdAt: now });
   const owned = (id: string) => {
@@ -209,7 +212,7 @@ export function applyAction(
       moves: (MOVE_OPTIONS[species.id] || ['Tackle', 'Growl']).slice(0, 4),
       acquiredAt: now,
     });
-    if (!s.discovered.includes(species.id)) s.discovered.push(species.id);
+    recordVariantDiscovery(s, species.id, !!result.shiny);
     s.notifications.forEach((n) => {
       if (n.id === 'ready-' + r.id || n.id === 'pack-' + r.id) n.read = true;
     });
@@ -221,6 +224,11 @@ export function applyAction(
       shiny: !!r.shiny,
       href: '/pokemon/' + id,
     });
+  }
+  if (action.type === 'pokemon.favourite') {
+    if (typeof action.favourite !== 'boolean')
+      throw new Error('Choose a valid favourite preference.');
+    owned(action.id).favourite = action.favourite;
   }
   if (action.type === 'pokemon.equip') {
     const p = owned(action.id);
@@ -250,7 +258,7 @@ export function applyAction(
     // A zero-value starter becomes an ordinary funded asset after its first funded evolution.
     if (p.starter && p.backing > 0) p.starter = false;
     reserveNextEvolution(s, p);
-    if (!s.discovered.includes(target)) s.discovered.push(target);
+    recordVariantDiscovery(s, target, !!p.shiny);
     s.notifications.forEach((n) => {
       if (n.id.startsWith('evolve-' + p.id)) n.read = true;
     });
@@ -373,7 +381,7 @@ export function applyAction(
     reserveNextEvolution(s, p);
     s.pokemon.push(p);
     s.profile.equippedId = id;
-    if (!s.discovered.includes(action.speciesId)) s.discovered.push(action.speciesId);
+    recordVariantDiscovery(s, action.speciesId, false);
     activity({
       title: 'You chose ' + pokemonById(action.speciesId).name + '!',
       detail: 'Your starter is now in your party.',

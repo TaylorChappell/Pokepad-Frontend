@@ -4,12 +4,18 @@ import React, { act } from 'react';
 import { JSDOM } from 'jsdom';
 import { useBattleAudio } from '../src/battle/audio';
 import { useRevealAudio } from '../src/audio/sound';
+import type { RevealClock } from '../src/audio/reveal-timeline';
 
 const key = 'kanto-audio-muted';
 const legacyKey = 'pokepad-battle-muted';
 type AudioControls = ReturnType<typeof useBattleAudio>;
 
-async function mountAudio({ savedMuted = false, supported = true, deferred = false } = {}) {
+async function mountAudio({
+  savedMuted = false,
+  supported = true,
+  deferred = false,
+  failed = false,
+} = {}) {
   const dom = new JSDOM('<div id="root"></div>', {
     url: 'https://example.test/',
     pretendToBeVisual: true,
@@ -53,9 +59,12 @@ async function mountAudio({ savedMuted = false, supported = true, deferred = fal
     buffer: unknown;
     onended?: () => void;
     stops: (number | undefined)[] = [];
+    starts: [number | undefined, number | undefined][] = [];
     connect() {}
     disconnect() {}
-    start() {}
+    start(at?: number, offset?: number) {
+      this.starts.push([at, offset]);
+    }
     stop(at?: number) {
       this.stops.push(at);
     }
@@ -86,7 +95,7 @@ async function mountAudio({ savedMuted = false, supported = true, deferred = fal
       return source;
     }
     decodeAudioData() {
-      return Promise.resolve({ duration: 1.5 });
+      return Promise.resolve({ duration: 10 });
     }
   }
   for (const name of ['window', 'document', 'navigator', 'localStorage']) {
@@ -112,6 +121,7 @@ async function mountAudio({ savedMuted = false, supported = true, deferred = fal
   const pending: (() => void)[] = [];
   globalThis.fetch = ((url: string) => {
     requested.push(url);
+    if (failed) return Promise.reject(new Error('Audio unavailable'));
     const response = { ok: true, arrayBuffer: async () => new ArrayBuffer(16) };
     return deferred
       ? new Promise((resolve) => pending.push(() => resolve(response)))
@@ -305,4 +315,190 @@ test('in-flight audio cannot start after a reveal closes or the player unmounts'
   assert.equal(app.contexts[0].sources.length, 0);
   await app.close();
   assert.equal(app.contexts[0].state, 'closed');
+});
+
+function revealTestClock() {
+  let now = 0,
+    id = 0;
+  const frames = new Map<number, () => void>();
+  const clock: RevealClock = {
+    now: () => now,
+    request: (callback) => {
+      frames.set(++id, callback);
+      return id;
+    },
+    cancel: (key) => {
+      frames.delete(key);
+    },
+  };
+  return {
+    clock,
+    advance(ms: number) {
+      now = ms;
+      const batch = [...frames.values()];
+      frames.clear();
+      batch.forEach((frame) => frame());
+    },
+  };
+}
+
+test('reveal samples seek to the actual recorded egg cracks instead of playing long silent prefixes', async () => {
+  const app = await mountAudio();
+  try {
+    await app.invokeReveal((audio) => {
+      audio.unlock('hatch');
+      audio.play('hatch', 'opening');
+    });
+    assert.deepEqual(
+      app.contexts[0].sources.map((source) => source.starts[0]),
+      [
+        [0.35, 0],
+        [0.9, 1.2],
+        [1.5, 3.39],
+        [2.05, 0],
+      ],
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('a dismissed reveal cancels even while audio is still downloading, without waiting for a network response', async () => {
+  const app = await mountAudio({ deferred: true });
+  const time = revealTestClock();
+  let pending: Promise<boolean> | undefined;
+  let frames = 0;
+  try {
+    await app.invokeReveal((audio) => {
+      audio.unlock('hatch');
+      pending = audio.start('hatch', {
+        clock: time.clock,
+        onFrame: () => {
+          frames++;
+        },
+        onReveal: () => assert.fail('dismissed result'),
+      });
+    });
+    await app.invokeReveal((audio) => audio.stop());
+    assert.equal(await pending, false);
+    await app.finishLoading();
+    time.advance(5000);
+    assert.equal(frames, 0);
+    assert.equal(app.contexts[0].sources.length, 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test('mute cancels remaining reveal sounds while the visual result still completes', async () => {
+  const app = await mountAudio();
+  const time = revealTestClock();
+  let revealed = false;
+  try {
+    await app.invokeReveal(async (audio) => {
+      audio.unlock('hatch');
+      await audio.start('hatch', {
+        clock: time.clock,
+        onFrame() {},
+        onReveal: () => {
+          revealed = true;
+        },
+      });
+    });
+    await app.invokeReveal(() => time.advance(350));
+    assert.equal(app.contexts[0].sources.length, 1);
+    await app.invokeReveal((audio) => audio.toggleMuted());
+    await app.invokeReveal((audio) => audio.toggleMuted());
+    await app.invokeReveal(() => time.advance(900));
+    await app.invokeReveal(() => time.advance(2400));
+    assert.equal(revealed, true);
+    assert.equal(
+      app.contexts[0].sources.length,
+      1,
+      'unmuting does not resume an interrupted reveal',
+    );
+    assert.ok(app.contexts[0].sources[0].stops.includes(undefined));
+  } finally {
+    await app.close();
+  }
+});
+
+test('unsupported audio and reduced motion cannot block the result; hiding finishes without a late fanfare', async () => {
+  const unsupported = await mountAudio({ supported: false });
+  const time = revealTestClock();
+  let revealed = 0;
+  try {
+    await unsupported.invokeReveal(async (audio) => {
+      audio.unlock('pack');
+      await audio.start('pack', {
+        reducedMotion: true,
+        clock: time.clock,
+        onFrame() {},
+        onReveal: () => {
+          revealed++;
+        },
+      });
+    });
+    time.advance(180);
+    assert.equal(revealed, 1);
+    assert.equal(unsupported.contexts.length, 0);
+  } finally {
+    await unsupported.close();
+  }
+  const app = await mountAudio();
+  const nextTime = revealTestClock();
+  try {
+    await app.invokeReveal(async (audio) => {
+      audio.unlock('evolve');
+      await audio.start('evolve', {
+        clock: nextTime.clock,
+        onFrame() {},
+        onReveal: () => {
+          revealed++;
+        },
+      });
+    });
+    assert.equal(app.contexts[0].sources.length, 1);
+    await app.visibility(true);
+    assert.equal(revealed, 2);
+    await app.visibility(false);
+    await app.invokeReveal(() => nextTime.advance(6000));
+    assert.equal(app.contexts[0].sources.length, 1);
+    assert.ok(app.contexts[0].sources[0].stops.includes(undefined));
+  } finally {
+    await app.close();
+  }
+});
+
+test('failed or indefinitely stalled audio downloads never block a confirmed reveal', async () => {
+  for (const mode of [{ failed: true }, { deferred: true }]) {
+    const app = await mountAudio(mode);
+    const time = revealTestClock();
+    let result = false;
+    try {
+      await app.invokeReveal(async (audio) => {
+        audio.unlock('pack');
+        assert.equal(
+          await audio.start('pack', {
+            clock: time.clock,
+            onFrame() {},
+            onReveal: () => {
+              result = true;
+            },
+          }),
+          true,
+        );
+      });
+      await app.invokeReveal(() => time.advance(1800));
+      assert.equal(result, true);
+      await app.finishLoading();
+      assert.equal(
+        app.contexts[0].sources.length,
+        0,
+        'late decoding cannot start out-of-sync sounds',
+      );
+    } finally {
+      await app.close();
+    }
+  }
 });

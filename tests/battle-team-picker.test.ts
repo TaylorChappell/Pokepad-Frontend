@@ -1,0 +1,102 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import React, { act, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import { JSDOM } from 'jsdom';
+import {
+  BattleTeamPicker,
+  battleAvailability,
+  battleSelection,
+} from '../src/components/BattleTeamPicker';
+import { createInitialState } from '../src/data/demo';
+import { pokemonById } from '../src/data/pokemon';
+
+test('battle selection removes duplicates, locked and fainted members and enforces the reviewed team size', () => {
+  const pokemon = createInitialState()
+    .pokemon.slice(0, 5)
+    .map((item) => ({
+      ...item,
+      starter: false,
+      locked: false,
+      health: undefined as number | undefined,
+    }));
+  pokemon[1].locked = true;
+  pokemon[2].health = 0;
+  pokemon[3].starter = true;
+  assert.equal(battleAvailability(pokemon[1], false), 'Busy');
+  assert.equal(battleAvailability(pokemon[2], false), 'Recovering');
+  assert.match(battleAvailability(pokemon[3], true)!, /Starter/);
+  assert.deepEqual(
+    battleSelection(
+      pokemon,
+      [pokemon[0].id, pokemon[0].id, pokemon[1].id, pokemon[2].id, pokemon[3].id, pokemon[4].id],
+      true,
+    ),
+    [pokemon[0].id, pokemon[4].id],
+  );
+  assert.deepEqual(battleSelection(pokemon, [pokemon[0].id, pokemon[4].id], false, 1), [
+    pokemon[0].id,
+  ]);
+});
+test('the party picker puts favourites first, keeps slots in sync, filters types and caps quick-pick', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'https://example.test' });
+  Object.assign(globalThis, {
+    window: dom.window,
+    document: dom.window.document,
+    HTMLElement: dom.window.HTMLElement,
+    Image: dom.window.Image,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  });
+  const root = createRoot(document.getElementById('root')!);
+  const pokemon = createInitialState()
+    .pokemon.slice(0, 6)
+    .map((item) => ({ ...item, health: undefined, locked: false, favourite: false }));
+  pokemon[5].favourite = true;
+  let selected: string[] = [];
+  function Probe() {
+    const [ids, setIds] = useState<string[]>([]);
+    selected = ids;
+    return React.createElement(BattleTeamPicker, {
+      pokemon,
+      selected: ids,
+      onChange: setIds,
+      teamSize: 2,
+    });
+  }
+  try {
+    await act(async () => root.render(React.createElement(Probe)));
+    const first = document.querySelector('.battle-picker-pokemon') as HTMLButtonElement;
+    assert.match(
+      first.getAttribute('aria-label')!,
+      new RegExp(pokemonById(pokemon[5].speciesId).name),
+    );
+    await act(async () => first.click());
+    assert.deepEqual(selected, [pokemon[5].id]);
+    assert.equal(document.querySelectorAll('.battle-party-slot.filled').length, 1);
+    await act(async () =>
+      (document.querySelector('.battle-party-slot.filled') as HTMLButtonElement).click(),
+    );
+    assert.deepEqual(selected, []);
+    await act(async () =>
+      (document.querySelector('.battle-party-heading>button') as HTMLButtonElement).click(),
+    );
+    assert.equal(selected.length, 2);
+    assert.equal(selected[0], pokemon[5].id);
+    assert.equal(document.querySelectorAll('.battle-party-slot.filled').length, 2);
+    const select = document.querySelector(
+      '[aria-label="Filter battle Pokémon"]',
+    ) as HTMLSelectElement;
+    await act(async () => {
+      select.value = 'favourite';
+      select.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    });
+    assert.equal(document.querySelectorAll('.battle-picker-pokemon').length, 1);
+    assert.equal(
+      document.querySelector('.battle-picker-pokemon')?.getAttribute('aria-pressed'),
+      'true',
+    );
+  } finally {
+    await act(async () => root.unmount());
+    dom.window.close();
+  }
+});

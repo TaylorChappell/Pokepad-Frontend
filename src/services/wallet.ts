@@ -320,7 +320,10 @@ export function createWalletController(overrides: Partial<ControllerDependencies
   async function signAndSendPrepared(
     prepared: PreparedTransaction,
     onSigning?: () => void,
+    submitPath?: string,
   ): Promise<string> {
+    if (submitPath && !/^\/v1\/battles\/[^/]+\/escrow\/submit$/.test(submitPath))
+      throw new Error('Invalid transaction submission endpoint.');
     const active = connected,
       attempt = generation;
     if (!active || session.status !== 'authenticated' || active.account.address !== session.wallet)
@@ -366,10 +369,13 @@ export function createWalletController(overrides: Partial<ControllerDependencies
     if (!result || result.signedTransaction.length < 64 || result.signedTransaction.length > 5000)
       throw new Error('The wallet returned an invalid signed transaction.');
     const sent = await deps.request<{ signature: string }>(
-      `/v1/transactions/${encodeURIComponent(prepared.intentId)}/submit`,
+      submitPath || `/v1/transactions/${encodeURIComponent(prepared.intentId)}/submit`,
       {
         method: 'POST',
-        json: { signedTransactionBase64: btoa(String.fromCharCode(...result.signedTransaction)) },
+        json: {
+          ...(submitPath ? { intentId: prepared.intentId } : {}),
+          signedTransactionBase64: btoa(String.fromCharCode(...result.signedTransaction)),
+        },
       },
     );
     return sent.signature;

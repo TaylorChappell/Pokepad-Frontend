@@ -11,13 +11,10 @@
 .boot-stage {
   isolation: isolate;
 }
-.boot-ball {
-  animation: boot-catch 1.8s cubic-bezier(0.45, 0, 0.3, 1) infinite;
+.boot-emblem {
+  animation: boot-emblem-float 2.2s ease-in-out infinite;
   filter: drop-shadow(0 5px 0 #25354b08);
-  transform-origin: 50% 80%;
-}
-.boot-ball-button {
-  animation: boot-button-glow 1.8s ease-in-out infinite;
+  transform-origin: center;
 }
 .boot-shadow {
   position: absolute;
@@ -27,17 +24,18 @@
   background: #25354b12;
   border-radius: 50%;
   filter: blur(4px);
-  animation: boot-shadow 1.8s ease-in-out infinite;
+  animation: boot-shadow 2.2s ease-in-out infinite;
 }
 .boot-brand {
-  font-family: Pokemon, Nunito, sans-serif;
-  color: #ffcf36;
-  -webkit-text-stroke: 2px #2e5c96;
-  paint-order: stroke fill;
-  font-weight: 400;
-  letter-spacing: 1px;
-  line-height: 1.5;
-  text-shadow: 0 2px #214779;
+  line-height: 1;
+  margin: 10px 0 18px;
+}
+.boot-wordmark {
+  display: block;
+  overflow: hidden;
+  width: 225px;
+  height: auto;
+  margin: 0 auto;
 }
 .boot-status {
   max-width: 340px;
@@ -53,8 +51,7 @@
   outline: 3px solid #4d81cf;
   outline-offset: 4px;
 }
-.boot-screen.is-stalled .boot-ball,
-.boot-screen.is-stalled .boot-ball-button,
+.boot-screen.is-stalled .boot-emblem,
 .boot-screen.is-stalled .boot-shadow {
   animation-play-state: paused;
 }
@@ -66,35 +63,13 @@
 .boot-screen--leaving .boot-content {
   transform: translateY(-20px) scale(1.025);
 }
-@keyframes boot-catch {
+@keyframes boot-emblem-float {
   0%,
-  35%,
-  70%,
   100% {
-    transform: translateY(-3px) rotate(0);
+    transform: translateY(0) scale(1);
   }
-  43% {
-    transform: translateY(-1px) rotate(-13deg);
-  }
-  53% {
-    transform: translateY(-2px) rotate(10deg);
-  }
-  61% {
-    transform: translateY(-3px) rotate(-5deg);
-  }
-}
-@keyframes boot-button-glow {
-  0%,
-  32%,
-  75%,
-  100% {
-    fill: #eef1f6;
-    stroke: #cbd3df;
-  }
-  48%,
-  58% {
-    fill: #ffd576;
-    stroke: #efa55c;
+  50% {
+    transform: translateY(-7px) scale(1.025);
   }
 }
 @keyframes boot-shadow {
@@ -119,7 +94,7 @@
     width: 156px;
     height: 156px;
   }
-  .boot-ball {
+  .boot-emblem {
     width: 96px;
     height: 96px;
   }
@@ -138,7 +113,7 @@
     width: 116px;
     height: 116px;
   }
-  .boot-ball {
+  .boot-emblem {
     width: 76px;
     height: 76px;
   }
@@ -156,8 +131,7 @@
   .boot-content {
     transition: none;
   }
-  .boot-ball,
-  .boot-ball-button,
+  .boot-emblem,
   .boot-shadow {
     animation: none;
   }
@@ -166,8 +140,7 @@ html[data-motion='reduced'] .boot-screen,
 html[data-motion='reduced'] .boot-content {
   transition: none;
 }
-html[data-motion='reduced'] .boot-ball,
-html[data-motion='reduced'] .boot-ball-button,
+html[data-motion='reduced'] .boot-emblem,
 html[data-motion='reduced'] .boot-shadow {
   animation: none;
 }

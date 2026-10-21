@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { useRevealAudio } from '../audio/sound';
+import type { RevealFrame } from '../audio/reveal-timeline';
 import { POKEMON, pokemonById } from '../data/pokemon';
 import { moveByName } from '../data/moves';
 import { getPokemonHealth, getPokemonStats } from '../data/stats';
 import { collectionValue, getEvolutionStatus, pendingMove } from '../state/model';
+import {
+  compareBattlePokemon,
+  comparePokemonStrength,
+  demoPokemonCatalogue,
+  pokemonStrength,
+  variantDiscoveries,
+} from '../state/collection';
 import {
   Button,
   Icon,
@@ -83,6 +91,41 @@ function HealthMeter({ pokemon, compact = false }: { pokemon: OwnedPokemon; comp
     </div>
   );
 }
+function FavouriteButton({
+  pokemon,
+  showLabel = false,
+}: {
+  pokemon: OwnedPokemon;
+  showLabel?: boolean;
+}) {
+  const { act, busy } = useApp();
+  const name = pokemonById(pokemon.speciesId).name;
+  return (
+    <button
+      type="button"
+      className={
+        'pokemon-favourite ' +
+        (pokemon.favourite ? 'is-favourite ' : '') +
+        (showLabel ? 'with-label' : '')
+      }
+      aria-label={
+        (pokemon.favourite ? 'Remove ' : 'Add ') +
+        name +
+        (pokemon.favourite ? ' from favourites' : ' to favourites')
+      }
+      aria-pressed={!!pokemon.favourite}
+      disabled={busy}
+      onClick={() =>
+        void act({ type: 'pokemon.favourite', id: pokemon.id, favourite: !pokemon.favourite })
+      }
+    >
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z" />
+      </svg>
+      {showLabel && <span>{pokemon.favourite ? 'Favourited' : 'Favourite'}</span>}
+    </button>
+  );
+}
 export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
   const { state } = useApp(),
     species = pokemonById(pokemon.speciesId),
@@ -92,72 +135,81 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
     canLearn = !!offer && !pokemon.locked,
     needsAttention = evolution.canEvolve || canLearn;
   return (
-    <a
-      href={'#/pokemon/' + pokemon.id}
-      className={
-        'pokemon-card pc-slot ' +
-        (equipped ? 'equipped ' : '') +
-        (pokemon.shiny ? 'variant-glow ' : '') +
-        (needsAttention ? 'pc-attention ' : '') +
-        (evolution.canEvolve ? 'pc-evolution-ready ' : '') +
-        (canLearn ? 'pc-move-ready' : '')
-      }
-      style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
-      data-variant={pokemon.shiny ? 'shiny' : 'original'}
-      data-attention={needsAttention || undefined}
-    >
-      {needsAttention && (
-        <span className="pc-ready-ribbon">
-          {evolution.canEvolve ? <CandySprite /> : <Icon name="BookOpen" size={13} />}
-          {evolution.canEvolve && canLearn
-            ? 'Evolve + new move'
-            : evolution.canEvolve
-              ? 'Evolution ready'
-              : 'New move ready'}
-        </span>
-      )}
-      <div className="pokemon-card-image">
-        <span className="pc-index">No. {String(species.id).padStart(3, '0')}</span>
-        <span className="level-tag">Lv. {pokemon.level}</span>
-        <PokemonArt id={species.id} shiny={pokemon.shiny} />
-        {equipped && (
-          <span className="pc-partner">
-            <span aria-hidden="true">●</span> Partner
+    <div className="pc-slot-wrapper">
+      <FavouriteButton pokemon={pokemon} />
+      <a
+        href={'#/pokemon/' + pokemon.id}
+        className={
+          'pokemon-card pc-slot ' +
+          (equipped ? 'equipped ' : '') +
+          (pokemon.shiny ? 'variant-glow ' : '') +
+          (needsAttention ? 'pc-attention ' : '') +
+          (evolution.canEvolve ? 'pc-evolution-ready ' : '') +
+          (canLearn ? 'pc-move-ready' : '')
+        }
+        style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
+        data-variant={pokemon.shiny ? 'shiny' : 'original'}
+        data-attention={needsAttention || undefined}
+      >
+        {needsAttention && (
+          <span className="pc-ready-ribbon">
+            {evolution.canEvolve ? <CandySprite /> : <Icon name="BookOpen" size={13} />}
+            {evolution.canEvolve && canLearn
+              ? 'Evolve + new move'
+              : evolution.canEvolve
+                ? 'Evolution ready'
+                : 'New move ready'}
           </span>
         )}
-      </div>
-      <div className="pokemon-card-body">
-        <div className="pc-name-line">
-          <h3>{species.name}</h3>
-          <SpeciesDistinction id={species.id} />
-        </div>
-        <div className="type-row">
-          {species.types.map((t) => (
-            <TypeChip key={t} type={t} />
-          ))}
-        </div>
-        <HealthMeter pokemon={pokemon} compact />
-        <div className="pc-alerts">
-          {offer && (
-            <span className={'pc-move-alert' + (!canLearn ? ' pc-alert-waiting' : '')}>
-              <Icon name="BookOpen" size={13} />
-              {canLearn ? 'New move' : 'Move waiting'}
+        <div className="pokemon-card-image">
+          <span className="pc-index">No. {String(species.id).padStart(3, '0')}</span>
+          <span className="level-tag">Lv. {pokemon.level}</span>
+          <PokemonArt id={species.id} shiny={pokemon.shiny} />
+          {equipped && (
+            <span className="pc-partner">
+              <span aria-hidden="true">●</span> Partner
             </span>
           )}
-          {evolution.canEvolve && (
-            <span className="pc-evolve-alert">
-              <CandySprite />
-              Can evolve
-            </span>
-          )}
-          {pokemon.locked && <span>In battle</span>}
         </div>
-        <div className="pokemon-card-value">
-          <SolValue amount={pokemon.backing} />
-          {pokemon.starter && <small>Starter</small>}
+        <div className="pokemon-card-body">
+          <div className="pc-name-line">
+            <h3>{species.name}</h3>
+            <SpeciesDistinction id={species.id} />
+          </div>
+          <div className="type-row">
+            {species.types.map((t) => (
+              <TypeChip key={t} type={t} />
+            ))}
+          </div>
+          <HealthMeter pokemon={pokemon} compact />
+          <div className="pc-alerts">
+            {offer && (
+              <span className={'pc-move-alert' + (!canLearn ? ' pc-alert-waiting' : '')}>
+                <Icon name="BookOpen" size={13} />
+                {canLearn ? 'New move' : 'Move waiting'}
+              </span>
+            )}
+            {evolution.canEvolve && (
+              <span className="pc-evolve-alert">
+                <CandySprite />
+                Can evolve
+              </span>
+            )}
+            {pokemon.locked && <span>In battle</span>}
+          </div>
+          <div className="pokemon-card-value">
+            <SolValue amount={pokemon.backing} />
+            <small
+              className="pc-strength"
+              title="Combined HP, Attack, Defense, Special Attack, Special Defense and Speed"
+            >
+              {pokemonStrength(pokemon)} stats
+            </small>
+            {pokemon.starter && <small>Starter</small>}
+          </div>
         </div>
-      </div>
-    </a>
+      </a>
+    </div>
   );
 }
 export function InventoryPage() {
@@ -176,21 +228,24 @@ export function InventoryPage() {
       (p) =>
         (filter === 'All' ||
           (filter === 'Shiny' && !!p.shiny) ||
+          (filter === 'Favourites' && !!p.favourite) ||
           (filter === 'Partner' && p.id === state.profile.equippedId) ||
           (filter === 'Battle ready' && !p.locked && getPokemonHealth(p).current > 0) ||
           (filter === 'Can evolve' && getEvolutionStatus(state, p).canEvolve) ||
           (filter === 'New move' && !!pendingMove(p) && !p.locked)) &&
         pokemonById(p.speciesId).name.toLowerCase().includes(search.toLowerCase()),
     )
-    .sort((a, b) =>
-      sort === 'Highest value'
-        ? b.backing - a.backing
-        : sort === 'Highest level'
-          ? b.level - a.level
-          : (sort === 'Ready first'
-              ? (attention.get(b.id) || 0) - (attention.get(a.id) || 0)
-              : 0) || b.acquiredAt - a.acquiredAt,
-    );
+    .sort((a, b) => {
+      if (sort === 'Highest value') return b.backing - a.backing || comparePokemonStrength(a, b);
+      if (sort === 'Highest level') return b.level - a.level || comparePokemonStrength(a, b);
+      if (sort === 'Newest') return b.acquiredAt - a.acquiredAt || comparePokemonStrength(a, b);
+      if (sort === 'Favourites first') return compareBattlePokemon(a, b);
+      if (sort === 'Strongest first') return comparePokemonStrength(a, b);
+      return (
+        Number((attention.get(b.id) || 0) > 0) - Number((attention.get(a.id) || 0) > 0) ||
+        comparePokemonStrength(a, b)
+      );
+    });
   return (
     <>
       <PageHeading title="My Pokémon">
@@ -203,16 +258,18 @@ export function InventoryPage() {
       </PageHeading>
       <div className="collection-toolbar">
         <div className="filter-pills">
-          {['All', 'Shiny', 'Battle ready', 'Partner', 'Can evolve', 'New move'].map((f) => (
-            <button
-              key={f}
-              className={filter === f ? 'active' : ''}
-              aria-pressed={filter === f}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </button>
-          ))}
+          {['All', 'Favourites', 'Shiny', 'Battle ready', 'Partner', 'Can evolve', 'New move'].map(
+            (f) => (
+              <button
+                key={f}
+                className={filter === f ? 'active' : ''}
+                aria-pressed={filter === f}
+                onClick={() => setFilter(f)}
+              >
+                {f}
+              </button>
+            ),
+          )}
         </div>
         <div className="toolbar-right">
           <div className="small-search">
@@ -230,7 +287,14 @@ export function InventoryPage() {
             value={sort}
             onChange={(e) => setSort(e.target.value)}
           >
-            {['Ready first', 'Newest', 'Highest value', 'Highest level'].map((s) => (
+            {[
+              'Ready first',
+              'Strongest first',
+              'Favourites first',
+              'Highest value',
+              'Highest level',
+              'Newest',
+            ].map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -287,9 +351,32 @@ export function PokemonDetailPage({ id }: { id: string }) {
     [replaceIndex, setReplaceIndex] = useState<number | null>(null),
     [declining, setDeclining] = useState(false),
     [evolution, setEvolution] = useState<EvolutionScene | null>(null),
-    timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+    [revealFrame, setRevealFrame] = useState<RevealFrame>({
+      elapsedMs: 0,
+      durationMs: 4200,
+      progress: 0,
+      revealed: false,
+    });
   const revealAudio = useRevealAudio();
-  useEffect(() => () => clearTimeout(timer.current), []);
+  // This key changes only for a committed new evolution or a closed dialog. The
+  // completion phase deliberately keeps it stable so the reveal fanfare can finish.
+  useEffect(() => {
+    if (dialog !== 'evolve' || !evolution?.to || evolution.phase !== 'evolving') return;
+    const scene = evolution;
+    void revealAudio.start('evolve', {
+      reducedMotion: state.profile.reducedMotion,
+      onFrame: setRevealFrame,
+      onReveal: () => setEvolution({ ...scene, phase: 'complete' }),
+    });
+    return revealAudio.stop;
+  }, [
+    dialog,
+    evolution?.to,
+    evolution?.from,
+    revealAudio.start,
+    revealAudio.stop,
+    state.profile.reducedMotion,
+  ]);
   if (!p)
     return (
       <EmptyState
@@ -319,7 +406,6 @@ export function PokemonDetailPage({ id }: { id: string }) {
   ];
   const statScale = Math.max(...statRows.map((stat) => stat.value), stats.hp) * 1.12;
   const closeDialog = () => {
-    clearTimeout(timer.current);
     revealAudio.stop();
     setDialog(null);
     setDeclining(false);
@@ -327,9 +413,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
   };
   const startEvolution = async () => {
     if (!evolution || busy) return;
-    revealAudio.unlock();
+    revealAudio.unlock('evolve');
     const before = { ...evolution, phase: 'evolving' as const };
-    setEvolution(before);
     const result = await act({ type: 'pokemon.evolve', id: p.id }),
       changed = result?.pokemon.find((x) => x.id === p.id);
     if (!changed) {
@@ -338,15 +423,13 @@ export function PokemonDetailPage({ id }: { id: string }) {
       return;
     }
     const scene = { ...before, to: changed.speciesId, after: changed.backing };
+    setRevealFrame({
+      elapsedMs: 0,
+      durationMs: state.profile.reducedMotion ? 180 : 4200,
+      progress: 0,
+      revealed: false,
+    });
     setEvolution(scene);
-    revealAudio.play('evolve', 'opening');
-    timer.current = setTimeout(
-      () => {
-        setEvolution({ ...scene, phase: 'complete' });
-        revealAudio.play('evolve', 'revealed');
-      },
-      state.profile.reducedMotion ? 150 : 4200,
-    );
   };
   const learn = async () => {
     if (!offer) return;
@@ -385,6 +468,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
           <Icon name="ArrowLeft" size={18} />
           Back to My PC
         </a>
+        <FavouriteButton pokemon={p} showLabel />
         <span
           className={
             'summary-battle-status ' + (unavailable || health.current === 0 ? 'unavailable' : '')
@@ -734,7 +818,10 @@ export function PokemonDetailPage({ id }: { id: string }) {
                     </dd>
                   </div>
                 </dl>
-                <a href={'#/pokedex?species=' + species.id} className="summary-record-link">
+                <a
+                  href={'#/pokedex?species=' + species.id + (p.shiny ? '&variant=shiny' : '')}
+                  className="summary-record-link"
+                >
                   <Icon name="BookOpen" size={18} />
                   Open Pokédex entry
                   <Icon name="ArrowUpRight" size={15} />
@@ -848,7 +935,17 @@ export function PokemonDetailPage({ id }: { id: string }) {
           wide
           closeDisabled={evolution.phase === 'evolving'}
         >
-          <div className={'evolution-sequence ' + evolution.phase}>
+          <div
+            className={'evolution-sequence ' + evolution.phase}
+            data-reveal-synced
+            data-reveal-reduced={revealFrame.durationMs === 180 || undefined}
+            style={
+              {
+                '--reveal-elapsed': `-${revealFrame.elapsedMs}ms`,
+                '--reveal-duration': `${revealFrame.durationMs}ms`,
+              } as CSSProperties
+            }
+          >
             <div className="evolution-stage">
               <div className="evolution-pixel-grid" />
               <div className="evolution-rays" />
@@ -950,50 +1047,124 @@ export function PokemonDetailPage({ id }: { id: string }) {
     </div>
   );
 }
-function PokeballMini() {
-  return <span className="pokeball-mark" />;
-}
 export function PokedexPage({ selectedId }: { selectedId?: number }) {
-  const { state } = useApp(),
-    [search, setSearch] = useState(''),
-    [type, setType] = useState('All types'),
-    [filter, setFilter] = useState('All'),
-    [selected, setSelected] = useState<number | null>(selectedId || null);
-  const found = new Set(state.discovered),
-    filtered = POKEMON.filter(
-      (p) =>
-        (p.name.toLowerCase().includes(search.toLowerCase()) || String(p.id) === search) &&
-        (type === 'All types' || p.types.includes(type)) &&
-        (filter === 'All' ||
-          (filter === 'Discovered' && found.has(p.id)) ||
-          (filter === 'Undiscovered' && !found.has(p.id))),
+  const { state, mode } = useApp();
+  const [shiny, setShiny] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.hash.split('?')[1]).get('variant') === 'shiny',
+  );
+  const [search, setSearch] = useState('');
+  const [type, setType] = useState('All types');
+  const [filter, setFilter] = useState('All');
+  const [sort, setSort] = useState('Pokédex number');
+  const [selected, setSelected] = useState<number | null>(selectedId || null);
+  const history = variantDiscoveries(state),
+    found = new Set(shiny ? history.shiny : history.normal);
+  const catalogue =
+    state.pokemonCatalogue ?? (mode === 'demo' ? demoPokemonCatalogue() : undefined);
+  const values = new Map(
+    catalogue?.entries.map((entry) => [
+      entry.speciesId,
+      shiny ? entry.shinyValue : entry.normalValue,
+    ]) ?? [],
+  );
+  const variant = shiny ? 'Shiny' : 'Normal';
+  const total = catalogue?.totals[shiny ? 'shiny' : 'normal'];
+  const owned = state.pokemon.filter((p) => !!p.shiny === shiny);
+  const ownedTotal =
+    Number(owned.reduce((sum, p) => sum + BigInt(Math.round(p.backing * 1e9)), 0n)) / 1e9;
+  const filtered = POKEMON.filter(
+    (p) =>
+      (p.name.toLowerCase().includes(search.toLowerCase()) || String(p.id) === search) &&
+      (type === 'All types' || p.types.includes(type)) &&
+      (filter === 'All' ||
+        (filter === 'Discovered' && found.has(p.id)) ||
+        (filter === 'Undiscovered' && !found.has(p.id))),
+  ).sort((a, b) =>
+    sort === 'Highest SOL value'
+      ? (values.get(b.id) ?? -1) - (values.get(a.id) ?? -1) || a.id - b.id
+      : sort === 'Lowest SOL value'
+        ? (values.get(a.id) ?? Infinity) - (values.get(b.id) ?? Infinity) || a.id - b.id
+        : a.id - b.id,
+  );
+  const selectedOwned = selected
+    ? owned.filter((p) => p.speciesId === selected).sort(compareBattlePokemon)
+    : [];
+  const value = (id: number) =>
+    values.has(id) ? (
+      <SolValue amount={values.get(id)!} />
+    ) : (
+      <span className="dex-unpriced">Unavailable</span>
     );
   return (
-    <>
+    <div className={'pokedex-v14 ' + (shiny ? 'dex-shiny' : 'dex-normal')}>
       <PageHeading title="Pokédex">
-        <span className="pokedex-count">
-          <Icon name="BookOpen" />
-          <strong>
-            {found.size} <small>/ 151</small>
-          </strong>
-          discovered
+        <span className="dex-permanent-record">
+          <Icon name="BookOpen" size={16} /> Your permanent collection record
         </span>
       </PageHeading>
-      <div className="panel dex-progress">
-        <div>
-          <PokeballMini />
-          <span>
-            <strong>Your Kanto collection</strong>
-            <small>Species stay discovered after a sale or transfer.</small>
-          </span>
+      <section className="dex-console" aria-label="Pokédex collection overview">
+        <div className="dex-section-tabs" role="tablist" aria-label="Pokédex variants">
+          {([false, true] as const).map((isShiny) => (
+            <button
+              key={String(isShiny)}
+              role="tab"
+              aria-selected={shiny === isShiny}
+              aria-controls="dex-records"
+              className={shiny === isShiny ? 'active' : ''}
+              onClick={() => setShiny(isShiny)}
+            >
+              <span className={'dex-variant-ball ' + (isShiny ? 'shiny' : '')} aria-hidden="true" />
+              <span>
+                <strong>{isShiny ? 'Shiny' : 'Normal'}</strong>
+                <small>{(isShiny ? history.shiny : history.normal).length} / 151 discovered</small>
+              </span>
+            </button>
+          ))}
         </div>
-        <Progress value={(found.size / 151) * 100} color="#e9bf55" />
-        <span>{Math.round((found.size / 151) * 100)}% complete</span>
-      </div>
-      <div className="collection-toolbar">
+        <div className="dex-section-summary">
+          <div className="dex-catalogue-total">
+            <span>Full {variant.toLowerCase()} catalogue</span>
+            <strong>{total !== undefined ? <SolValue amount={total} /> : <span>—</span>}</strong>
+            <small>Reference total · all 151 species</small>
+          </div>
+          <div className="dex-owned-total">
+            <span>Currently in your PC</span>
+            <strong>
+              <SolValue amount={ownedTotal} />
+            </strong>
+            <small>{owned.length} Pokémon · actual redeemable values</small>
+          </div>
+          <div className="dex-record-progress">
+            <strong>
+              {found.size}
+              <span> / 151</span>
+            </strong>
+            <Progress value={(found.size / 151) * 100} color={shiny ? '#89a7d7' : '#65a687'} />
+            <small>{Math.round((found.size / 151) * 100)}% discovered</small>
+          </div>
+        </div>
+        <p className="dex-value-note">
+          Catalogue values describe reward reference values. Your owned Pokémon keep their
+          individual redeemable amounts. Discoveries stay after a sale or transfer.
+        </p>
+        {!!history.unknown.length && (
+          <p className="dex-legacy-note">
+            {history.unknown.length} older species records are preserved; their original colour was
+            not recorded.
+          </p>
+        )}
+      </section>
+      <div className="collection-toolbar dex-controls">
         <div className="filter-pills">
           {['All', 'Discovered', 'Undiscovered'].map((f) => (
-            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+            <button
+              key={f}
+              className={filter === f ? 'active' : ''}
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+            >
               {f}
             </button>
           ))}
@@ -1005,9 +1176,19 @@ export function PokedexPage({ selectedId }: { selectedId?: number }) {
               aria-label="Search the Pokédex"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Name or Pokédex number…"
+              placeholder="Name or Pokédex number"
             />
           </div>
+          <select
+            className="sort-select"
+            aria-label="Sort the Pokédex"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+          >
+            {['Pokédex number', 'Highest SOL value', 'Lowest SOL value'].map((option) => (
+              <option key={option}>{option}</option>
+            ))}
+          </select>
           <select
             className="sort-select"
             aria-label="Filter Pokémon type"
@@ -1020,67 +1201,98 @@ export function PokedexPage({ selectedId }: { selectedId?: number }) {
           </select>
         </div>
       </div>
-      <div className="dex-grid">
-        {filtered.map((p) => (
-          <button
-            key={p.id}
-            className={'dex-card ' + (!found.has(p.id) ? 'undiscovered' : '')}
-            onClick={() => setSelected(p.id)}
-          >
-            <div className="row-between">
-              <span className="dex-number">#{String(p.id).padStart(3, '0')}</span>
-              {found.has(p.id) ? (
-                <Icon name="CheckCircle2" size={15} />
-              ) : (
-                <Icon name="Lock" size={13} />
-              )}
-            </div>
-            <PokemonArt id={p.id} />
-            <h3>{p.name}</h3>
-            <div className="type-row">
-              {p.types.map((t) => (
-                <TypeChip type={t} key={t} />
-              ))}
-            </div>
-            <small>{found.has(p.id) ? 'Discovered' : 'Still to discover'}</small>
-          </button>
-        ))}
-      </div>
-      {!filtered.length && (
-        <EmptyState title="No Pokémon found" description="Try another name, number or type." />
-      )}
+      <section id="dex-records" role="tabpanel" aria-label={variant + ' Pokédex'}>
+        <div className="dex-grid">
+          {filtered.map((p) => (
+            <button
+              key={p.id}
+              className={'dex-card ' + (!found.has(p.id) ? 'undiscovered' : 'discovered')}
+              data-species={p.id}
+              data-shiny={shiny}
+              onClick={() => setSelected(p.id)}
+            >
+              <div className="row-between">
+                <span className="dex-number">#{String(p.id).padStart(3, '0')}</span>
+                {found.has(p.id) ? (
+                  <Icon name="CheckCircle2" size={15} />
+                ) : (
+                  <Icon name="Lock" size={13} />
+                )}
+              </div>
+              <PokemonArt id={p.id} shiny={shiny} />
+              <h3>{p.name}</h3>
+              <div className="type-row">
+                {p.types.map((t) => (
+                  <TypeChip type={t} key={t} />
+                ))}
+              </div>
+              <div className="dex-entry-value">
+                {value(p.id)}
+                <small>Catalogue value</small>
+              </div>
+              <span className="dex-discovery-label">
+                {found.has(p.id)
+                  ? 'Discovered'
+                  : history.unknown.includes(p.id)
+                    ? 'Earlier record · colour unknown'
+                    : 'Still to discover'}
+              </span>
+            </button>
+          ))}
+        </div>
+        {!filtered.length && (
+          <EmptyState title="No Pokémon found" description="Try another name, number or type." />
+        )}
+      </section>
       {selected && (
         <Modal
           title={pokemonById(selected).name + ' #' + String(selected).padStart(3, '0')}
           onClose={() => setSelected(null)}
         >
           <div className="modal-body dex-modal">
-            <PokemonArt id={selected} />
+            <PokemonArt id={selected} shiny={shiny} />
             <div className="type-row">
               {pokemonById(selected).types.map((t) => (
-                <TypeChip type={t} key={t} />
+                <TypeChip key={t} type={t} />
               ))}
+            </div>
+            <div className="dex-modal-value">
+              <span>{variant} catalogue value</span>
+              {value(selected)}
             </div>
             <p>
               {found.has(selected)
-                ? 'Discovered. This entry remains even after you sell this Pokémon.'
-                : 'Undiscovered. Hatch an egg or open a pack for a chance to meet this Pokémon.'}
+                ? 'You have discovered this colour variant. Its record stays even after a sale or transfer.'
+                : 'This colour variant has not yet been recorded in your collection.'}
             </p>
-            <Button
-              onClick={() => {
-                const owned = state.pokemon.find((p) => p.speciesId === selected);
-                navigate(owned ? '/pokemon/' + owned.id : '/rewards');
-                setSelected(null);
-              }}
-            >
-              {state.pokemon.some((p) => p.speciesId === selected)
-                ? 'View in my inventory'
-                : 'View rewards'}
-              <Icon name="ArrowRight" />
-            </Button>
+            {selectedOwned.length ? (
+              <div className="dex-owned-copies">
+                <strong>Your current Pokémon</strong>
+                {selectedOwned.map((p) => (
+                  <a key={p.id} href={'#/pokemon/' + p.id} onClick={() => setSelected(null)}>
+                    <span>
+                      Lv. {p.level}
+                      {p.favourite ? ' · Favourite' : ''}
+                    </span>
+                    <SolValue amount={p.backing} />
+                    <Icon name="ArrowRight" size={16} />
+                  </a>
+                ))}
+                <small>These are the actual redeemable amounts for your owned instances.</small>
+              </div>
+            ) : (
+              <Button
+                onClick={() => {
+                  navigate('/rewards');
+                  setSelected(null);
+                }}
+              >
+                View rewards <Icon name="ArrowRight" />
+              </Button>
+            )}
           </div>
         </Modal>
       )}
-    </>
+    </div>
   );
 }

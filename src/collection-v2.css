@@ -1296,17 +1296,17 @@
   opacity: 0.25;
 }
 .evolution-sequence.evolving .evolution-old > .pokemon-art {
-  animation: evolution-charge-old 4.2s ease forwards;
+  animation: evolution-charge-old var(--reveal-duration, 4200ms) ease forwards;
 }
 .evolution-sequence.evolving .evolution-new {
-  animation: evolution-charge-new 4.2s ease forwards;
+  animation: evolution-charge-new var(--reveal-duration, 4200ms) ease forwards;
 }
 .evolution-sequence.evolving .evolution-new > .pokemon-art {
   filter: brightness(0) invert(1);
-  animation: evolution-grow-new 4.2s ease forwards;
+  animation: evolution-grow-new var(--reveal-duration, 4200ms) ease forwards;
 }
 .evolution-sequence.evolving .evolution-flash {
-  animation: evolution-bloom 4.2s ease forwards;
+  animation: evolution-bloom var(--reveal-duration, 4200ms) ease forwards;
 }
 .evolution-sequence.evolving .evolution-ring {
   border-color: #dcf2d299;
@@ -1315,6 +1315,24 @@
 .evolution-sequence.evolving .evolution-rays {
   opacity: 0.35;
   animation-duration: 9s;
+}
+/* Shared reveal clock samples each evolution pose and schedules its matching local sample. */
+.evolution-sequence[data-reveal-synced].evolving .evolution-old > .pokemon-art,
+.evolution-sequence[data-reveal-synced].evolving .evolution-new,
+.evolution-sequence[data-reveal-synced].evolving .evolution-new > .pokemon-art,
+.evolution-sequence[data-reveal-synced].evolving .evolution-flash {
+  animation-play-state: paused;
+  animation-delay: var(--reveal-elapsed, 0ms);
+}
+.evolution-sequence[data-reveal-reduced] .evolution-flash,
+.evolution-sequence[data-reveal-reduced] .evolution-rays,
+.evolution-sequence[data-reveal-reduced] .evolution-orbit-stars,
+.evolution-sequence[data-reveal-reduced] .evolution-ring {
+  display: none;
+}
+.evolution-sequence[data-reveal-reduced] .pokemon-art,
+.evolution-sequence[data-reveal-reduced] .evolution-new {
+  animation: none !important;
 }
 .evolution-sequence.complete .evolution-new {
   opacity: 1;
@@ -1428,16 +1446,24 @@
     filter: brightness(0) invert(1);
     transform: scale(0.85);
   }
-  42% {
+  29.762% {
     filter: brightness(0) invert(1);
     transform: scale(1.09);
+  }
+  42% {
+    filter: brightness(0) invert(1);
+    transform: scale(0.65);
+  }
+  54.762% {
+    filter: brightness(0) invert(1);
+    transform: scale(1.04);
   }
   65% {
     filter: brightness(0) invert(1);
     transform: scale(0.45);
     opacity: 1;
   }
-  83%,
+  77.381%,
   100% {
     filter: brightness(0) invert(1);
     transform: scale(0.1);
@@ -1472,7 +1498,7 @@
 }
 @keyframes evolution-bloom {
   0%,
-  76% {
+  77.381% {
     opacity: 0;
   }
   90% {

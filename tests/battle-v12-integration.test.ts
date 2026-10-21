@@ -6,7 +6,12 @@ import React, { act } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { JSDOM } from 'jsdom';
 import { BattleEffects } from '../src/components/BattleEffects';
-import { createBattle, createPlayerTeam, resolveTurn } from '../src/battle/engine';
+import {
+  createBattle,
+  createPlayerTeam,
+  resolveTurn,
+  resolveReplacements,
+} from '../src/battle/engine';
 import { createBattlePlayback, getBattleCue, PRESENTED_MOVES } from '../src/battle/presentation';
 import { sampleBodyTransition } from '../src/battle/body-transition';
 import { sampleSwitchVisual } from '../src/battle/switch-presentation';
@@ -368,7 +373,8 @@ test('forced switching never recalls or resurrects the already-fainted fighter',
       'Easy',
     );
     previous[side][0].hp = 0;
-    const next = resolveTurn(previous, { kind: 'move', index: 0 }, () => 0.5);
+    previous.replacementRequired[side] = true;
+    const next = resolveReplacements(previous, { [side]: 1 });
     const switching = createBattlePlayback(previous, next).filter((frame) => frame.switch);
     assert.equal(switching.length, 1);
     const release = switching[0];

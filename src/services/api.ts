@@ -3,6 +3,11 @@ import { COINS, createInitialState } from '../data/demo';
 import { applyAction, assertSupportedAction, STORAGE_KEY } from '../state/model';
 import { getPokemonHealth } from '../data/stats';
 import { decorateDemoCoins } from '../data/coin-presentation';
+import {
+  variantDiscoveries,
+  demoPokemonCatalogue,
+  recordVariantDiscovery,
+} from '../state/collection';
 import { apiRequest } from './http';
 export interface KantoApi {
   mode: 'demo' | 'live';
@@ -46,17 +51,31 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
     // Old reward tiers are not variants: never turn a legacy "Rare" Pokémon into a shiny
     // or re-price existing owned assets. Missing variants become normal, at their funded value.
     p.shiny = p.shiny === true;
+    p.favourite = p.favourite === true;
     p.rarity = '';
     p.health = getPokemonHealth(p).current;
     return p;
   });
+  s.discoveredVariants = variantDiscoveries(s);
+  // Older local reveals can prove an exact variant; species-only history cannot.
+  for (const reward of s.rewards)
+    if (reward.openedAt && reward.outcomeSpeciesId && typeof reward.shiny === 'boolean')
+      recordVariantDiscovery(s, reward.outcomeSpeciesId, reward.shiny);
+  for (const event of s.activity)
+    if (
+      event.pokemonId &&
+      typeof event.shiny === 'boolean' &&
+      ['reward', 'egg', 'pack', 'evolve'].includes(event.kind)
+    )
+      recordVariantDiscovery(s, event.pokemonId, event.shiny);
+  s.pokemonCatalogue = demoPokemonCatalogue();
   s.rewards = s.rewards.map((r: Reward) => {
     const reward = { ...r, evolutionReserve: nonNegative(r.evolutionReserve) };
     // Local demo rewards now draw on opening. Keep their exact prior allocation until then.
     if (!reward.openedAt) {
       delete reward.outcomeSpeciesId;
       delete reward.shiny;
-    } else reward.shiny = reward.shiny === true;
+    } else if (typeof reward.shiny !== 'boolean') delete reward.shiny;
     return reward;
   });
   const currentCopy = (value: string) =>

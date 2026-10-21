@@ -34,12 +34,13 @@ export interface BattleEvent {
   movePhase?: 'charge' | 'release';
   targetSide?: Side;
   outcome?: 'miss' | 'immune';
-  frame?: Pick<BattleState, 'player' | 'rival' | 'active' | 'winner'>;
+  frame?: Pick<BattleState, 'player' | 'rival' | 'active' | 'winner' | 'replacementRequired'>;
 }
 export interface BattleState {
   player: Fighter[];
   rival: Fighter[];
   active: Record<Side, number>;
+  replacementRequired: Record<Side, boolean>;
   difficulty: Difficulty;
   turn: number;
   winner: Side | 'draw' | null;
@@ -47,7 +48,10 @@ export interface BattleState {
   history: BattleEvent[];
   lastRivalSwitch: number;
 }
-export type BattleAction = { kind: 'move'; index: number } | { kind: 'switch'; index: number };
+export type BattleAction =
+  | { kind: 'move'; index: number }
+  | { kind: 'switch'; index: number }
+  | { kind: 'replace'; index: number };
 export const DIFFICULTIES: Record<Difficulty, { ratio: number; detail: string; trainer: string }> =
   {
     Easy: {
@@ -397,6 +401,7 @@ export function createBattle(
     player,
     rival,
     active: { player: 0, rival: 0 },
+    replacementRequired: { player: false, rival: false },
     difficulty,
     turn: 1,
     winner: null,
@@ -513,12 +518,106 @@ export function chooseRivalAction(state: BattleState, random = Math.random): Bat
     .sort((a, b) => b.score - a.score);
   return { kind: 'move', index: ranked[0].index };
 }
+export type BattlePhase = 'turn' | 'replacement';
+export function battlePhase(state: BattleState): BattlePhase {
+  return !state.winner && (state.replacementRequired?.player || state.replacementRequired?.rival)
+    ? 'replacement'
+    : 'turn';
+}
+/** All mandatory choices are validated before either becomes visible. This is not a combat turn. */
+export function resolveReplacements(
+  previous: BattleState,
+  choices: Partial<Record<Side, number>>,
+): BattleState {
+  if (battlePhase(previous) !== 'replacement') return previous;
+  for (const side of ['player', 'rival'] as const) {
+    const required = previous.replacementRequired[side];
+    const index = choices[side];
+    if (
+      required
+        ? !Number.isInteger(index) ||
+          index === previous.active[side] ||
+          !previous[side][index!]?.hp ||
+          previous[side][index!].hp <= 0
+        : index !== undefined
+    )
+      return previous;
+  }
+  const state = structuredClone(previous);
+  state.events = [];
+  for (const side of ['player', 'rival'] as const) {
+    if (!previous.replacementRequired[side]) continue;
+    const outgoing = state[side][state.active[side]];
+    outgoing.stages = blankStages();
+    outgoing.trapped = 0;
+    outgoing.charging = null;
+    outgoing.recharge = false;
+    const other = side === 'player' ? 'rival' : 'player';
+    state[other][state.active[other]].trapped = 0;
+    state.active[side] = choices[side]!;
+    state.replacementRequired[side] = false;
+    if (side === 'rival') state.lastRivalSwitch = state.turn;
+    state.events.push({
+      kind: 'switch',
+      side,
+      text: `${pokemonById(state[side][state.active[side]].speciesId).name} entered the battle!`,
+      frame: structuredClone({
+        player: state.player,
+        rival: state.rival,
+        active: state.active,
+        winner: state.winner,
+        replacementRequired: state.replacementRequired,
+      }),
+    });
+  }
+  state.history = [
+    ...state.history,
+    ...state.events.map(({ frame: _frame, ...entry }) => entry),
+  ].slice(-80);
+  return state;
+}
+/** The bot chooses from the current public position, never a trainer's pending replacement. */
+export function chooseRivalReplacement(state: BattleState): number {
+  const activeTarget = state.player[state.active.player];
+  const targets =
+    activeTarget.hp > 0 ? [activeTarget] : state.player.filter((pokemon) => pokemon.hp > 0);
+  const score = (candidate: Fighter) =>
+    targets.reduce((total, target) => {
+      const usable = candidate.moves.filter((_, index) => candidate.pp[index] > 0);
+      const outgoing = Math.max(
+        0,
+        ...(usable.length ? usable : ['Struggle']).map((name) =>
+          predictedDamage(candidate, target, name),
+        ),
+      );
+      const incoming = Math.max(
+        1,
+        ...target.moves.map((name) => predictedDamage(target, candidate, name)),
+      );
+      return total + outgoing / Math.max(1, target.hp) + candidate.hp / incoming;
+    }, 0) / Math.max(1, targets.length);
+  return (
+    state.rival
+      .map((pokemon, index) => ({ pokemon, index }))
+      .filter(({ pokemon, index }) => pokemon.hp > 0 && index !== state.active.rival)
+      .sort((a, b) => score(b.pokemon) - score(a.pokemon) || a.index - b.index)[0]?.index ?? -1
+  );
+}
+
 export function resolveTurn(
   previous: BattleState,
   action: BattleAction,
   random = Math.random,
 ): BattleState {
   if (previous.winner) return previous;
+  if (battlePhase(previous) === 'replacement') {
+    if (action.kind !== 'replace' || !previous.replacementRequired.player) return previous;
+    return resolveReplacements(previous, {
+      player: action.index,
+      ...(previous.replacementRequired.rival ? { rival: chooseRivalReplacement(previous) } : {}),
+    });
+  }
+  if (action.kind === 'replace') return previous;
   const player = previous.player[previous.active.player];
   if (action.kind === 'switch') {
     if (
@@ -579,6 +678,7 @@ export function resolveTurn(
         rival: state.rival,
         active: state.active,
         winner: state.winner,
+        replacementRequired: state.replacementRequired,
       }),
     });
   const status = (target: Fighter, value: Status, side: Side, turns = 0) => {
@@ -853,21 +953,21 @@ export function resolveTurn(
       'result',
     );
   } else {
-    for (const side of ['player', 'rival'] as const) {
-      if (state[side][state.active[side]].hp <= 0) {
-        state.active[side] = state[side].findIndex((pokemon) => pokemon.hp > 0);
-        log(
-          `${side === 'player' ? 'You send' : DIFFICULTIES[state.difficulty].trainer + ' sends'} out ${pokemonById(state[side][state.active[side]].speciesId).name}!`,
-          side,
-          'switch',
-        );
-      }
-    }
+    state.replacementRequired = {
+      player: state.player[state.active.player].hp <= 0,
+      rival: state.rival[state.active.rival].hp <= 0,
+    };
   }
   state.turn += 1;
   // Frame snapshots are transient playback data; keep the history lightweight.
   state.history = [...state.history, ...events.map(({ frame: _frame, ...event }) => event)].slice(
     -80,
   );
+  // A sole bot replacement needs no trainer input; retain the faint and send-out playback.
+  if (state.replacementRequired.rival && !state.replacementRequired.player) {
+    const replaced = resolveReplacements(state, { rival: chooseRivalReplacement(state) });
+    replaced.events = [...state.events, ...replaced.events];
+    return replaced;
+  }
   return state;
 }

@@ -35,6 +35,11 @@ test('every playable move and reveal phase has a verified local recorded sound',
   for (const layer of layers) {
     assert.ok(layer.duration! > 0 && layer.duration! <= 4, layer.file);
     assert.ok((layer.delay ?? 0) >= 0);
+    assert.ok((layer.offset ?? 0) >= 0);
+    assert.ok(
+      (layer.offset ?? 0) < manifest.assets[layer.file].durationSeconds,
+      'slice begins inside source recording',
+    );
     assert.ok((layer.volume ?? 0.8) > 0 && (layer.volume ?? 0.8) <= 1);
   }
   for (const [name, entry] of Object.entries(manifest.assets)) {

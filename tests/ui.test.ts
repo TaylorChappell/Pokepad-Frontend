@@ -1028,3 +1028,229 @@ test('Pokémon selling confirms the exact redeemable value and removes the old m
     await app.close();
   }
 });
+
+test('a faint opens mandatory party selection and the chosen reserve enters without an extra turn', async () => {
+  const app = await mountApp('/battles', (state) => {
+    const base = state.pokemon[0];
+    state.pokemon = [
+      {
+        ...base,
+        id: 'weak-lead',
+        speciesId: 129,
+        level: 1,
+        moves: ['Growl'],
+        locked: undefined,
+        favourite: true,
+      },
+      {
+        ...base,
+        id: 'reserve-one',
+        speciesId: 150,
+        level: 100,
+        moves: ['Psychic'],
+        locked: undefined,
+        favourite: false,
+      },
+      {
+        ...base,
+        id: 'reserve-two',
+        speciesId: 149,
+        level: 100,
+        moves: ['Dragon Rage'],
+        locked: undefined,
+        favourite: false,
+      },
+    ];
+  });
+  try {
+    const { document, click } = app;
+    await click(document.querySelector('[aria-label="Master difficulty"]'));
+    await click(document.querySelector('.arena-hero .button'));
+    const cards = [...document.querySelectorAll('.team-select-card')];
+    assert.match(cards[0].textContent || '', /Magikarp/, 'Favourites come first in the picker');
+    for (const name of ['Magikarp', 'Mewtwo', 'Dragonite'])
+      await click(cards.find((card) => card.querySelector('strong')?.textContent === name)!);
+    await click(document.querySelector('.battle-review>.button'));
+    await app.until(() => !!document.querySelector('.classic-fight'), 'Battle artwork loads', 4000);
+    for (
+      let attempt = 0;
+      attempt < 4 && !document.querySelector('[aria-label="Choose your next Pokémon"]');
+      attempt++
+    ) {
+      await click(document.querySelector('.classic-fight'));
+      await click(document.querySelector('.battle-moves>button'));
+      await app.until(
+        () =>
+          !!document.querySelector('[aria-label="Choose your next Pokémon"]') ||
+          !!document.querySelector<HTMLButtonElement>('.classic-fight:not(:disabled)'),
+        'The attack finishes',
+        9000,
+      );
+    }
+    assert.ok(document.querySelector('[aria-label="Choose your next Pokémon"]'));
+    assert.equal(
+      document.querySelector('.classic-fight'),
+      null,
+      'Fight is not offered while a replacement is required',
+    );
+    assert.equal(
+      document.querySelector('.classic-menu-back')?.tagName,
+      'DIV',
+      'The mandatory picker cannot be dismissed',
+    );
+    assert.equal(
+      document.querySelector<HTMLButtonElement>('[aria-label="Send out Magikarp"]')?.disabled,
+      true,
+    );
+    const turn = document.querySelector('.battle-page-heading')?.textContent;
+    await click(document.querySelector('[aria-label="Send out Dragonite"]'));
+    await app.until(
+      () => !!document.querySelector<HTMLButtonElement>('.classic-fight:not(:disabled)'),
+      'The replacement finishes its send-out',
+      4000,
+    );
+    assert.match(document.querySelector('.classic-health-player')?.textContent || '', /Dragonite/);
+    assert.equal(
+      document.querySelector('.battle-page-heading')?.textContent,
+      turn,
+      'Replacement is not another combat turn',
+    );
+    assert.equal(app.saved().pokemon.length, 3, 'Practice never changes collection ownership');
+  } finally {
+    await app.close();
+  }
+});
+
+test('PC favourites persist, ready Pokémon lead by strength, and SOL sorting remains independent', async () => {
+  const app = await mountApp('/pokemon', (state) => {
+    const base = state.pokemon[0];
+    state.pokemon = [
+      {
+        ...base,
+        id: 'strong',
+        speciesId: 150,
+        level: 70,
+        rareCandy: 0,
+        backing: 0.01,
+        favourite: false,
+        moveOffers: [],
+      },
+      {
+        ...base,
+        id: 'ready',
+        speciesId: 10,
+        level: 5,
+        rareCandy: 0,
+        backing: 9,
+        favourite: false,
+        moveOffers: [{ id: 'ready-move', move: 'Tackle', level: 5, status: 'pending' }],
+      },
+      {
+        ...base,
+        id: 'middle',
+        speciesId: 25,
+        level: 30,
+        rareCandy: 0,
+        backing: 0.1,
+        favourite: false,
+        moveOffers: [],
+      },
+    ];
+  });
+  try {
+    const order = () =>
+      [...app.document.querySelectorAll('.pc-grid .pc-slot')].map((el) => el.getAttribute('href'));
+    assert.deepEqual(order(), ['#/pokemon/ready', '#/pokemon/strong', '#/pokemon/middle']);
+    await app.click(app.document.querySelector('[aria-label="Add Pikachu to favourites"]'));
+    assert.equal(app.saved().pokemon.find((p) => p.id === 'middle')?.favourite, true);
+    assert.equal(
+      app.document
+        .querySelector('[aria-label="Remove Pikachu from favourites"]')
+        ?.getAttribute('aria-pressed'),
+      'true',
+    );
+    const select = app.document.querySelector<HTMLSelectElement>('[aria-label="Sort Pokémon"]')!;
+    const sort = async (value: string) =>
+      act(async () => {
+        select.value = value;
+        select.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
+      });
+    await sort('Strongest first');
+    assert.deepEqual(order(), ['#/pokemon/strong', '#/pokemon/middle', '#/pokemon/ready']);
+    await sort('Highest value');
+    assert.deepEqual(order(), ['#/pokemon/ready', '#/pokemon/middle', '#/pokemon/strong']);
+    await sort('Favourites first');
+    assert.deepEqual(order(), ['#/pokemon/middle', '#/pokemon/strong', '#/pokemon/ready']);
+    await app.click(app.button('Favourites'));
+    assert.deepEqual(order(), ['#/pokemon/middle']);
+    await app.go('/pokemon/middle');
+    assert.equal(
+      app.document.querySelector('.pokemon-favourite')?.getAttribute('aria-pressed'),
+      'true',
+    );
+    await app.click(app.document.querySelector('.pokemon-favourite'));
+    assert.equal(app.saved().pokemon.find((p) => p.id === 'middle')?.favourite, false);
+  } finally {
+    await app.close();
+  }
+});
+
+test('Pokédex separates permanent variant discoveries and reference totals from owned backing', async () => {
+  const app = await mountApp('/pokedex', (state) => {
+    const base = state.pokemon[0];
+    state.pokemon = [
+      { ...base, id: 'normal-one', speciesId: 1, shiny: false, backing: 0.123, moveOffers: [] },
+    ];
+    state.discovered = [1, 25, 150];
+    state.discoveredVariants = { normal: [1], shiny: [25], unknown: [150] };
+    state.rewards = [];
+    state.activity = [];
+  });
+  try {
+    const { document } = app;
+    assert.equal(document.querySelectorAll('.dex-card').length, 151);
+    assert.equal(
+      document.querySelector('.dex-card[data-species="1"]')?.classList.contains('discovered'),
+      true,
+    );
+    assert.equal(
+      document.querySelector('.dex-card[data-species="25"]')?.classList.contains('discovered'),
+      false,
+    );
+    assert.match(document.querySelector('.dex-owned-total')?.textContent || '', /0.123/);
+    assert.match(
+      document.querySelector('.dex-catalogue-total')?.textContent || '',
+      /all 151 species/,
+    );
+    assert.match(document.querySelector('.dex-legacy-note')?.textContent || '', /1 older species/);
+    assert.equal(document.querySelectorAll('.dex-entry-value .sol-value').length, 151);
+    await app.click(document.querySelector('.dex-section-tabs button:nth-child(2)'));
+    assert.equal(
+      document.querySelector('.dex-card[data-species="25"]')?.classList.contains('discovered'),
+      true,
+    );
+    assert.equal(
+      document.querySelector('.dex-card[data-species="1"]')?.classList.contains('discovered'),
+      false,
+    );
+    assert.match(document.querySelector('.dex-owned-total')?.textContent || '', /0 Pokémon/);
+    const sort = document.querySelector<HTMLSelectElement>('[aria-label="Sort the Pokédex"]')!;
+    await act(async () => {
+      sort.value = 'Highest SOL value';
+      sort.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
+    });
+    assert.equal(document.querySelector('.dex-card')?.getAttribute('data-species'), '151');
+    await app.click(document.querySelector('.dex-card[data-species="25"]'));
+    assert.match(
+      document.querySelector('[role="dialog"]')?.textContent || '',
+      /Shiny catalogue value/,
+    );
+    assert.match(
+      document.querySelector('[role="dialog"]')?.textContent || '',
+      /record stays even after/,
+    );
+    assert.equal(document.querySelector('.dex-owned-copies'), null);
+  } finally {
+    await app.close();
+  }
+});

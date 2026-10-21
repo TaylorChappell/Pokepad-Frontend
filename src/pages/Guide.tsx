@@ -296,7 +296,7 @@ const topics: GuideTopic[] = [
           'Online is intended for another trainer, with friendly play and optional SOL, coin-token, or Pokémon stakes. It needs a live opponent, authoritative rules, and backend settlement.',
           'A lost Pokémon wager would transfer the selected team—up to all three Pokémon—to the winner. It would not merely start a healing timer. Review the exact team and stake before accepting.',
         ],
-        note: 'Online matchmaking and real wagers are not connected here. An offline practice match never becomes a wager.',
+        note: 'Demo mode does not connect online matchmaking or real wagers. An offline practice match never becomes a wager.',
       },
     ],
     links: [
@@ -370,7 +370,8 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
     ],
     'Online and wagers': [
       'Online rooms use server-controlled teams, turns, and results. Both trainers must confirm the exact team and stake. Reconnect to restore a running match.',
-      'Friendly battles and supported Pokémon stakes are available when the battle service is ready. Losing a Pokémon wager transfers the wagered team to the winner. SOL and token wagers remain unavailable until on-chain escrow is implemented.',
+      'Friendly battles and Pokémon stakes are available when the battle service is ready. Losing a Pokémon wager transfers the selected team to the winner. If a Pokémon faints, choose a living teammate before the next attack turn.',
+      'SOL and supported coin-token wagers appear when the connected service has verified its deployed escrow program and worker. Review the matching amount and asset, then approve your deposit in your wallet. Both deposits must confirm before battle; a win is not paid until settlement confirms.',
     ],
     'Know what is connected': [
       'Browse live coin data without signing in. Connect Phantom or MetaMask using a Solana account, then sign a one-time message to access your trainer.',

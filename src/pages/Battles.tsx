@@ -11,6 +11,7 @@ import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { Avatar, Button, Icon, PokemonArt, Pokeball, TypeChip, Modal } from '../components/UI';
 import { profileName } from '../state/model';
+import { compareBattlePokemon } from '../state/collection';
 import { TYPE_COLORS } from '../utils';
 import { BattleSprite } from '../battle/BattleSprite';
 import { createBattleScene, type BattleActorGeometry, type BattleScene } from '../battle/geometry';
@@ -29,6 +30,7 @@ import { createBattlePlayback, type BattleCue } from '../battle/presentation';
 import {
   DIFFICULTIES,
   battleMove,
+  battlePhase,
   createBattle,
   createPlayerTeam,
   createSeededRandom,
@@ -43,7 +45,9 @@ import {
   type Fighter,
 } from '../battle/engine';
 
-import { OnlineBattle, useOnlineBattle } from '../components/OnlineBattle';
+import { OnlineBattle, useOnlineBattle, EscrowFunding } from '../components/OnlineBattle';
+import { battleWagerLabel } from '../services/battles';
+import { monetaryBattleResult } from '../battle/result';
 
 const difficultyNames = Object.keys(DIFFICULTIES) as Difficulty[];
 const trainerCharacters = { Easy: 'leaf', Medium: 'brock', Hard: 'blue', Master: 'red' } as const;
@@ -230,6 +234,7 @@ export function BattlesPage() {
   );
   const online = useOnlineBattle(mode === 'online');
   const [forfeitConfirm, setForfeitConfirm] = useState(false);
+  const [escrowDetails, setEscrowDetails] = useState(false);
   const settledRoom = useRef<string | null>(null);
   const [phase, setPhase] = useState<'lobby' | 'team' | 'battle'>('lobby');
   useEffect(() => {
@@ -299,7 +304,7 @@ export function BattlesPage() {
     },
     [],
   );
-  const available = state.pokemon.filter((pokemon) => !pokemon.locked);
+  const available = state.pokemon.filter((pokemon) => !pokemon.locked).sort(compareBattlePokemon);
   const chosen = useMemo(
     () =>
       selectedIds
@@ -477,12 +482,30 @@ export function BattlesPage() {
         cancelled = true;
       };
     }
-    if (next.turn !== battle.turn || next.winner !== battle.winner) animateTurn(next);
+    if (
+      next.turn !== battle.turn ||
+      next.winner !== battle.winner ||
+      next.active.player !== battle.active.player ||
+      next.active.rival !== battle.active.rival ||
+      battlePhase(next) !== battlePhase(battle)
+    )
+      animateTurn(next);
     if (online.room?.status === 'finished' && settledRoom.current !== online.room.id) {
       settledRoom.current = online.room.id;
       void reload();
     }
-  }, [mode, online.room?.id, online.room?.revision, busy, phase, battle?.turn, battle?.winner]);
+  }, [
+    mode,
+    online.room?.id,
+    online.room?.revision,
+    busy,
+    phase,
+    battle?.turn,
+    battle?.winner,
+    battle?.active.player,
+    battle?.active.rival,
+    battle?.replacementRequired,
+  ]);
   const play = (action: BattleAction) => {
     if (!battle || busy || battle.winner) return;
     if (mode === 'online') {
@@ -520,7 +543,7 @@ export function BattlesPage() {
         <span>
           {phase === 'battle'
             ? mode === 'online'
-              ? 'Online · ' + (online.room?.wager === 'pokemon' ? 'Pokémon wager' : 'Friendly')
+              ? 'Online · ' + (online.room ? battleWagerLabel(online.room) : 'Connecting')
               : 'Offline · ' + difficulty
             : phase === 'team'
               ? 'Choose your party'
@@ -598,14 +621,25 @@ export function BattlesPage() {
       opponent = view.rival[view.active.rival];
     const exhausted = current.pp.every((value) => value <= 0),
       lockedMove = current.charging;
-    const playerFainted = visualFaintedIds.has(current.id);
-    const rivalFainted = visualFaintedIds.has(opponent.id);
-    const waiting = mode === 'online' && (online.pending || !!online.room?.submitted);
+    const playerFainted = visualFaintedIds.has(current.id) || (!busy && current.hp <= 0);
+    const rivalFainted = visualFaintedIds.has(opponent.id) || (!busy && opponent.hp <= 0);
+    const choosingReplacement = !battle.winner && !!battle.replacementRequired?.player;
+    const awaitingRivalReplacement =
+      !battle.winner && battlePhase(battle) === 'replacement' && !choosingReplacement;
+    const waiting =
+      mode === 'online' && (online.pending || !!online.room?.submitted || awaitingRivalReplacement);
+    const partyMenu = !busy && !waiting && (choosingReplacement || command === 'pokemon');
     const controlsBusy = busy || waiting;
+    const monetary =
+      mode === 'online' && (online.room?.wager === 'sol' || online.room?.wager === 'token');
     const prompt = busy
       ? dialogue
       : waiting
-        ? 'Your move is locked in. Waiting for your rival…'
+        ? awaitingRivalReplacement
+          ? 'Waiting for your rival to choose a Pokémon…'
+          : choosingReplacement
+            ? 'Your replacement is locked in. Waiting for your rival…'
+            : 'Your move is locked in. Waiting for your rival…'
         : battle.winner
           ? battle.winner === 'player'
             ? 'You won the battle!'
@@ -614,11 +648,13 @@ export function BattlesPage() {
               : mode === 'online'
                 ? 'Your rival won this battle.'
                 : 'Your team has fainted.'
-          : current.recharge
-            ? `${pokemonById(current.speciesId).name} needs to recharge.`
-            : lockedMove
-              ? `${lockedMove} is ready!`
-              : `What will ${pokemonById(current.speciesId).name} do?`;
+          : choosingReplacement
+            ? 'Choose your next Pokémon.'
+            : current.recharge
+              ? `${pokemonById(current.speciesId).name} needs to recharge.`
+              : lockedMove
+                ? `${lockedMove} is ready!`
+                : `What will ${pokemonById(current.speciesId).name} do?`;
     return (
       <div className="battle-v8 battle-screen classic-match">
         {heading}
@@ -638,9 +674,20 @@ export function BattlesPage() {
                       (Date.parse(online.room.deadlineAt) - now - online.clockOffset) / 1000,
                     ),
                   ) + 's to choose'
-                : 'Battle settled'}
+                : monetary &&
+                    online.room?.escrow?.status !== 'settled' &&
+                    online.room?.escrow?.status !== 'refunded'
+                  ? 'Settlement pending'
+                  : 'Battle complete'}
             </span>
           </div>
+        )}
+        {escrowDetails && online.room && (
+          <Modal title="Battle escrow" onClose={() => setEscrowDetails(false)}>
+            <div className="modal-body">
+              <EscrowFunding room={online.room} online={online} />
+            </div>
+          </Modal>
         )}
         {forfeitConfirm && (
           <Modal title="Forfeit this battle?" onClose={() => setForfeitConfirm(false)}>
@@ -648,7 +695,9 @@ export function BattlesPage() {
               <p>
                 {online.room?.wager === 'pokemon'
                   ? 'Your full selected team will transfer to the other trainer. This cannot be undone.'
-                  : 'The other trainer wins. Your Pokémon stay in your collection.'}
+                  : monetary && online.room
+                    ? `Forfeiting awards your ${battleWagerLabel(online.room)} stake to your rival. Your Pokémon stay yours.`
+                    : 'The other trainer wins. Your Pokémon stay in your collection.'}
               </p>
               <Button
                 disabled={online.pending}
@@ -753,7 +802,7 @@ export function BattlesPage() {
               reducedMotion={state.profile.reducedMotion}
             />
           </div>
-          <div className={'classic-console command-' + command}>
+          <div className={'classic-console command-' + (partyMenu ? 'pokemon' : command)}>
             {battle.winner && !busy ? (
               <div className="classic-result">
                 <div>
@@ -770,16 +819,25 @@ export function BattlesPage() {
                   <small>
                     {mode === 'offline'
                       ? 'Your collection is unchanged.'
-                      : online.room?.wager === 'pokemon' && battle.winner !== 'draw'
-                        ? battle.winner === 'player'
-                          ? 'The opposing team joined your PC.'
-                          : 'Your wagered team transferred to the winner.'
-                        : 'Your Pokémon stay yours. Injured Pokémon recover in 10 minutes.'}
+                      : monetary && online.room
+                        ? monetaryBattleResult(online.room)
+                        : online.room?.wager === 'pokemon' && battle.winner !== 'draw'
+                          ? battle.winner === 'player'
+                            ? 'The opposing team joined your PC.'
+                            : 'Your wagered team transferred to the winner.'
+                          : 'Your Pokémon stay yours. Injured Pokémon recover in 10 minutes.'}
                   </small>
                 </div>
                 <div>
                   {mode === 'online' ? (
-                    <Button onClick={leave}>Back to rooms</Button>
+                    <>
+                      {monetary && (
+                        <Button variant="secondary" onClick={() => setEscrowDetails(true)}>
+                          Wager details
+                        </Button>
+                      )}
+                      <Button onClick={leave}>Back to rooms</Button>
+                    </>
                   ) : (
                     <>
                       <Button
@@ -811,7 +869,7 @@ export function BattlesPage() {
                   )}
                 </div>
               </div>
-            ) : busy || command === 'root' ? (
+            ) : busy || waiting || (command === 'root' && !partyMenu) ? (
               <>
                 <div className="classic-dialogue" role="status" aria-live="polite">
                   <p>{prompt}</p>
@@ -855,7 +913,7 @@ export function BattlesPage() {
                   </button>
                 </div>
               </>
-            ) : command === 'fight' ? (
+            ) : command === 'fight' && !partyMenu ? (
               <>
                 <div className="battle-moves classic-moves">
                   {(lockedMove
@@ -905,7 +963,7 @@ export function BattlesPage() {
                   <span>Back</span>
                 </button>
               </>
-            ) : command === 'pokemon' ? (
+            ) : partyMenu ? (
               <>
                 <div className="classic-party-menu">
                   {view.player.map((fighter, index) => (
@@ -915,19 +973,24 @@ export function BattlesPage() {
                         controlsBusy ||
                         fighter.hp <= 0 ||
                         index === view.active.player ||
-                        current.trapped > 0 ||
-                        !!current.charging ||
-                        current.recharge
+                        (!choosingReplacement &&
+                          (current.trapped > 0 || !!current.charging || current.recharge))
                       }
-                      onClick={() => play({ kind: 'switch', index })}
-                      aria-label={`Switch to ${pokemonById(fighter.speciesId).name}`}
+                      onClick={() =>
+                        play({ kind: choosingReplacement ? 'replace' : 'switch', index })
+                      }
+                      aria-label={`${choosingReplacement ? 'Send out' : 'Switch to'} ${pokemonById(fighter.speciesId).name}`}
                     >
                       <PokemonArt id={fighter.speciesId} shiny={fighter.shiny} animated={false} />
                       <span>
                         <strong>{pokemonById(fighter.speciesId).name}</strong>
                         <small>
                           {fighter.hp}/{fighter.stats.hp} HP
-                          {index === view.active.player ? ' · In battle' : ''}
+                          {fighter.hp <= 0
+                            ? ' · Fainted'
+                            : index === view.active.player
+                              ? ' · In battle'
+                              : ''}
                         </small>
                         <i>
                           <b
@@ -940,10 +1003,21 @@ export function BattlesPage() {
                     </button>
                   ))}
                 </div>
-                <button className="classic-menu-back" onClick={() => setCommand('root')}>
-                  <Icon name="ArrowLeft" size={18} />
-                  <span>Back</span>
-                </button>
+                {choosingReplacement ? (
+                  <div
+                    className="classic-menu-back"
+                    role="status"
+                    aria-label="Choose your next Pokémon"
+                  >
+                    <Pokeball size={22} />
+                    <span>Choose next</span>
+                  </div>
+                ) : (
+                  <button className="classic-menu-back" onClick={() => setCommand('root')}>
+                    <Icon name="ArrowLeft" size={18} />
+                    <span>Back</span>
+                  </button>
+                )}
               </>
             ) : (
               <div className="classic-log">
@@ -967,9 +1041,13 @@ export function BattlesPage() {
           </span>
           <span>
             {mode === 'online'
-              ? online.room?.wager === 'pokemon'
-                ? 'Pokémon wager · all selected Pokémon'
-                : 'Friendly · no stakes'
+              ? online.room
+                ? online.room.wager === 'pokemon'
+                  ? 'Pokémon wager · all selected Pokémon'
+                  : online.room.wager === 'friendly'
+                    ? 'Friendly · no stakes'
+                    : battleWagerLabel(online.room) + ' per trainer'
+                : 'Connecting'
               : 'Practice · no stakes'}
           </span>
         </footer>

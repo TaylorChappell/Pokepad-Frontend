@@ -21,6 +21,7 @@ test('online commands send only an intent, server turn and retry ID; never a cli
   assert.equal(reply.submitted, true);
   assert.deepEqual(calls[0].options?.json, {
     turn: 8,
+    phase: 'turn',
     action: { kind: 'move', index: 1 },
     requestId: 'same-request',
   });
@@ -71,4 +72,15 @@ test('reconnect reads are abortable and forfeit sends no fabricated outcome', as
   assert.equal(calls[0].options?.signal, controller.signal);
   assert.deepEqual(calls[1].options?.json, {});
   assert.equal(calls[1].path, '/v1/battles/room/leave');
+});
+
+test('a forced replacement command keeps its phase distinct from a normal move on the same turn', async () => {
+  const { api, calls } = transport();
+  await api.command('room', 8, { kind: 'replace', index: 2 }, 'replacement-request', 'replacement');
+  assert.deepEqual(calls[0].options?.json, {
+    turn: 8,
+    phase: 'replacement',
+    action: { kind: 'replace', index: 2 },
+    requestId: 'replacement-request',
+  });
 });

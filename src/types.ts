@@ -68,6 +68,7 @@ export interface EvolutionPreview {
   reason?: string;
 }
 export interface OwnedPokemon {
+  favourite?: boolean;
   evolutionPreview?: EvolutionPreview;
   id: string;
   speciesId: number;
@@ -152,7 +153,21 @@ export interface Gym {
   externalScore: number;
   color: string;
 }
+export interface PokemonCatalogue {
+  /** Versioned reward reference values, not owned redemption claims. */
+  policyVersion: number;
+  entries: { speciesId: number; normalValue: number; shinyValue: number }[];
+  totals: { normal: number; shiny: number };
+}
+export interface VariantDiscoveries {
+  normal: number[];
+  shiny: number[];
+  /** Species in legacy history whose original colour was not recorded. */
+  unknown: number[];
+}
 export interface AppSnapshot {
+  discoveredVariants?: VariantDiscoveries;
+  pokemonCatalogue?: PokemonCatalogue;
   starterEligibility?: { canChoose: boolean; canChoosePikachu: boolean; reason?: string };
   redemptions?: {
     id: string;
@@ -211,6 +226,7 @@ export type Action =
   | { type: 'notification.read'; id?: string }
   | { type: 'reward.open'; id: string }
   | { type: 'pokemon.equip'; id: string }
+  | { type: 'pokemon.favourite'; id: string; favourite: boolean }
   | { type: 'pokemon.evolve'; id: string }
   | { type: 'pokemon.learn'; id: string; offerId: string; replaceIndex?: number }
   | { type: 'pokemon.declineMove'; id: string; offerId: string }
