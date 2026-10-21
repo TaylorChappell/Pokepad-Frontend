@@ -1,4 +1,5 @@
 import type { AppSnapshot, Profile } from '../types';
+import { apiRequest, ApiError } from './http';
 
 export interface PublicPokemon {
   id: string;
@@ -131,27 +132,13 @@ function validTrainer(value: unknown): value is PublicTrainer {
 /** Railway contract: GET /v1/trainers?query=... -> {trainers}; GET /v1/trainers/:wallet -> {trainer}. */
 export function createTrainerDirectory(base?: string) {
   async function request(path: string, signal?: AbortSignal): Promise<unknown> {
-    const controller = new AbortController();
-    const abort = () => controller.abort();
-    if (signal?.aborted) abort();
-    signal?.addEventListener('abort', abort, { once: true });
-    const timeout = setTimeout(abort, 12000);
     try {
-      const response = await fetch(base!.replace(/\/$/, '') + '/v1/trainers' + path, {
-        credentials: 'include',
-        headers: { Accept: 'application/json' },
-        signal: controller.signal,
-      });
-      if (response.status === 404) return null;
-      if (!response.ok) throw new Error('Trainer search is unavailable. Try again shortly.');
-      return await response.json();
+      return await apiRequest('/v1/trainers' + path, { base, signal, timeoutMs: 12000 });
     } catch (error) {
-      if (controller.signal.aborted && !signal?.aborted)
-        throw new Error('Trainer search took too long. Try again shortly.');
+      if (error instanceof ApiError && error.status === 404) return null;
+      if (error instanceof ApiError)
+        throw new Error('Trainer search is unavailable. Try again shortly.');
       throw error;
-    } finally {
-      clearTimeout(timeout);
-      signal?.removeEventListener('abort', abort);
     }
   }
   return {

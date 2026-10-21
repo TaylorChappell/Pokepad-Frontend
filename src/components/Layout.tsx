@@ -5,6 +5,8 @@ import { Icon, Pokeball, Wordmark, Avatar, PokemonArt, type IconName } from './U
 import { asset, navigate, relativeTime } from '../utils';
 import { SidebarBuddy } from './SidebarBuddy';
 import { SearchDialog } from './SearchDialog';
+import { WalletConnection } from './WalletConnection';
+import { BackendStatus } from './BackendStatus';
 const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/discover', label: 'Discover', icon: 'Compass' },
   { path: '/create', label: 'Create Coin', icon: 'Plus' },
@@ -18,7 +20,7 @@ const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/guide', label: 'How-to', icon: 'BookOpen' },
 ];
 export function Layout({ path, children }: { path: string; children: ReactNode }) {
-  const { state, act, mode } = useApp(),
+  const { state, act, mode, session } = useApp(),
     [panel, setPanel] = useState<'notifications' | 'account' | null>(null),
     [mobile, setMobile] = useState(false),
     [searchOpen, setSearchOpen] = useState(false);
@@ -120,24 +122,28 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             {unread > 0 && <span className="unread-dot" />}
           </button>
           <div className="header-separator" />
-          <button
-            className="account-button"
-            aria-label="Open account menu"
-            aria-expanded={panel === 'account'}
-            onClick={() => {
-              setPanel(panel === 'account' ? null : 'account');
-              setSearchOpen(false);
-            }}
-          >
-            <span className="avatar-wrap">
-              <Avatar profile={state.profile} size={58} />
-            </span>
-            <span className="account-name">
-              {profileName(state)}
-              <small>Pokémon trainer</small>
-            </span>
-            <Icon name="ChevronDown" size={14} />
-          </button>
+          {mode === 'live' && session.status !== 'authenticated' ? (
+            <WalletConnection compact />
+          ) : (
+            <button
+              className="account-button"
+              aria-label="Open account menu"
+              aria-expanded={panel === 'account'}
+              onClick={() => {
+                setPanel(panel === 'account' ? null : 'account');
+                setSearchOpen(false);
+              }}
+            >
+              <span className="avatar-wrap">
+                <Avatar profile={state.profile} size={58} />
+              </span>
+              <span className="account-name">
+                {profileName(state)}
+                <small>Pokémon trainer</small>
+              </span>
+              <Icon name="ChevronDown" size={14} />
+            </button>
+          )}
           {panel === 'notifications' && (
             <div className="header-dropdown notification-dropdown">
               <div className="dropdown-heading">
@@ -254,6 +260,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="main-content">
+        {mode === 'live' && <BackendStatus />}
         {children}
         <footer className="page-footer">
           <Pokeball size={17} />

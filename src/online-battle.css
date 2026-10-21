@@ -1,0 +1,267 @@
+.online-battle-lobby {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 1fr);
+  gap: 24px;
+}
+.online-battle-builder,
+.online-room-list,
+.online-room-panel {
+  background: #fff;
+  border: 1px solid #e0e7e4;
+  border-radius: 20px;
+  padding: 24px;
+}
+.online-battle-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+.online-battle-lobby h2,
+.online-room-panel h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+.online-battle-lobby p,
+.online-room-panel p {
+  font-size: 12px;
+  color: #71808c;
+  line-height: 1.6;
+}
+.online-battle-title > span {
+  white-space: nowrap;
+  color: #87927d;
+  font-size: 11px;
+}
+.online-format-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+.online-format-options button {
+  background: #f5f7f4;
+  border: 1px solid #e2e8df;
+  border-radius: 12px;
+  padding: 12px;
+  font-weight: 800;
+  color: #677c6b;
+}
+.online-format-options button[aria-pressed='true'] {
+  background: #e8f3e4;
+  border-color: #93b88c;
+  color: #406449;
+}
+.online-format-options small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.online-escrow-note {
+  font-size: 10px !important;
+}
+.online-team-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 16px 0 10px;
+}
+.online-team-picker button {
+  min-width: 0;
+  min-height: 125px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fbfcf8;
+  border: 1px solid #e4e8df;
+  border-radius: 12px;
+  padding: 7px;
+  color: #526451;
+}
+.online-team-picker button[aria-pressed='true'] {
+  background: #fff2dc;
+  border-color: #dab56e;
+}
+.online-team-picker button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.online-team-picker .pokemon-art {
+  width: 68px;
+  height: 68px;
+}
+.online-team-picker strong {
+  font-size: 11px;
+}
+.online-team-picker small {
+  color: #879081;
+  font-size: 10px;
+  margin-top: 4px;
+}
+.online-party-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  margin: 10px 0 15px;
+}
+.online-party-pagination button {
+  border: 0;
+  background: none;
+  color: #76876e;
+  padding: 8px;
+}
+.online-party-pagination button:disabled {
+  opacity: 0.4;
+}
+.online-battle-lobby label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 11px;
+  color: #72816f;
+  margin: 12px 0;
+}
+.online-room-visibility select,
+.online-room-list input {
+  width: 100%;
+  border: 1px solid #dee5db;
+  border-radius: 9px;
+  padding: 10px;
+  background: #fafbf8;
+  color: #405240;
+}
+.online-wager-consent {
+  flex-direction: row !important;
+  align-items: flex-start;
+  padding: 12px;
+  background: #fff2df;
+  border: 1px solid #edd5ad;
+  border-radius: 10px;
+  line-height: 1.6;
+}
+.online-wager-consent input {
+  width: auto;
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.online-recovery-note {
+  display: block;
+  margin-top: 12px;
+  color: #8a9483;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.online-room-list > button:not(.button) {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  background: #f8faf5;
+  border: 1px solid #e2e8db;
+  border-radius: 12px;
+  gap: 5px;
+  margin-top: 10px;
+  color: #53664e;
+}
+.online-room-list > button.selected {
+  border-color: #97b58a;
+  background: #edf5e6;
+}
+.online-room-list > button span {
+  font-size: 11px;
+  color: #849277;
+}
+.online-error {
+  color: #ad524b !important;
+}
+.online-room-panel {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.online-party-preview {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+.online-party-preview .pokemon-art {
+  width: 80px;
+  height: 80px;
+}
+.online-room-time {
+  color: #89907e;
+  font-size: 12px;
+}
+.online-match-notice {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #fff5df;
+  border: 1px solid #e8d6a6;
+  border-radius: 10px;
+  font-size: 11px;
+  color: #877044;
+}
+@media (max-width: 850px) {
+  .online-battle-lobby {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 500px) {
+  .online-battle-builder,
+  .online-room-list {
+    padding: 18px;
+  }
+  .online-team-picker button {
+    min-height: 105px;
+  }
+  .online-team-picker .pokemon-art {
+    width: 52px;
+    height: 52px;
+  }
+}
+/* Keep room controls reachable within the viewport-sized arena shell. */
+.online-battle-lobby {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  align-items: start;
+  padding-bottom: 8px;
+}
+.online-room-panel {
+  min-height: 0;
+  overflow: auto;
+}
+.online-match-notice {
+  flex-shrink: 0;
+}
+@media (min-width: 851px) and (max-height: 800px) {
+  .online-battle-builder,
+  .online-room-list {
+    padding: 16px;
+  }
+  .online-battle-lobby h2 {
+    font-size: 18px;
+  }
+  .online-team-picker button {
+    min-height: 94px;
+  }
+  .online-team-picker .pokemon-art {
+    width: 48px;
+    height: 48px;
+  }
+  .online-battle-title p {
+    margin: 4px 0;
+  }
+  .online-format-options {
+    margin-top: 10px;
+  }
+}

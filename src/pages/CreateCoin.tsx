@@ -5,6 +5,10 @@ import { useApp } from '../state/AppContext';
 import { isValidCoinTicker, profileName } from '../state/model';
 import { navigate } from '../utils';
 import type { RewardMode } from '../types';
+import { apiRequest } from '../services/http';
+import { useTransactionFlow, type TransactionConfirmation } from '../services/transactions';
+import { TransactionStatus } from '../components/TransactionStatus';
+import { WalletConnection } from '../components/WalletConnection';
 
 type SocialKey = 'website' | 'x' | 'telegram' | 'discord';
 const SOCIAL_FIELDS: { key: SocialKey; label: string; placeholder: string }[] = [
@@ -25,7 +29,13 @@ function validSocial(value: string) {
 }
 
 export function CreateCoinPage() {
-  const { state, act, busy, toast } = useApp();
+  const { state, act, busy: actionBusy, toast, mode: appMode, session, reload } = useApp();
+  const transaction = useTransactionFlow(state.profile.wallet, 'launch');
+  const [uploading, setUploading] = useState(false);
+  const upload = useRef<{ body: string; requestId: string; assetId?: string } | null>(null);
+  const uploadingNow = useRef(false);
+  const busy = actionBusy || transaction.busy || uploading;
+  const isLive = appMode === 'live';
   const eligible = useMemo(() => state.pokemon.filter((p) => !p.locked), [state.pokemon]);
   const [step, setStep] = useState(0);
   const [linksOpen, setLinksOpen] = useState(false);
@@ -79,12 +89,17 @@ export function CreateCoinPage() {
   const invalidSocial = SOCIAL_FIELDS.some(({ key }) => !validSocial(socials[key]));
   const canCreate =
     name.trim().length >= 3 &&
-    name.trim().length <= 32 &&
-    isValidCoinTicker(ticker) &&
+    (isLive ? new TextEncoder().encode(name.trim()).length <= 32 : name.trim().length <= 32) &&
+    (isLive
+      ? ticker.trim().length > 0 &&
+        new TextEncoder().encode(ticker).length <= 13 &&
+        !/[\u0000-\u001f\u007f]/.test(ticker)
+      : isValidCoinTicker(ticker)) &&
     !invalidSocial &&
     (trainerLaunch || !!selected) &&
     !imageLoading &&
-    !imageError;
+    !imageError &&
+    (!isLive || Boolean(coinImage));
   const shownPokemon = eligible.filter((p) =>
     pokemonById(p.speciesId).name.toLowerCase().includes(pokemonFilter.trim().toLowerCase()),
   );
@@ -97,8 +112,16 @@ export function CreateCoinPage() {
   const readImage = async (file?: File) => {
     if (!file) return;
     setImageError('');
-    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
-      setImageError('Choose a PNG, JPG, WebP, or GIF image.');
+    if (
+      !(
+        isLive
+          ? ['image/png', 'image/jpeg', 'image/webp']
+          : ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+      ).includes(file.type)
+    ) {
+      setImageError(
+        isLive ? 'Choose a PNG, JPG, or WebP image.' : 'Choose a PNG, JPG, WebP, or GIF image.',
+      );
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
@@ -143,7 +166,61 @@ export function CreateCoinPage() {
       if (stepValid[step]) setStep(step + 1);
       return;
     }
-    if (!canCreate || busy) return;
+    if (isLive && transaction.pending && !busy) {
+      await finishLaunch(await transaction.confirm());
+      return;
+    }
+    if (!canCreate || busy || uploadingNow.current) return;
+    if (isLive) {
+      if (session.status !== 'authenticated') {
+        toast('Connect your Solana wallet before launching.');
+        return;
+      }
+      if (transaction.pending) {
+        await finishLaunch(await transaction.confirm());
+        return;
+      }
+      let asset: { assetId: string };
+      const metadata = {
+        imageDataUrl: coinImage,
+        name: name.trim(),
+        symbol: ticker,
+        description: description.trim(),
+        socials,
+      };
+      const body = JSON.stringify(metadata);
+      if (upload.current?.body !== body) upload.current = { body, requestId: crypto.randomUUID() };
+      uploadingNow.current = true;
+      setUploading(true);
+      try {
+        asset = upload.current.assetId
+          ? { assetId: upload.current.assetId }
+          : await apiRequest<{ assetId: string }>('/v1/uploads/coin', {
+              method: 'POST',
+              json: metadata,
+              headers: { 'Idempotency-Key': upload.current.requestId },
+            });
+        upload.current.assetId = asset.assetId;
+      } catch (error) {
+        toast(error instanceof Error ? error.message : 'The coin image could not be uploaded.');
+        return;
+      } finally {
+        uploadingNow.current = false;
+        setUploading(false);
+      }
+      const result = await transaction.execute({
+        preparePath: '/v1/coins/prepare',
+        confirmPath: '/v1/coins/confirm',
+        body: {
+          assetId: asset.assetId,
+          mode,
+          launchKind,
+          ...(selected ? { pokemonId: selected.id } : {}),
+        },
+      });
+      await finishLaunch(result);
+      return;
+    }
     const next = await act({
       type: 'coin.create',
       name: name.trim(),
@@ -164,11 +241,19 @@ export function CreateCoinPage() {
       navigate('/coin/' + next.createdCoins[next.createdCoins.length - 1]);
     }
   };
+  async function finishLaunch(result: TransactionConfirmation | null) {
+    if (result?.status !== 'confirmed') return;
+    await reload();
+    toast('Your coin launch is confirmed.');
+    if (result.coinId) navigate('/coin/' + result.coinId);
+  }
 
   const steps = ['Details', 'Partner', 'Rewards', 'Review'];
   const stepValid = [
     name.trim().length >= 3 &&
-      isValidCoinTicker(ticker) &&
+      (isLive
+        ? ticker.trim().length > 0 && new TextEncoder().encode(ticker).length <= 13
+        : isValidCoinTicker(ticker)) &&
       !imageLoading &&
       !imageError &&
       !invalidSocial,
@@ -199,6 +284,12 @@ export function CreateCoinPage() {
           <p>Your community starts here. Make it yours, one step at a time.</p>
         </div>
       </header>
+      {isLive && transaction.pending && step !== 3 && (
+        <TransactionStatus
+          {...transaction}
+          onCheck={(signature) => void transaction.confirm(undefined, signature).then(finishLaunch)}
+        />
+      )}
       <nav className="wizard-progress" aria-label="Launch steps">
         {steps.map((label, index) => (
           <button
@@ -312,19 +403,25 @@ export function CreateCoinPage() {
                         <input
                           id="coin-ticker"
                           value={ticker}
-                          maxLength={10}
+                          maxLength={isLive ? 13 : 10}
                           required
                           placeholder="e.g. moon club"
                           autoCapitalize="off"
                           autoCorrect="off"
                           spellCheck={false}
                           onChange={(e) => setTicker(e.target.value)}
-                          aria-invalid={ticker.length > 0 && !isValidCoinTicker(ticker)}
+                          aria-invalid={
+                            ticker.length > 0 &&
+                            (isLive
+                              ? new TextEncoder().encode(ticker).length > 13 || !ticker.trim()
+                              : !isValidCoinTicker(ticker))
+                          }
                           aria-describedby="ticker-help"
                         />
                       </div>
                       <span id="ticker-help" className="creation-field-note">
-                        1–10 characters · case and spaces are kept
+                        {isLive ? 'Up to 13 UTF-8 bytes' : '1–10 characters'} · case and spaces are
+                        kept
                       </span>
                     </div>
                   </div>
@@ -570,7 +667,10 @@ export function CreateCoinPage() {
                 </div>
                 <div className="creation-fee-split">
                   <span>
-                    <strong>50%</strong>Creator
+                    <strong>30%</strong>Creator
+                  </span>
+                  <span>
+                    <strong>20%</strong>Platform
                   </span>
                   <span>
                     <strong>50%</strong>Holder rewards
@@ -623,7 +723,7 @@ export function CreateCoinPage() {
                   </div>
                   <div>
                     <dt>Creator fees</dt>
-                    <dd>50% creator · 50% rewards</dd>
+                    <dd>30% creator · 20% platform · 50% rewards</dd>
                   </div>
                   <div>
                     <dt>Community links</dt>
@@ -651,10 +751,29 @@ export function CreateCoinPage() {
                 <div className="wizard-launch-note">
                   <Icon name="Info" size={20} />
                   <span>
-                    <strong>Save your coin draft</strong>Saved on this device. Token deployment and
-                    wallet confirmation need the connected backend.
+                    <strong>{isLive ? 'Launch on Solana' : 'Save your coin draft'}</strong>
+                    {isLive
+                      ? 'Review the transaction in your wallet. Your coin appears after on-chain confirmation.'
+                      : 'Saved on this device. No token or transaction is created in demo mode.'}
                   </span>
                 </div>
+                {isLive && (session.status !== 'authenticated' || !session.signingReady) && (
+                  <WalletConnection />
+                )}
+                {isLive && !coinImage && (
+                  <p role="alert">Add your coin image on the Details step before launching.</p>
+                )}
+                {isLive && state.features?.launching === false && (
+                  <p role="status">Coin launches are currently unavailable.</p>
+                )}
+                {isLive && (
+                  <TransactionStatus
+                    {...transaction}
+                    onCheck={(signature) =>
+                      void transaction.confirm(undefined, signature).then(finishLaunch)
+                    }
+                  />
+                )}
               </>
             )}
           </section>
@@ -677,8 +796,29 @@ export function CreateCoinPage() {
             <span>
               {step + 1} / {steps.length}
             </span>
-            <Button type="submit" disabled={!stepValid[step] || busy}>
-              {busy ? 'Saving…' : step < 3 ? nextLabels[step] : 'Create coin draft'}
+            <Button
+              type="submit"
+              disabled={
+                !stepValid[step] ||
+                busy ||
+                (isLive &&
+                  step === 3 &&
+                  (session.status !== 'authenticated' ||
+                    !session.signingReady ||
+                    state.features?.launching === false))
+              }
+            >
+              {busy
+                ? isLive
+                  ? 'Waiting for confirmation…'
+                  : 'Saving…'
+                : step < 3
+                  ? nextLabels[step]
+                  : isLive
+                    ? transaction.pending
+                      ? 'Check confirmation'
+                      : 'Launch coin'
+                    : 'Create coin draft'}
               <Icon name={step === 3 ? 'Check' : 'ArrowRight'} size={16} />
             </Button>
           </footer>

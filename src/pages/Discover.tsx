@@ -21,6 +21,13 @@ import { compact, navigate, relativeTime, sol } from '../utils';
 import { useCoinWatchlist } from '../state/watchlist';
 import { MarketCapChart } from '../components/MarketCapChart';
 import { DEMO_TRAINERS } from '../services/trainers';
+import {
+  decimalToRaw,
+  useTransactionFlow,
+  type TransactionConfirmation,
+} from '../services/transactions';
+import { TransactionStatus } from '../components/TransactionStatus';
+import { WalletConnection } from '../components/WalletConnection';
 function WatchStar({ filled = false }: { filled?: boolean }) {
   return (
     <svg
@@ -553,12 +560,14 @@ const COIN_DETAIL_TABS = ['Transactions', 'Holders', 'Rewards', 'Gym'] as const;
 type CoinDetailTab = (typeof COIN_DETAIL_TABS)[number];
 
 export function CoinPage({ id }: { id: string }) {
-  const { state, toast, mode } = useApp();
+  const { state, toast, mode, session, reload } = useApp();
   const coin = state.coins.find((item) => item.id === id);
   const [tab, setTab] = useState<CoinDetailTab>('Transactions');
   const [side, setSide] = useState<'Buy' | 'Sell'>('Buy');
   const [amount, setAmount] = useState('0.1');
   const [review, setReview] = useState(false);
+  const [slippageBps, setSlippageBps] = useState(100);
+  const transaction = useTransactionFlow(state.profile.wallet, 'trade:' + id);
   const tabsId = useId();
   const watchlist = useCoinWatchlist(state.profile.wallet);
   if (!coin)
@@ -584,14 +593,13 @@ export function CoinPage({ id }: { id: string }) {
     amount.trim() !== '' &&
     Number.isFinite(tradeAmount) &&
     tradeAmount > 0 &&
-    (side === 'Buy' || tradeAmount <= coin.holding) &&
-    Number.isFinite(coin.price) &&
-    coin.price > 0;
-  const estimate = validTrade
-    ? side === 'Buy'
-      ? tradeAmount / coin.price
-      : tradeAmount * coin.price
-    : null;
+    (side === 'Buy' || tradeAmount <= coin.holding);
+  const estimate =
+    validTrade && Number.isFinite(coin.price) && coin.price > 0
+      ? side === 'Buy'
+        ? tradeAmount / coin.price
+        : tradeAmount * coin.price
+      : null;
   const validEstimate = estimate !== null && Number.isFinite(estimate);
   const tabIndex = COIN_DETAIL_TABS.indexOf(tab);
   const copyAddress = async () => {
@@ -603,6 +611,37 @@ export function CoinPage({ id }: { id: string }) {
       toast('Contract address: ' + coin.ca);
     }
   };
+  async function finishTrade(result: TransactionConfirmation | null) {
+    if (result?.status === 'confirmed') {
+      await reload();
+      toast('Trade confirmed on Solana.');
+      setReview(false);
+    }
+  }
+  async function submitTrade() {
+    if (!coin || !validTrade || session.status !== 'authenticated') return;
+    if (transaction.pending) {
+      await finishTrade(await transaction.confirm());
+      return;
+    }
+    if (side === 'Sell' && coin.decimals === undefined) {
+      toast('Token precision is unavailable. Refresh the coin before selling.');
+      return;
+    }
+    let raw: string;
+    try {
+      raw = decimalToRaw(amount, side === 'Buy' ? 9 : coin.decimals!);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Enter a valid amount.');
+      return;
+    }
+    const result = await transaction.execute({
+      preparePath: `/v1/coins/${encodeURIComponent(coin.ca)}/trades/prepare`,
+      confirmPath: `/v1/coins/${encodeURIComponent(coin.ca)}/trades/confirm`,
+      body: { side: side.toLowerCase(), amount: raw, slippageBps },
+    });
+    await finishTrade(result);
+  }
   return (
     <div className="kanto-market-page">
       <div className="kanto-market-navigation">
@@ -998,15 +1037,20 @@ export function CoinPage({ id }: { id: string }) {
             <p>Collected for this community’s Pokémon rewards.</p>
             <div
               className="kanto-market-fee-split"
-              aria-label="Creator fees are split equally between creator and holder rewards"
+              aria-label="Creator fees: 30 percent creator, 20 percent platform, 50 percent holder rewards"
             >
+              <span />
               <span />
               <span />
             </div>
             <div className="kanto-market-fee-labels">
               <span>
                 <i />
-                50% creator
+                30% creator
+              </span>
+              <span>
+                <i />
+                20% platform
               </span>
               <span>
                 <i />
@@ -1016,8 +1060,18 @@ export function CoinPage({ id }: { id: string }) {
           </section>
         </aside>
       </div>
+      {!isDemo && !review && transaction.pending && (
+        <TransactionStatus
+          {...transaction}
+          onCheck={(signature) => void transaction.confirm(undefined, signature).then(finishTrade)}
+        />
+      )}
       {review && (
-        <Modal title={'Review ' + side.toLowerCase()} onClose={() => setReview(false)}>
+        <Modal
+          title={'Review ' + side.toLowerCase()}
+          onClose={() => setReview(false)}
+          closeDisabled={transaction.busy}
+        >
           <div className="modal-body">
             <CoinAvatar coin={coin} size={62} />
             <h3>
@@ -1027,23 +1081,68 @@ export function CoinPage({ id }: { id: string }) {
                 ' ' +
                 (side === 'Buy' ? 'SOL worth of ' + coin.ticker : coin.ticker)}
             </h3>
-            <p>
-              This is a trade preview. Wallet signing and transaction submission will become
-              available when trading is connected.
-            </p>
-            <div className="notice">
-              <Icon name="Info" />
-              No order or payment will be submitted.
-            </div>
-            <Button
-              className="full-width"
-              onClick={() => {
-                setReview(false);
-                toast('Trade preview complete. No transaction was sent.');
-              }}
-            >
-              Close preview
-            </Button>
+            {isDemo ? (
+              <>
+                <p>
+                  This is a trade preview. Wallet signing and transaction submission will become
+                  available when trading is connected.
+                </p>
+                <div className="notice">
+                  <Icon name="Info" />
+                  No order or payment will be submitted.
+                </div>
+                <Button
+                  className="full-width"
+                  onClick={() => {
+                    setReview(false);
+                    toast('Trade preview complete. No transaction was sent.');
+                  }}
+                >
+                  Close preview
+                </Button>
+              </>
+            ) : (
+              <>
+                <p>
+                  Your wallet will show the exact transaction before you approve. Displayed
+                  estimates may change.
+                </p>
+                <label>
+                  Maximum slippage
+                  <select
+                    value={slippageBps}
+                    onChange={(event) => setSlippageBps(Number(event.target.value))}
+                    disabled={transaction.busy || Boolean(transaction.pending)}
+                  >
+                    <option value={50}>0.5%</option>
+                    <option value={100}>1%</option>
+                    <option value={200}>2%</option>
+                  </select>
+                </label>
+                {session.status !== 'authenticated' || !session.signingReady ? (
+                  <WalletConnection />
+                ) : (
+                  <Button
+                    className="full-width"
+                    disabled={transaction.busy || !validTrade || state.features?.trading === false}
+                    onClick={() => void submitTrade()}
+                  >
+                    {transaction.busy
+                      ? 'Waiting for confirmation…'
+                      : transaction.pending
+                        ? 'Check confirmation'
+                        : 'Review in wallet'}
+                  </Button>
+                )}
+                {state.features?.trading === false && <p>Trading is currently unavailable.</p>}
+                <TransactionStatus
+                  {...transaction}
+                  onCheck={(signature) =>
+                    void transaction.confirm(undefined, signature).then(finishTrade)
+                  }
+                />
+              </>
+            )}
           </div>
         </Modal>
       )}

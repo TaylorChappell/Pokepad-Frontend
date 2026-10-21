@@ -45,6 +45,18 @@ export function evolutionValueIncrease(p: Pick<OwnedPokemon, 'speciesId' | 'back
   return fromLamports(Math.max(20_000_000, Math.round(lamports(p.backing) / 2)));
 }
 export function getEvolutionStatus(state: AppSnapshot, p: OwnedPokemon) {
+  if (p.evolutionPreview) return p.evolutionPreview;
+  // Live snapshots must never invent an evolution quote from the local demo policy.
+  if (state.features)
+    return {
+      candyRequired: EVOLUTION_CANDY,
+      valueIncrease: 0,
+      nextValue: p.backing,
+      reserved: p.evolutionReserve,
+      fundingNeeded: 0,
+      canEvolve: false,
+      reason: 'Evolution details are unavailable. Refresh your collection.',
+    };
   const valueIncrease = evolutionValueIncrease(p);
   const reserved = p.evolutionReserve;
   const fundingNeeded = fromLamports(Math.max(0, lamports(valueIncrease) - lamports(reserved)));

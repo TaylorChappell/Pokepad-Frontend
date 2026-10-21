@@ -1,6 +1,16 @@
 # Kanto frontend · interface v13
 
-A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
+## Connected Kanto backend
+
+The matching server is [TaylorChappell/kanto-backend](https://github.com/TaylorChappell/kanto-backend). Set this repository’s GitHub Actions variable `VITE_API_BASE_URL` to its deployed HTTPS API URL and rebuild Pages. Leave it unset to use the existing local demo. Backend failures never silently switch a live account into demo mode.
+
+The integration adds Phantom/MetaMask Solana sign-in, server-owned profile/inventory/rewards, real signed Pump launch/trade transactions with confirmation recovery, mobile-only walking sessions, and online friendly/Pokémon-wager battles. The backend configures creator fees as 30% creator / 20% platform / 50% holder rewards, with one rewards treasury and separate coin ledgers. Wallet signatures authorize each transaction; no user wallet private key enters the frontend.
+
+Use `FRONTEND_ORIGINS=https://taylorchappell.github.io` on the backend (no repository path). Authentication supports secure cookies and a memory-only bearer fallback. Connect/disconnect/account changes reload the appropriate server snapshot and clear stale private state.
+
+No backend URL or real treasury was supplied during implementation, so the public site stays in demo mode until you configure it. SOL/token battle wagers remain unavailable pending their cash-escrow integration. The server’s current 48-move battle engine is the existing modernized frontend ruleset, not every original cartridge mechanic. See the backend README for deployment requirements, funded reward policy, GPS limitations and readiness checks.
+
+A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. It supports a local demo and the separate Kanto API.
 
 ## Try the preview
 
@@ -95,9 +105,9 @@ The provisional demo evolution policy requires 1,000 Rare Candy and increases cu
 
 Repository: https://github.com/TaylorChappell/Pokepad-Frontend. Development changes use the staging branch. Promote the frontend to main when you are ready to publish with the included Pages workflow.
 
-## Connect the future Railway backend
+## Connect the Kanto backend
 
-Keep the backend in its own repository. Set the frontend repository variable **VITE_API_BASE_URL** to the Railway API's HTTPS origin once that service implements the contract, then rebuild.
+Keep the backend in its own repository. Set the frontend repository variable **VITE_API_BASE_URL** to the deployed Kanto API's HTTPS origin, then rebuild.
 
 For local development, copy .env.example to .env.local and set the same variable. An empty value selects the local demo adapter. With an API configured, failures are shown rather than silently replaced with sample data.
 

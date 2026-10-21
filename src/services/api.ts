@@ -3,6 +3,7 @@ import { COINS, createInitialState } from '../data/demo';
 import { applyAction, assertSupportedAction, STORAGE_KEY } from '../state/model';
 import { getPokemonHealth } from '../data/stats';
 import { decorateDemoCoins } from '../data/coin-presentation';
+import { apiRequest } from './http';
 export interface KantoApi {
   mode: 'demo' | 'live';
   load(): Promise<AppSnapshot>;
@@ -137,46 +138,25 @@ export const demoApi: KantoApi = {
   },
 };
 export function createHttpApi(base: string): KantoApi {
-  const root = base.replace(/\/$/, '');
   async function request(path: string, body?: unknown): Promise<AppSnapshot> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    try {
-      const response = await fetch(root + '/v1' + path, {
-        method: body ? 'POST' : 'GET',
-        credentials: 'include',
-        signal: controller.signal,
-        headers: {
-          Accept: 'application/json',
-          ...(body
-            ? { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() }
-            : {}),
-        },
-        ...(body ? { body: JSON.stringify(body) } : {}),
-      });
-      if (!response.ok) {
-        const problem = await response.json().catch(() => null);
-        throw new Error(
-          problem?.message || 'The server could not complete that request. Please try again.',
-        );
-      }
-      const data = await response.json();
-      if (!data?.profile || !Array.isArray(data?.coins))
-        throw new Error('The API returned an unexpected response.');
-      return data as AppSnapshot;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError')
-        throw new Error('The server took too long to respond. Please try again.');
-      throw error;
-    } finally {
-      clearTimeout(timeout);
-    }
+    const data = await apiRequest<AppSnapshot>('/v1' + path, {
+      base,
+      method: body ? 'POST' : 'GET',
+      ...(body ? { json: body, headers: { 'Idempotency-Key': crypto.randomUUID() } } : {}),
+    });
+    if (!data?.profile || !Array.isArray(data?.coins) || !Array.isArray(data?.pokemon))
+      throw new Error('The API returned an unexpected response.');
+    return data;
   }
   return {
     mode: 'live',
     load: () => request('/bootstrap'),
     dispatch: async (action) => {
       assertSupportedAction(action);
+      if (action.type === 'walk.progress')
+        throw new Error('Start a walking session on your phone to record progress.');
+      if (action.type === 'coin.create')
+        throw new Error('Live coins require a signed launch transaction.');
       return request('/actions', action);
     },
   };

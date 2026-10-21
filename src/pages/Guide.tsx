@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { useOptionalApp } from '../state/AppContext';
 import { EggArt, Icon, PackArt, PokemonArt, RareCandyIcon, type IconName } from '../components/UI';
 
 interface GuideTopic {
@@ -203,9 +204,9 @@ const topics: GuideTopic[] = [
     color: '#fff0ca',
     sections: [
       {
-        title: 'The 50 / 50 fee split',
+        title: 'The 30 / 20 / 50 fee split',
         text: [
-          'The proposed allocation splits collected creator fees equally: 50% to the creator and 50% to holder rewards. The reward pool can only issue values that its collected funds support.',
+          'Collected creator fees are allocated 30% to the creator, 20% to the platform, and 50% to holder rewards. The reward pool can only issue values that its collected funds support.',
           'Randomness chooses among affordable outcomes. A pool does not need to distribute everything at once, and cannot select an outcome whose value and required evolution budget exceed its funding. A rising token chart does not create reward cash.',
         ],
       },
@@ -341,16 +342,78 @@ const topics: GuideTopic[] = [
   },
 ];
 
+function liveGuideSection(section: GuideTopic['sections'][number]) {
+  const replacements: Record<string, string[]> = {
+    'Rare Candy and active holdings': [
+      'Your equipped Pokémon earns Rare Candy from verified holdings in active coins. Selling can reset holding progress; inactive coins do not keep generating candy.',
+      'A free starter with no SOL backing earns candy only from its originating main-token holding. After its first funded evolution, it can train from any eligible active coin.',
+    ],
+    'Complete the launch wizard': [
+      'The four steps are Details, Partner, Rewards, and Review. Add your own PNG, JPG, or WebP coin image, name, ticker, description, and optional social links. Choose an available Pokémon or your trainer and a reward mode.',
+      'Review the wallet transaction before signing. Kanto saves the prepared operation for recovery and lists the coin only after its Solana transaction confirms.',
+    ],
+    'Open a pack or hatch an egg': [
+      'Rewards has separate Eggs and Packs tabs. A pack opens immediately; an egg opens when its timer reaches zero.',
+      'Your Pokémon and its full financial backing are sealed when the reward is awarded. Opening reveals that result without rerolling. A reveal adds the individual to My PC and its species to your Pokédex.',
+    ],
+    'Walking helps the timer': [
+      'Open Walking on a phone, allow location access, and keep the page visible. Walking accelerates eggs that are already incubating; their timers also progress normally.',
+      'The server checks sample timing, accuracy, speed, and distance, and applies daily and incubation caps. Browser GPS can still be spoofed; it does not provide cheat-proof verification.',
+    ],
+    'Selling your Pokémon': [
+      'Open an eligible Pokémon, choose Sell, and review its displayed redemption amount. A locked Pokémon or free starter cannot be redeemed.',
+      'The Pokémon is locked while the payout is processed. Check Redemptions in Portfolio: pending does not mean paid. The payment is complete only after its Solana transaction confirms. Your Pokédex discovery remains.',
+    ],
+    'How your collection contributes': [
+      'Gym scores use the funded current value of eligible owned Pokémon belonging to supporters who hold the coin. Future evolution reserves do not increase that score.',
+      'Scores come from the server and include each supporter once. Changing your gym moves your contribution.',
+    ],
+    'Online and wagers': [
+      'Online rooms use server-controlled teams, turns, and results. Both trainers must confirm the exact team and stake. Reconnect to restore a running match.',
+      'Friendly battles and supported Pokémon stakes are available when the battle service is ready. Losing a Pokémon wager transfers the wagered team to the winner. SOL and token wagers remain unavailable until on-chain escrow is implemented.',
+    ],
+    'Know what is connected': [
+      'Browse live coin data without signing in. Connect Phantom or MetaMask using a Solana account, then sign a one-time message to access your trainer.',
+      'Launching and trading require a separate wallet transaction approval. Feature availability depends on the connected services; pending transactions remain pending until confirmed on Solana.',
+    ],
+    'Notifications and your wallet': [
+      'The bell marks unread notifications for eggs, evolutions, and other available actions. Your wallet settings let you reconnect or disconnect.',
+      'Login tokens stay in memory. A secure session cookie can restore your account after reloading; browsers that block it require a fresh sign-in. Changing wallet accounts signs you out.',
+    ],
+  };
+  if (replacements[section.title])
+    return { ...section, text: replacements[section.title], note: undefined };
+  return {
+    ...section,
+    text: section.text.map((text) =>
+      text.includes('current demo policy')
+        ? 'The evolution screen shows the server’s current Rare Candy requirement, next value, and availability. The reward pool must cover the full evolution path before it can proceed.'
+        : text.includes('Every opening') ||
+            (text.includes('at the moment') && text.includes('draw'))
+          ? 'A reward is selected and fully funded when awarded. Opening reveals the sealed Pokémon; it does not reroll the outcome.'
+          : text,
+    ),
+  };
+}
+
 function initialTopic() {
   if (typeof window === 'undefined') return 'start';
   const topic = new URLSearchParams(window.location.hash.split('?')[1]).get('topic');
   return topics.some((item) => item.id === topic) ? topic! : 'start';
 }
 export function GuideManual({ embedded = false }: { embedded?: boolean }) {
+  const app = useOptionalApp();
+  const live = app?.mode === 'live';
+  const displayedTopics = live
+    ? topics.map((topic) => ({
+        ...topic,
+        sections: topic.sections.map((section) => liveGuideSection(section)),
+      }))
+    : topics;
   const [selected, setSelected] = useState(initialTopic);
   const [query, setQuery] = useState('');
   const term = query.trim().toLowerCase();
-  const matching = topics.filter((topic) =>
+  const matching = displayedTopics.filter((topic) =>
     [
       topic.label,
       topic.title,

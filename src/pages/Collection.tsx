@@ -4,7 +4,7 @@ import { useRevealAudio } from '../audio/sound';
 import { POKEMON, pokemonById } from '../data/pokemon';
 import { moveByName } from '../data/moves';
 import { getPokemonHealth, getPokemonStats } from '../data/stats';
-import { collectionValue, EVOLUTION_CANDY, getEvolutionStatus, pendingMove } from '../state/model';
+import { collectionValue, getEvolutionStatus, pendingMove } from '../state/model';
 import {
   Button,
   Icon,
@@ -20,6 +20,25 @@ import {
 import type { OwnedPokemon } from '../types';
 import { asset, navigate, sol, TYPE_COLORS } from '../utils';
 
+function EvolutionValue({
+  preview,
+  fallback,
+}: {
+  preview?: OwnedPokemon['evolutionPreview'];
+  fallback: number;
+}) {
+  return preview?.nextValueMin !== undefined &&
+    preview.nextValueMax !== undefined &&
+    preview.nextValueMin < preview.nextValueMax ? (
+    <span className="evolution-value-range">
+      <SolValue amount={preview.nextValueMin} />
+      <span>–</span>
+      <SolValue amount={preview.nextValueMax} />
+    </span>
+  ) : (
+    <SolValue amount={fallback} />
+  );
+}
 function CandySprite() {
   return (
     <img
@@ -353,7 +372,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
       toast(
         mode === 'demo'
           ? 'Pokémon sold in demo. No SOL was sent.'
-          : species.name + ' sold for ' + sol(p.backing) + ' SOL.',
+          : 'Redemption requested. Payment is pending confirmation.',
       );
       closeDialog();
       navigate('/pokemon');
@@ -434,6 +453,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
           {p.starter && (
             <p className="summary-starter-note">
               Your starter can be sold after its first funded evolution.
+              {mode === 'live' &&
+                ' Until then, it earns Rare Candy only from your main-token holding.'}
             </p>
           )}
         </section>
@@ -598,14 +619,17 @@ export function PokemonDetailPage({ id }: { id: string }) {
                     {p.rareCandy.toLocaleString()}
                     <small>
                       {species.evolvesTo.length
-                        ? ' / ' + EVOLUTION_CANDY.toLocaleString()
+                        ? ' / ' + evoStatus.candyRequired.toLocaleString()
                         : ' Candy'}
                     </small>
                   </strong>
                 </div>
                 {species.evolvesTo.length ? (
                   <>
-                    <Progress value={(p.rareCandy / EVOLUTION_CANDY) * 100} color="#7f8ddb" />
+                    <Progress
+                      value={(p.rareCandy / evoStatus.candyRequired) * 100}
+                      color="#7f8ddb"
+                    />
                     <div className="evolution-line-sprites">
                       <div>
                         <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
@@ -638,7 +662,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                     )}
                     <div className="evolution-funding-row">
                       <span>After evolution</span>
-                      <SolValue amount={evoStatus.nextValue} />
+                      <EvolutionValue preview={p.evolutionPreview} fallback={evoStatus.nextValue} />
                     </div>
                     <Button
                       className="full-width evolve-action"
@@ -852,8 +876,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
               {evolution.phase === 'ready' ? (
                 <>
                   <p>
-                    Use <strong>{EVOLUTION_CANDY.toLocaleString()} Rare Candy</strong> to evolve{' '}
-                    {pokemonById(evolution.from).name}.
+                    Use <strong>{evoStatus.candyRequired.toLocaleString()} Rare Candy</strong> to
+                    evolve {pokemonById(evolution.from).name}.
                   </p>
                   {evolution.from === 133 && (
                     <p>
@@ -863,7 +887,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                   <div className="evolution-value-change">
                     <SolValue amount={evolution.before} />
                     <span>→</span>
-                    <SolValue amount={evoStatus.nextValue} />
+                    <EvolutionValue preview={p.evolutionPreview} fallback={evoStatus.nextValue} />
                   </div>
                   <Button disabled={busy || !evoStatus.canEvolve} onClick={startEvolution}>
                     Evolve
@@ -897,15 +921,20 @@ export function PokemonDetailPage({ id }: { id: string }) {
           <div className="modal-body sell-modal">
             <PokemonArt id={p.speciesId} shiny={p.shiny} />
             <div className="sale-value">
-              <span>You receive</span>
+              <span>{mode === 'demo' ? 'You receive' : 'Redemption amount'}</span>
               <SolValue amount={p.backing} />
             </div>
             <p>
               Selling redeems this Pokémon’s full value and removes it from your inventory. Its
               discovery stays in your Pokédex.
             </p>
-            {mode === 'demo' && (
+            {mode === 'demo' ? (
               <div className="notice">This is a demo sale. No SOL is transferred.</div>
+            ) : (
+              <div className="notice">
+                This Pokémon is locked while your payout is processed. SOL is paid only after the
+                transaction confirms.
+              </div>
             )}
             <div className="modal-actions">
               <Button variant="secondary" disabled={busy} onClick={closeDialog}>

@@ -1,4 +1,5 @@
 import type { Profile } from '../types';
+import { apiRequest, ApiError } from './http';
 
 export type AnalyticsEventKind = 'egg' | 'pack' | 'redeem' | 'evolve' | 'launch' | 'other';
 
@@ -124,22 +125,17 @@ export async function loadPlatformAnalytics(
   baseUrl: string,
   signal?: AbortSignal,
 ): Promise<PlatformAnalytics> {
-  const controller = new AbortController();
-  const abort = () => controller.abort(signal?.reason);
-  if (signal?.aborted) abort();
-  else signal?.addEventListener('abort', abort, { once: true });
-  const timeout = setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetch(baseUrl.replace(/\/+$/, '') + '/v1/analytics', {
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error('Analytics is temporarily unavailable.');
-    return parsePlatformAnalytics(await response.json());
-  } finally {
-    clearTimeout(timeout);
-    signal?.removeEventListener('abort', abort);
+    return parsePlatformAnalytics(
+      await apiRequest('/v1/analytics', {
+        base: baseUrl.replace(/\/+$/, ''),
+        signal,
+        timeoutMs: 12000,
+        cache: 'no-store',
+      }),
+    );
+  } catch (error) {
+    if (error instanceof ApiError) throw new Error('Analytics is temporarily unavailable.');
+    throw error;
   }
 }

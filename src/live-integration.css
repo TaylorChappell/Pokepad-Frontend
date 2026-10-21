@@ -1,0 +1,90 @@
+.header-connect {
+  min-height: 42px;
+  white-space: nowrap;
+  padding-inline: 16px;
+}
+.wallet-connect-dialog {
+  display: grid;
+  gap: 16px;
+}
+.wallet-connect-dialog > .button {
+  justify-content: flex-start;
+  min-height: 54px;
+}
+.wallet-connect-dialog > .button > span {
+  margin-left: auto;
+  font-size: 11px;
+  opacity: 0.65;
+}
+.wallet-error,
+.transaction-error {
+  color: #a7393b;
+  background: #fff0ef;
+  border: 1px solid #f0d0cc;
+  padding: 12px;
+  border-radius: 10px;
+}
+.transaction-status {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f1f6f7;
+  color: #35566b;
+  overflow-wrap: anywhere;
+}
+.transaction-status a {
+  text-decoration: underline;
+}
+.backend-status {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border: 1px solid #e1ddd0;
+  border-radius: 10px;
+  background: #fff9e7;
+  font-size: 12px;
+}
+.creation-fee-split {
+  grid-template-columns: 3fr 2fr 5fr;
+}
+.kanto-market-fee-split > span:nth-child(1) {
+  flex: 3;
+}
+.kanto-market-fee-split > span:nth-child(2) {
+  flex: 2;
+  background: #81a4bd;
+}
+.kanto-market-fee-split > span:nth-child(3) {
+  flex: 5;
+  background: #83b99d;
+}
+@media (max-width: 600px) {
+  .header-connect {
+    font-size: 11px;
+    padding-inline: 10px;
+  }
+}
+.redemption-status-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border, #e8e5e0);
+  flex-wrap: wrap;
+}
+.redemption-status-row > .pokemon-art {
+  width: 56px;
+  height: 56px;
+}
+.redemption-status-row > div {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+}
+.redemption-status-row small {
+  color: var(--muted, #777);
+}

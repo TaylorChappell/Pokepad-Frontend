@@ -6,6 +6,17 @@ export function gymRankings(state: AppSnapshot) {
     .filter((c) => c.active)
     .map((coin) => {
       const seeded = GYMS.find((g) => g.coinId === coin.id);
+      const live = state.gyms?.find((gym) => gym.coinId === coin.id);
+      if (state.gyms)
+        return {
+          coin,
+          coinId: coin.id,
+          name: live?.name || 'Team ' + coin.ticker,
+          badge: coin.ticker,
+          color: live?.color || coin.color,
+          supporters: live?.supporters || 0,
+          score: live?.score || 0,
+        };
       return {
         coin,
         coinId: coin.id,

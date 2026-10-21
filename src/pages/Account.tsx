@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useSoundPreference } from '../audio/sound';
 import { useApp } from '../state/AppContext';
+import { WalletConnection } from '../components/WalletConnection';
 import { GymBadge, coinForBadge } from '../components/GymBadge';
 import { gymRankings } from '../state/gyms';
 import { collectionValue, profileName, shortWallet } from '../state/model';
@@ -26,7 +27,7 @@ import { compact, navigate, relativeTime, sol } from '../utils';
 import type { Profile } from '../types';
 
 export function PortfolioPage() {
-  const { state } = useApp(),
+  const { state, mode } = useApp(),
     held = state.coins.filter((c) => c.holding > 0),
     value = held.reduce((n, c) => n + c.holding * c.price, 0);
   return (
@@ -70,6 +71,36 @@ export function PortfolioPage() {
           </strong>
         </div>
       </div>
+      {mode === 'live' && !!state.redemptions?.length && (
+        <section className="panel inset panels-margin">
+          <h2>Redemptions</h2>
+          {state.redemptions.map((payout) => (
+            <div className="redemption-status-row" key={payout.id}>
+              <PokemonArt id={payout.speciesId} animated={false} />
+              <div>
+                <strong>{pokemonById(payout.speciesId).name}</strong>
+                <small>
+                  {payout.status === 'confirmed'
+                    ? 'Paid on Solana'
+                    : payout.status === 'failed'
+                      ? 'Payout needs attention'
+                      : 'Payment pending confirmation'}
+                </small>
+              </div>
+              <SolValue amount={payout.amountSol} />
+              {payout.signature && (
+                <a
+                  href={'https://solscan.io/tx/' + encodeURIComponent(payout.signature)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View transaction
+                </a>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
       <div className="section-heading">
         <h2>
           Your communities <span className="count-pill">{held.length}</span>
@@ -143,7 +174,11 @@ export function PortfolioPage() {
                 <PokemonArt id={p.speciesId} shiny={p.shiny} />
                 <div>
                   <h2>{pokemonById(p.speciesId).name}</h2>
-                  <p>Rare Candy from holding active coins.</p>
+                  <p>
+                    {mode === 'live' && p.starter && p.backing === 0
+                      ? 'Rare Candy from your main-token holding until the first funded evolution.'
+                      : 'Rare Candy from holding active coins.'}
+                  </p>
                   <Progress value={p.rareCandy / 10} color="#e5ba4c" />
                   <small>{p.rareCandy.toLocaleString()} / 1,000 Rare Candy</small>
                   <a className="text-link" href={'#/pokemon/' + p.id}>
@@ -179,7 +214,7 @@ export function PortfolioPage() {
 }
 
 export function ProfilePage() {
-  const { state } = useApp(),
+  const { state, mode } = useApp(),
     gym = gymRankings(state).find((g) => g.coinId === state.profile.supportedGym),
     partner = state.pokemon.find((p) => p.id === state.profile.equippedId);
   return (
@@ -221,7 +256,9 @@ export function ProfilePage() {
           <strong>
             {state.walkKm.toFixed(1)} <small>km</small>
           </strong>
-          <small>Walking preview distance</small>
+          <small>
+            {mode === 'live' ? 'Server-accepted walking distance' : 'Walking preview distance'}
+          </small>
         </div>
       </div>
       <div className="two-column">
@@ -632,10 +669,14 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
               <div className="wallet-card">
                 <Icon name="Wallet" size={28} />
                 <span className="status-tag">
-                  {mode === 'demo' ? 'Demo wallet' : 'Backend connected'}
+                  {mode === 'demo'
+                    ? 'Demo wallet'
+                    : state.profile.wallet
+                      ? 'Authenticated Solana account'
+                      : 'Not connected'}
                 </span>
                 <label>Wallet address</label>
-                <code>{state.profile.wallet}</code>
+                <code>{state.profile.wallet || 'Connect a wallet to create your trainer.'}</code>
                 <button
                   className="text-link"
                   onClick={async () => {
@@ -656,9 +697,10 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                 <span>
                   {mode === 'demo'
                     ? 'This frontend uses a sample wallet and local demo data. No wallet is connected, and no real funds are used.'
-                    : 'Your account data is supplied by the configured API. Wallet signing will be added with the backend integration.'}
+                    : 'Your wallet signs in to your trainer account. Every token launch or trade requires a separate transaction approval in your wallet.'}
                 </span>
               </div>
+              <WalletConnection />
               {mode === 'demo' && (
                 <div className="reset-section">
                   <h3>Reset demo data</h3>
@@ -710,10 +752,13 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
 }
 
 export function StarterPage() {
-  const { state, act, busy, toast } = useApp(),
+  const { state, act, busy, toast, mode } = useApp(),
     [choice, setChoice] = useState(4),
     main = state.coins.find((c) => c.main),
-    pikachu = !!main && main.holding / main.totalSupply > 0.01;
+    pikachu =
+      mode === 'live'
+        ? state.starterEligibility?.canChoosePikachu === true
+        : !!main && main.holding / main.totalSupply > 0.01;
   return (
     <>
       <PageHeading
@@ -726,6 +771,8 @@ export function StarterPage() {
         <span>
           Hold the main $POKE token to choose your starter. Your first partner stays with you, with
           no redemption value.
+          {mode === 'live' &&
+            ' Until its first funded evolution, your starter earns Rare Candy only from your main-token holding.'}
         </span>
       </div>
       <div className="starter-grid">
@@ -766,13 +813,20 @@ export function StarterPage() {
         })}
       </div>
       <div className="starter-confirm">
+        {mode === 'live' && state.starterEligibility?.reason && (
+          <p className="notice">{state.starterEligibility.reason}</p>
+        )}
         <p>
           {state.profile.starterChosen
             ? 'Your starter has already been chosen.'
             : 'Choose one starter. This choice is permanent.'}
         </p>
         <Button
-          disabled={busy || state.profile.starterChosen || !main?.holding}
+          disabled={
+            busy ||
+            state.profile.starterChosen ||
+            (mode === 'live' ? !state.starterEligibility?.canChoose : !main?.holding)
+          }
           onClick={async () => {
             if (await act({ type: 'starter.choose', speciesId: choice })) {
               toast(pokemonById(choice).name + ' is now in your PC.');

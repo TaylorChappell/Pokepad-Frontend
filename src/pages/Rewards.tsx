@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
+import { LiveWalkPage } from './LiveWalk';
 import { pokemonById } from '../data/pokemon';
 import { rewardPool } from '../data/rewardPools';
 import { WALK_BOOST_MS_PER_KM, rewardBudget } from '../state/model';
@@ -87,7 +88,9 @@ export function RewardOpening({
     };
   }, []);
   const resolvedReward = result?.rewards.find((r) => r.id === reward.id);
-  const owned = result?.pokemon.find((p) => p.id === 'hatched-' + reward.id);
+  const owned = result?.pokemon.find(
+    (p) => p.id === (resolvedReward?.pokemonInstanceId || 'hatched-' + reward.id),
+  );
   const species = pokemonById(owned?.speciesId || resolvedReward?.outcomeSpeciesId || 1);
   const revealed = phase === 'revealed' && !!owned;
   return (
@@ -404,7 +407,15 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
               .filter((r) => r.openedAt)
               .sort((a, b) => b.openedAt! - a.openedAt!)
               .map((r) => (
-                <a className="opened-reward-row" href={'#/pokemon/hatched-' + r.id} key={r.id}>
+                <a
+                  className="opened-reward-row"
+                  href={
+                    r.pokemonInstanceId || mode === 'demo'
+                      ? '#/pokemon/' + (r.pokemonInstanceId || 'hatched-' + r.id)
+                      : '#/pokedex'
+                  }
+                  key={r.id}
+                >
                   <PokemonArt id={r.outcomeSpeciesId || 1} shiny={r.shiny} animated={false} />
                   <span>
                     <strong>{pokemonById(r.outcomeSpeciesId || 1).name}</strong>
@@ -486,77 +497,89 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
             </div>
             <div className="reward-v3-pool">
               <h3>Who could you discover?</h3>
-              <p>Every opening is a fresh draw. Only rewards this coin can fund are included.</p>
-              <div className="reward-v3-pool-tabs">
-                <button
-                  className={poolFilter === 'all' ? 'active' : ''}
-                  onClick={() => {
-                    setPoolFilter('all');
-                    setPoolLimit(24);
-                  }}
-                >
-                  All Pokémon
-                </button>
-                <button
-                  className={poolFilter === 'legendary' ? 'active' : ''}
-                  onClick={() => {
-                    setPoolFilter('legendary');
-                    setPoolLimit(24);
-                  }}
-                >
-                  Legendaries
-                </button>
-              </div>
-              <input
-                className="reward-v3-pool-search"
-                aria-label="Search possible Pokémon"
-                placeholder="Find a Pokémon…"
-                value={poolSearch}
-                onChange={(event) => {
-                  setPoolSearch(event.target.value);
-                  setPoolLimit(24);
-                }}
-              />
-              <div className="reward-v3-pool-list">
-                {filteredPool.length ? (
-                  filteredPool.slice(0, poolLimit).map((entry) => (
-                    <div
-                      className={'reward-v3-drop ' + (entry.shiny ? 'is-shiny' : '')}
-                      key={entry.speciesId + '-' + entry.shiny}
-                    >
-                      <PokemonArt id={entry.speciesId} shiny={entry.shiny} animated={false} />
-                      <div>
-                        <strong>{pokemonById(entry.speciesId).name}</strong>
-                        <SolValue amount={entry.backing} />
-                      </div>
-                      <span className="drop-chance">
-                        {entry.chance * 100 < 0.01 ? '<0.01' : (entry.chance * 100).toFixed(2)}%
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="reward-v3-no-drops">
-                    {poolSearch.trim()
-                      ? 'No Pokémon match your search.'
-                      : poolFilter === 'legendary'
-                        ? 'This pool needs more funding before a legendary can be drawn.'
-                        : 'The coin’s reward pool needs more funding before this reward can open.'}
+              {mode === 'live' ? (
+                <p>
+                  Your reward was sealed and fully funded when awarded. Its Pokémon is revealed when
+                  opened.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    Every opening is a fresh demo draw. Only rewards this coin can fund are
+                    included.
                   </p>
-                )}
-              </div>
-              {filteredPool.length > poolLimit && (
-                <button
-                  className="reward-v3-pool-more"
-                  onClick={() => setPoolLimit((limit) => limit + 24)}
-                >
-                  Show more Pokémon <Icon name="ChevronDown" size={15} />
-                </button>
+                  <div className="reward-v3-pool-tabs">
+                    <button
+                      className={poolFilter === 'all' ? 'active' : ''}
+                      onClick={() => {
+                        setPoolFilter('all');
+                        setPoolLimit(24);
+                      }}
+                    >
+                      All Pokémon
+                    </button>
+                    <button
+                      className={poolFilter === 'legendary' ? 'active' : ''}
+                      onClick={() => {
+                        setPoolFilter('legendary');
+                        setPoolLimit(24);
+                      }}
+                    >
+                      Legendaries
+                    </button>
+                  </div>
+                  <input
+                    className="reward-v3-pool-search"
+                    aria-label="Search possible Pokémon"
+                    placeholder="Find a Pokémon…"
+                    value={poolSearch}
+                    onChange={(event) => {
+                      setPoolSearch(event.target.value);
+                      setPoolLimit(24);
+                    }}
+                  />
+                  <div className="reward-v3-pool-list">
+                    {filteredPool.length ? (
+                      filteredPool.slice(0, poolLimit).map((entry) => (
+                        <div
+                          className={'reward-v3-drop ' + (entry.shiny ? 'is-shiny' : '')}
+                          key={entry.speciesId + '-' + entry.shiny}
+                        >
+                          <PokemonArt id={entry.speciesId} shiny={entry.shiny} animated={false} />
+                          <div>
+                            <strong>{pokemonById(entry.speciesId).name}</strong>
+                            <SolValue amount={entry.backing} />
+                          </div>
+                          <span className="drop-chance">
+                            {entry.chance * 100 < 0.01 ? '<0.01' : (entry.chance * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="reward-v3-no-drops">
+                        {poolSearch.trim()
+                          ? 'No Pokémon match your search.'
+                          : poolFilter === 'legendary'
+                            ? 'This pool needs more funding before a legendary can be drawn.'
+                            : 'The coin’s reward pool needs more funding before this reward can open.'}
+                      </p>
+                    )}
+                  </div>
+                  {filteredPool.length > poolLimit && (
+                    <button
+                      className="reward-v3-pool-more"
+                      onClick={() => setPoolLimit((limit) => limit + 24)}
+                    >
+                      Show more Pokémon <Icon name="ChevronDown" size={15} />
+                    </button>
+                  )}
+                  <p className="reward-v3-odds-note">
+                    {mode === 'demo' ? 'Demo odds shown for the current funded pool. ' : ''}Odds can
+                    change as pool funding changes. Alternate-colour Pokémon have their own funded
+                    value.
+                  </p>
+                </>
               )}
-              <p className="reward-v3-odds-note">
-                {mode === 'demo' ? 'Demo odds shown for the current funded pool. ' : ''}Odds can
-                change as pool funding changes. Alternate-colour Pokémon have their own funded
-                value.
-              </p>
             </div>
           </div>
         </Modal>
@@ -576,6 +599,10 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
 }
 
 export function WalkPage() {
+  const { mode } = useApp();
+  return mode === 'live' ? <LiveWalkPage /> : <DemoWalkPage />;
+}
+function DemoWalkPage() {
   const { state, act, mode, now } = useApp(),
     [walking, setWalking] = useState(false),
     [sessionKm, setSessionKm] = useState(0);

@@ -8,6 +8,7 @@ export interface CoinSocials {
   discord?: string;
 }
 export interface Coin {
+  decimals?: number;
   id: string;
   name: string;
   ticker: string;
@@ -51,7 +52,23 @@ export interface Move {
   pp: number;
   description: string;
 }
+export interface EvolutionPreview {
+  nextValueMin?: number;
+  nextValueMax?: number;
+  valueIncreaseMin?: number;
+  valueIncreaseMax?: number;
+  branches?: { speciesId: number; nextValue: number; valueIncrease: number; chance: number }[];
+  policyVersion: number;
+  candyRequired: number;
+  valueIncrease: number;
+  nextValue: number;
+  reserved: number;
+  fundingNeeded: number;
+  canEvolve: boolean;
+  reason?: string;
+}
 export interface OwnedPokemon {
+  evolutionPreview?: EvolutionPreview;
   id: string;
   speciesId: number;
   level: number;
@@ -79,6 +96,7 @@ export interface MoveOffer {
   status: 'pending' | 'learned' | 'declined';
 }
 export interface Reward {
+  pokemonInstanceId?: string;
   id: string;
   kind: 'egg' | 'pack';
   tier: EggTier;
@@ -135,6 +153,33 @@ export interface Gym {
   color: string;
 }
 export interface AppSnapshot {
+  starterEligibility?: { canChoose: boolean; canChoosePikachu: boolean; reason?: string };
+  redemptions?: {
+    id: string;
+    pokemonId: string;
+    speciesId: number;
+    amountSol: number;
+    status: string;
+    signature?: string;
+  }[];
+  gyms?: {
+    coinId: string;
+    name: string;
+    badge: string;
+    supporters: number;
+    score: number;
+    color: string;
+  }[];
+  watchlist?: string[];
+  features?: {
+    launching?: boolean;
+    trading?: boolean;
+    rewards?: boolean;
+    walking?: boolean;
+    walkingMobileOnly?: boolean;
+    battles?: boolean;
+    payouts?: boolean;
+  };
   version: 2;
   profile: Profile;
   coins: Coin[];

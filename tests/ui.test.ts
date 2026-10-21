@@ -484,11 +484,11 @@ test('the how-to supports categories and search, and the sidebar Pokémon reacts
       /Offline is always for fun/,
     );
     assert.equal(app.dom.window.location.hash, '#/guide?topic=battles');
-    await app.fill('[aria-label="Search the how-to"]', '50 / 50');
+    await app.fill('[aria-label="Search the how-to"]', '30 / 20 / 50');
     assert.equal(document.querySelectorAll('.howto-topic-button').length, 1);
     assert.match(
       document.querySelector('.howto-article')?.textContent || '',
-      /creator fees equally/,
+      /30% to the creator, 20% to the platform, and 50% to holder rewards/,
     );
     await app.fill('[aria-label="Search the how-to"]', 'unfindable-topic');
     assert.ok(document.querySelector('.howto-no-results'));
