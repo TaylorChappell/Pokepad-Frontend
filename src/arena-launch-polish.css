@@ -2,6 +2,7 @@
    Reading/forms keep their own centred limits; data views use the available width. */
 .app-shell > .main-content {
   max-width: none;
+  padding-inline: clamp(24px, 4.2vw, 104px);
 }
 .analytics-page,
 .kanto-market-page,
@@ -336,5 +337,16 @@
     inset: var(--top) 0 0;
     background: #343b4940;
     z-index: 60;
+  }
+}
+
+@media (max-width: 1100px) {
+  .app-shell > .main-content {
+    padding-inline: 24px;
+  }
+}
+@media (max-width: 640px) {
+  .app-shell > .main-content {
+    padding-inline: 16px;
   }
 }

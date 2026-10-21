@@ -1,0 +1,728 @@
+/* Battle setup: a bounded matchup, three clear team slots and one launch action. */
+.online-battle-lobby > .slot-party-desk {
+  align-self: start;
+  padding: 20px;
+  gap: 16px;
+  border: 1px solid #dce5e7;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 3px 0 #e3e9e7;
+}
+.online-battle-lobby .slot-party-desk .battle-party-slots {
+  flex: 0 0 auto;
+  min-height: 180px;
+  max-height: 180px;
+}
+.online-battle-lobby .slot-party-desk .battle-party-slot {
+  min-height: 180px;
+  border-radius: 12px;
+  background: #f8fafb;
+  border-color: #dce5e7;
+  box-shadow: none;
+  padding: 24px 6px 12px;
+}
+.online-battle-lobby .slot-party-desk .battle-party-slot.filled {
+  background: #f0f6ed;
+  border-color: #b5cdb0;
+}
+.online-battle-lobby .slot-party-desk .battle-party-slot .pokemon-art {
+  width: 70px !important;
+  height: 70px !important;
+}
+.online-battle-lobby .slot-party-desk > footer {
+  margin-top: 0;
+  justify-content: flex-end;
+}
+.online-battle-lobby .slot-party-desk > footer p {
+  display: none;
+}
+.online-battle-lobby .previous-party {
+  border-radius: 10px;
+  background: #f8fafb;
+  border-color: #e5eaec;
+}
+@media (max-width: 640px) {
+  .online-battle-lobby > .slot-party-desk {
+    padding: 12px;
+    gap: 12px;
+  }
+  .online-battle-lobby .slot-party-desk .battle-party-slots,
+  .online-battle-lobby .slot-party-desk .battle-party-slot {
+    min-height: 150px;
+    max-height: 150px;
+  }
+  .online-battle-lobby .slot-party-desk .battle-party-slot {
+    padding-inline: 3px;
+    gap: 4px;
+  }
+  .online-battle-lobby .slot-party-desk .battle-party-slot strong {
+    font-size: 10px;
+  }
+  .online-battle-lobby .slot-party-desk .battle-party-slot small {
+    font-size: 8px;
+  }
+  .online-battle-lobby .slot-party-desk .battle-party-slot .pokemon-art {
+    width: 54px !important;
+    height: 54px !important;
+  }
+}
+.arena-lobby .lobby-workspace {
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 28vw, 440px);
+  align-items: start;
+  gap: 24px;
+  flex: 1 1 680px;
+  max-height: 680px;
+}
+.arena-lobby .classic-lobby-board {
+  height: 100%;
+  max-height: none;
+  border-color: #dce5e7;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow:
+    0 3px 0 #e3e9e7,
+    0 12px 30px #324c4205;
+  overflow: hidden;
+}
+.lobby-matchup-heading {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px;
+  background: #fff;
+  border-bottom: 1px solid #e3eae5;
+}
+.lobby-trainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+.lobby-trainer > span:not(.trainer-avatar) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.lobby-trainer strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lobby-trainer small {
+  color: #8a9a9f;
+  font-size: 10px;
+}
+.lobby-trainer .trainer-avatar {
+  flex-shrink: 0;
+}
+.lobby-trainer-rival {
+  justify-content: flex-end;
+  text-align: right;
+}
+.lobby-versus {
+  font-family: Pixelify, Nunito, sans-serif;
+  font-size: 12px;
+  color: #d97c6f;
+}
+
+.classic-match .classic-root-actions {
+  min-height: 0;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.classic-console > .classic-dialogue {
+  min-height: 0;
+}
+/* Keep the dialogue readable beside long species names on small phones. */
+@media (max-width: 640px) {
+  .classic-console:has(> .classic-dialogue) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+  .classic-console > .classic-dialogue {
+    padding: 8px 11px;
+  }
+  .classic-console > .classic-dialogue > p {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+  }
+  .classic-console > .classic-dialogue > small:empty {
+    display: none;
+  }
+  .classic-console > .classic-root-actions > button {
+    min-height: 0;
+    font-size: 18px;
+    padding: 3px 6px;
+  }
+}
+.lobby-stage-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(180deg, #f1f5ea, #dcebcf);
+  border-bottom: 1px solid #dce7d5;
+}
+.arena-lobby .classic-preview-field {
+  display: block;
+  flex: 0 1 980px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.arena-lobby .classic-preview-field > .classic-ground {
+  opacity: 0.5;
+}
+.lobby-lead-name,
+.lobby-rival-name {
+  position: absolute;
+  z-index: 5;
+  display: flex;
+  gap: 7px;
+  align-items: baseline;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: #ffffffc9;
+  color: #4b6958;
+  font-size: 11px;
+  border: 1px solid #d9e5d8;
+}
+.lobby-lead-name {
+  left: 20px;
+  bottom: 14px;
+}
+.lobby-rival-name {
+  right: 20px;
+  top: 14px;
+}
+.lobby-lead-name span,
+.lobby-rival-name span {
+  font-size: 10px;
+  color: #829283;
+}
+.lobby-waiting-ball {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  opacity: 0.7;
+  padding-bottom: 4px;
+}
+.lobby-waiting-rival {
+  opacity: 0.35;
+}
+.lobby-empty-message {
+  position: absolute;
+  inset: 18px 15px auto;
+  text-align: center;
+  color: #739078;
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+}
+.arena-lobby .classic-lobby-board > .slot-party-desk {
+  padding: 16px 20px 12px;
+  gap: 12px;
+  background: #fff;
+}
+.arena-lobby .classic-lobby-board .battle-party-heading {
+  display: flex;
+  margin: 0;
+}
+.arena-lobby .battle-party-heading small {
+  display: none;
+}
+.arena-lobby .battle-party-heading h2 {
+  margin: 0;
+  font-size: 16px;
+  color: #39534e;
+}
+.arena-lobby .battle-party-heading h2 > span {
+  font-size: 11px;
+  margin-left: 7px;
+  color: #8a9c92;
+}
+.arena-lobby .classic-lobby-board .battle-party-slots {
+  min-height: 132px;
+  max-height: 132px;
+  gap: 12px;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot {
+  min-height: 132px;
+  max-height: 132px;
+  padding: 24px 8px 10px;
+  border-radius: 12px;
+  border: 1px solid #dce5e7;
+  background: #f8fafb;
+  box-shadow: none;
+  transition:
+    background 160ms,
+    border-color 160ms,
+    box-shadow 160ms;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot:hover:not(:disabled) {
+  background: #f0f6f4;
+  border-color: #a0c0b1;
+  box-shadow: inset 0 0 0 1px #b9d5c8;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot.empty {
+  border-style: dashed;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot.filled {
+  background: #f0f6ed;
+  border-color: #c8dbc2;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot .pokemon-art {
+  width: 60px !important;
+  height: 60px !important;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot > .pokeball {
+  width: 28px;
+  height: 28px;
+  margin: 10px 0 7px;
+  opacity: 0.6;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot strong {
+  font-size: 12px;
+}
+.arena-lobby .classic-lobby-board .battle-party-slot small {
+  font-size: 9px;
+}
+.arena-lobby .party-slot-number {
+  color: #82998e;
+  font-size: 9px;
+}
+.arena-lobby .classic-lobby-board .previous-party {
+  border: 0;
+  border-top: 1px solid #edf0ee;
+  background: none;
+  border-radius: 0;
+  justify-content: flex-start;
+  padding: 10px 0 0;
+  gap: 12px;
+}
+.arena-lobby .previous-party > span {
+  flex: 0 1 auto;
+}
+.arena-lobby .classic-lobby-board .previous-party-preview {
+  margin-right: auto;
+  flex: 0 1 auto;
+}
+.arena-lobby .classic-lobby-board .previous-party-preview .pokemon-art {
+  width: 30px !important;
+  height: 30px !important;
+}
+.arena-lobby .classic-lobby-board .slot-party-desk > footer {
+  display: flex;
+  padding: 0;
+  min-height: 18px;
+}
+.arena-lobby .slot-party-desk > footer .text-link {
+  font-size: 10px;
+}
+.arena-lobby .lobby-rival-panel {
+  align-self: start;
+  padding: 24px;
+  border: 1px solid #e2e6e9;
+  border-radius: 20px;
+  box-shadow: 0 3px 0 #e6e9eb;
+  background: #fff;
+}
+.lobby-rival-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.lobby-rival-heading h2 {
+  font-size: 20px;
+  margin: 0;
+  color: #344d58;
+}
+.lobby-rival-heading a {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #85969d;
+  border-radius: 50%;
+}
+.lobby-rival-heading a:hover {
+  color: #416e61;
+  background: #edf5ef;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulties {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulties > button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 142px;
+  padding: 16px 10px 13px;
+  gap: 9px;
+  text-align: center;
+  background: #f9fafb;
+  border: 1px solid #e1e7ec;
+  border-radius: 13px;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulties > button:hover {
+  background: #f2f6f3;
+  border-color: #bdd1c7;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulties > button.selected {
+  background: #eaf3ed;
+  border-color: #77a18b;
+  box-shadow: inset 0 0 0 1px #77a18b;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulties > button > .difficulty-portrait {
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+}
+.arena-lobby .lobby-rival-panel .difficulty-portrait > .trainer-avatar {
+  width: 60px !important;
+  height: 60px !important;
+  transform: none;
+}
+.arena-lobby .lobby-rival-panel .difficulty-label {
+  flex: 0 0 auto !important;
+  gap: 2px;
+}
+.arena-lobby .lobby-rival-panel .difficulty-label strong {
+  font-size: 13px;
+}
+.arena-lobby .lobby-rival-panel .difficulty-label small {
+  display: none;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulty-stars {
+  position: absolute;
+  top: 11px;
+  right: 10px;
+  gap: 2px;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulty-stars i {
+  width: 3px;
+  height: 8px;
+}
+.arena-lobby .lobby-rival-panel .classic-difficulty-note {
+  display: block;
+  margin: 18px 0 0;
+  border: 0;
+  padding: 14px 16px;
+  background: #f5f7f8;
+  border-radius: 10px;
+  min-height: 77px;
+}
+.arena-lobby .classic-difficulty-note strong {
+  font-size: 12px;
+  color: #4b6370;
+}
+.arena-lobby .classic-difficulty-note p {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.lobby-match-rules {
+  display: flex;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  font-size: 10px;
+  font-weight: 750;
+  color: #85928c;
+}
+.lobby-match-rules span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.arena-lobby .lobby-rival-panel .classic-lobby-actions {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  gap: 8px;
+  background: none;
+}
+.arena-lobby .classic-lobby-actions > span {
+  display: block;
+  text-align: center;
+  font-size: 11px;
+  color: #81908b;
+}
+.arena-lobby .lobby-rival-panel .classic-lobby-actions .button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  font-size: 14px;
+  border-radius: 11px;
+  gap: 10px;
+}
+.arena-lobby .lobby-rival-panel .classic-lobby-actions .button:disabled {
+  opacity: 1;
+  background: #e9edef;
+  color: #a0adb2;
+  box-shadow: 0 3px 0 #dfe5e8;
+  border-color: #dfe5e8;
+}
+@media (max-width: 1180px) {
+  .arena-lobby .lobby-workspace {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 16px;
+  }
+  .arena-lobby .lobby-rival-panel {
+    padding: 18px;
+  }
+}
+@container battle-page (max-height: 650px) {
+  .arena-lobby .lobby-workspace {
+    max-height: 100%;
+  }
+  .lobby-matchup-heading {
+    padding: 10px 14px;
+  }
+  .arena-lobby .classic-lobby-board > .slot-party-desk {
+    padding: 10px 12px 8px;
+    gap: 8px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slots,
+  .arena-lobby .classic-lobby-board .battle-party-slot {
+    min-height: 104px;
+    max-height: 104px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot {
+    padding: 19px 4px 6px;
+    gap: 2px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot .pokemon-art {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot > .pokeball {
+    margin: 3px 0;
+  }
+  .arena-lobby .lobby-rival-panel {
+    padding: 16px;
+  }
+  .lobby-rival-heading {
+    margin-bottom: 12px;
+  }
+  .lobby-rival-heading h2 {
+    font-size: 17px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties {
+    gap: 9px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties > button {
+    min-height: 105px;
+    padding: 10px;
+    gap: 5px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties > button > .difficulty-portrait {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+  .arena-lobby .lobby-rival-panel .difficulty-portrait > .trainer-avatar {
+    transform: scale(0.8);
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulty-note {
+    margin-top: 12px;
+    padding: 10px 12px;
+    min-height: 64px;
+  }
+  .lobby-match-rules {
+    margin: 12px 0;
+  }
+}
+@media (max-width: 760px) {
+  .arena-lobby .lobby-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .lobby-matchup-heading {
+    padding: 8px 12px;
+  }
+  .lobby-trainer {
+    gap: 7px;
+  }
+  .lobby-trainer strong {
+    font-size: 11px;
+  }
+  .lobby-trainer small {
+    font-size: 9px;
+  }
+  .lobby-versus {
+    font-size: 9px;
+  }
+  .arena-lobby .classic-lobby-board > .slot-party-desk {
+    padding: 10px;
+    gap: 6px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-heading h2 {
+    font-size: 13px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slots,
+  .arena-lobby .classic-lobby-board .battle-party-slot {
+    min-height: 94px;
+    max-height: 94px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot {
+    padding: 18px 3px 5px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot strong {
+    font-size: 10px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot small {
+    font-size: 8px;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot.empty small {
+    display: none;
+  }
+  .arena-lobby .classic-lobby-board .battle-party-slot .pokemon-art {
+    width: 38px !important;
+    height: 38px !important;
+  }
+  .arena-lobby .classic-lobby-board .previous-party {
+    padding-top: 6px;
+    gap: 6px;
+  }
+  .arena-lobby .classic-lobby-board .previous-party small {
+    display: none;
+  }
+  .arena-lobby .previous-party .button {
+    font-size: 9px;
+    padding: 5px 7px;
+    min-height: 28px;
+  }
+  .arena-lobby .classic-lobby-board .previous-party-preview .pokemon-art {
+    width: 23px !important;
+    height: 23px !important;
+  }
+  .arena-lobby .lobby-rival-panel {
+    padding: 12px;
+    border-radius: 15px;
+  }
+  .lobby-rival-heading {
+    margin-bottom: 7px;
+  }
+  .lobby-rival-heading h2 {
+    font-size: 14px;
+  }
+  .lobby-rival-heading a {
+    width: 24px;
+    height: 24px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties > button {
+    min-height: 80px;
+    padding: 8px 4px 5px;
+    gap: 4px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties > button > .difficulty-portrait {
+    width: 36px;
+    height: 36px;
+    flex-basis: 36px;
+  }
+  .arena-lobby .lobby-rival-panel .difficulty-portrait > .trainer-avatar {
+    transform: scale(0.6);
+  }
+  .arena-lobby .lobby-rival-panel .difficulty-label strong {
+    font-size: 10px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulty-stars {
+    display: none;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulty-note,
+  .lobby-match-rules {
+    display: none;
+  }
+  .arena-lobby .lobby-rival-panel .classic-lobby-actions {
+    gap: 0;
+    margin-top: 9px;
+  }
+  .arena-lobby .classic-lobby-actions > span {
+    display: none;
+  }
+  .arena-lobby .lobby-rival-panel .classic-lobby-actions .button {
+    min-height: 40px;
+    font-size: 12px;
+  }
+  .lobby-empty-message {
+    font-size: 12px;
+    top: 10px;
+  }
+  .lobby-lead-name,
+  .lobby-rival-name {
+    display: none;
+  }
+}
+@media (max-width: 760px) and (max-height: 780px) {
+  .arena-lobby .lobby-workspace {
+    grid-template-rows: auto auto;
+    align-content: start;
+  }
+  .arena-lobby .lobby-stage-wrap {
+    display: none;
+  }
+  .arena-lobby .classic-lobby-board {
+    height: auto;
+  }
+}
+@container battle-page (max-height: 370px) {
+  .arena-lobby .lobby-stage-wrap,
+  .arena-lobby .lobby-matchup-heading,
+  .arena-lobby .classic-lobby-board .battle-party-heading {
+    display: none;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulty-note,
+  .arena-lobby .lobby-match-rules,
+  .arena-lobby .classic-lobby-actions > span {
+    display: none;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties > button {
+    min-height: 45px;
+    flex-direction: row;
+    padding: 6px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties > button > .difficulty-portrait {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
+  }
+  .arena-lobby .lobby-rival-panel .difficulty-portrait > .trainer-avatar {
+    transform: scale(0.5);
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulty-stars {
+    display: none;
+  }
+  .arena-lobby .lobby-rival-panel .classic-lobby-actions {
+    margin-top: 10px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-lobby-actions .button {
+    min-height: 36px;
+    padding: 6px;
+  }
+  .arena-lobby .classic-lobby-board {
+    height: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arena-lobby .battle-party-slot {
+    transition: none !important;
+  }
+}

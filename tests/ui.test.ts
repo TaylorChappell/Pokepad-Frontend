@@ -1556,7 +1556,7 @@ test('Stats and Moves have separate tab panels and support arrow-key navigation'
   }
 });
 
-test('gym vacancies use paired Pokémon and unpaired gyms render no empty slot cards', async () => {
+test('a single paired defender can be challenged and unpaired gyms render no empty slot cards', async () => {
   const app = await mountApp('/gym/paired', (s) => {
     s.coins = [
       { ...s.coins[0], id: 'paired', launchKind: 'pokemon', pokemonId: 25 },
@@ -1565,13 +1565,25 @@ test('gym vacancies use paired Pokémon and unpaired gyms render no empty slot c
     s.profile.supportedGym = undefined;
   });
   try {
-    assert.equal(app.document.querySelectorAll('.gym-partner-defender').length, 3);
+    assert.equal(app.document.querySelectorAll('.gym-partner-defender').length, 1);
     assert.equal(app.document.querySelectorAll('.gym-defender.empty').length, 0);
     assert.equal(
       app.document.querySelectorAll('.gym-partner-defender a[href^="#/trainer/"]').length,
       0,
     );
     assert.ok(app.document.querySelector('a[href="#/battles?gym=paired"]'));
+    await app.go('/battles?gym=paired');
+    for (const slot of [1, 2, 3]) {
+      await app.click(app.document.querySelector(`[aria-label="Choose Pokémon for slot ${slot}"]`));
+      await app.click(
+        app.document.querySelectorAll('.battle-picker-pokemon:not(:disabled)')[slot - 1],
+      );
+    }
+    const start = app.button('Start gym challenge');
+    assert.equal(start.disabled, false, 'One defender is enough to start a challenge');
+    await app.click(start);
+    await app.until(() => !!app.document.querySelector('.battle-field'), 'Gym battle starts');
+    assert.equal(app.document.querySelectorAll('.classic-health-rival .pokeball').length, 1);
     await app.go('/gym/unpaired');
     assert.equal(app.document.querySelectorAll('.gym-defender').length, 0);
     assert.match(

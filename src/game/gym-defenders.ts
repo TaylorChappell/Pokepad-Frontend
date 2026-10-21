@@ -2,7 +2,7 @@ import { BASE_STATS, getPokemonStats } from '../data/stats';
 import { MOVE_OPTIONS } from '../data/moves';
 import type { GymDefender } from './gym-policy';
 
-/** Battle-only partners fill vacancies; they never enter anyone's inventory. */
+/** At most one battle-only partner fills a vacancy; they never enter anyone's inventory. */
 export const GYM_PARTNER_LEVEL = 20;
 export function completeGymDefenders(
   supporters: GymDefender[],
@@ -14,7 +14,7 @@ export function completeGymDefenders(
     return team;
   const stats = getPokemonStats({ speciesId, level: GYM_PARTNER_LEVEL });
   const moves = [...new Set(MOVE_OPTIONS[speciesId] || ['Tackle', 'Growl'])].slice(0, 4);
-  while (team.length < 3) {
+  if (team.length < 3) {
     team.push({
       id: 'gym-partner:' + coin.id + ':' + team.length,
       speciesId,

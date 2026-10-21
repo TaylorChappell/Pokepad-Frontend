@@ -50,7 +50,7 @@ Favourites improve collection and team selection without changing Pokémon stats
 
 There is no marketplace or player asking-price flow. Selling redeems an eligible Pokémon for its recorded funded SOL amount. A pending payout is not displayed as paid, and a locked Pokémon cannot be used in conflicting actions.
 
-Gyms with fewer than three eligible defenders fill missing places with battle-only Lv. 20 copies of the coin’s paired Pokémon. Trainer-led coins show only real defenders and need three to accept challenges. These fallback copies do not enter inventories or create SOL liabilities; live clients use the server’s exact defender snapshot.
+Gyms with fewer than three eligible defenders can add one battle-only Lv. 20 copy of the coin’s paired Pokémon. Trainer-led coins show only real defenders. A gym needs at least one defender to accept a challenge; challengers still select three Pokémon. These fallback copies do not enter inventories or create SOL liabilities; live clients use the server’s exact defender snapshot.
 
 ## Battles, animation and sound
 

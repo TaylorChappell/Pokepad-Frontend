@@ -112,7 +112,7 @@ export function GymsPage() {
   const visible = gyms.filter(
     (g) =>
       filter === 'All gyms' ||
-      (filter === 'Ready to challenge' && g.defenders.length === 3) ||
+      (filter === 'Ready to challenge' && g.defenders.length > 0) ||
       (filter === 'My gym' && g.coinId === state.profile.supportedGym),
   );
   return (
@@ -120,7 +120,7 @@ export function GymsPage() {
       <header className="gyms-heading">
         <div>
           <h1>Gyms</h1>
-          <p>Three defenders. One badge. A new challenge in every community.</p>
+          <p>One badge. A new challenge in every community.</p>
         </div>
         <button className="button secondary" onClick={() => setCatalogue(true)}>
           <Icon name="BookOpen" />
@@ -131,7 +131,7 @@ export function GymsPage() {
         <div className="gym-passport-total">
           <Icon name="Gym" size={32} />
           <strong>
-            {state.gymProgress?.badges || 0}
+            {Math.max(state.gymProgress?.badges || 0, new Set(state.badges).size)}
             <small>Badges earned</small>
           </strong>
         </div>
@@ -238,7 +238,7 @@ export function GymDetailPage({ id }: { id: string }) {
       />
     );
   const own = state.profile.supportedGym === id,
-    ready = gym.defenders.length === 3,
+    ready = gym.defenders.length > 0,
     claimed = state.gymProgress?.claimedToday.includes(id),
     cap = (state.gymProgress?.claimedToday.length || 0) >= 5;
   return (
@@ -267,7 +267,7 @@ export function GymDetailPage({ id }: { id: string }) {
               <h2>The defending team</h2>
               <p>
                 {gym.defenders.some((p) => p.source === 'partner')
-                  ? 'Supporters lead the team. The coin’s paired Pokémon fills any remaining places.'
+                  ? 'Supporters lead the team. One copy of the coin’s paired Pokémon joins when there’s room.'
                   : 'The three strongest Pokémon from this gym’s supporters.'}
               </p>
             </div>
@@ -286,9 +286,9 @@ export function GymDetailPage({ id }: { id: string }) {
           {rules && (
             <div className="gym-rules-copy">
               <p>
-                Missing defenders are filled by Lv. 20 copies of the coin’s paired Pokémon.
-                Trainer-led coins have no fallback. A complete team of three is needed to challenge.
-                These copies cannot be owned or redeemed.
+                A gym can include one Lv. 20 copy of the coin’s paired Pokémon when fewer than three
+                supporter Pokémon are available. Trainer-led coins have no fallback. A gym with at
+                least one defender can be challenged. Gym copies cannot be owned or redeemed.
               </p>
               <p>
                 Defenders are full-health copies. Your team uses its current HP and stays locked

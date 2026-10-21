@@ -16,12 +16,13 @@ const defender: GymDefender = {
   trainerName: 'Holder',
 };
 const coin = { id: 'test-gym', launchKind: 'pokemon', pokemonId: 25, pokemonShiny: true };
-test('paired Pokémon fill only missing gym defenders without replacing supporters or creating ownership', () => {
+test('only one paired Pokémon joins an incomplete gym defence without replacing supporters or creating ownership', () => {
   for (const count of [0, 1, 2, 3]) {
     const supporters = Array.from({ length: count }, (_, i) => ({ ...defender, id: 'owned-' + i }));
     const team = completeGymDefenders(supporters, coin);
-    assert.equal(team.length, 3);
-    assert.equal(new Set(team.map((p) => p.id)).size, 3);
+    assert.equal(team.length, Math.min(3, count + 1));
+    assert.equal(team.filter((p) => p.source === 'partner').length, count < 3 ? 1 : 0);
+    assert.equal(new Set(team.map((p) => p.id)).size, team.length);
     assert.deepEqual(team.slice(0, count), supporters);
     assert.equal(supporters.length, count);
     for (const fallback of team.slice(count)) {
@@ -50,7 +51,7 @@ test('unpaired and invalid pairs keep real defenders only; live views are not fa
   }
   const state = createInitialState();
   state.coins = [{ ...state.coins[0], ...coin, active: true }];
-  assert.equal(gymRankings(state)[0].defenders.length, 3);
+  assert.equal(gymRankings(state)[0].defenders.length, 1);
   state.gyms = [];
   assert.equal(gymRankings(state)[0].defenders.length, 0);
 });

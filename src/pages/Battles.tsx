@@ -163,7 +163,7 @@ function DifficultyPicker({
   );
 }
 
-function FieldGround({ scene }: { scene: BattleScene }) {
+function FieldGround({ scene, lobby = false }: { scene: BattleScene; lobby?: boolean }) {
   return (
     <svg
       className="classic-ground"
@@ -186,7 +186,9 @@ function FieldGround({ scene }: { scene: BattleScene }) {
         </pattern>
       </defs>
       {(['rival', 'player'] as const).map((side) => {
-        const { x, y, rx, ry } = scene.actors[side].ground;
+        const { x, y, rx: sourceRx, ry: sourceRy } = scene.actors[side].ground;
+        const rx = lobby ? Math.min(sourceRx, side === 'player' ? 190 : 150) : sourceRx;
+        const ry = lobby ? Math.min(sourceRy, side === 'player' ? 24 : 18) : sourceRy;
         return (
           <g className={'classic-ground-' + side} key={side}>
             <ellipse cx={x} cy={y + ry * 0.14} rx={rx} ry={ry} fill="#a3ad56" />
@@ -1198,12 +1200,15 @@ export function BattlesPage() {
                 <GymRewards prize={gym.prize} />
               </>
             )}
-            <p>3 Pokémon each · original levels · equal battle bags</p>
+            <p>
+              Your team: 3 Pokémon · Gym: {gym?.defenders.length || 0}{' '}
+              {gym?.defenders.length === 1 ? 'defender' : 'defenders'} · Equal bags
+            </p>
             <Button
               disabled={
                 chosen.length !== 3 ||
                 !gym ||
-                gym.defenders.length !== 3 ||
+                !gym.defenders.length ||
                 launching ||
                 gymBattle.pending
               }
@@ -1230,41 +1235,90 @@ export function BattlesPage() {
     <div className="battle-v8 battle-screen arena-lobby">
       {heading}
       {mode === 'offline' ? (
-        <div className="classic-lobby-grid">
+        <div className="classic-lobby-grid lobby-workspace">
           <section className="arena-hero classic-lobby-board">
-            <div ref={field} className="classic-preview-field">
-              <FieldGround scene={scene} />
-
-              <div className="classic-preview-caption">
-                <h2>Your next challenger.</h2>
-                <p>Choose your rival and your team.</p>
+            <header className="lobby-matchup-heading">
+              <div className="lobby-trainer">
+                <Avatar profile={state.profile} size={40} />
+                <span>
+                  <small>Your team</small>
+                  <strong>{profileName(state)}</strong>
+                </span>
               </div>
-              <div
-                className="classic-preview-player battle-placed-actor"
-                style={actorStyle(scene.actors.player)}
-              >
-                <BattleSprite
-                  speciesId={lobbyParty[0]?.speciesId || 4}
-                  shiny={lobbyParty[0]?.shiny}
-                  side="player"
-                  actor={scene.actors.player}
-                  manifest={playerBody}
-                  reducedMotion={state.profile.reducedMotion}
+              <span className="lobby-versus" aria-hidden="true">
+                VS
+              </span>
+              <div className="lobby-trainer lobby-trainer-rival">
+                <span>
+                  <small>Your rival</small>
+                  <strong>{difficulty}</strong>
+                </span>
+                <Avatar
+                  profile={{
+                    character: trainerCharacters[difficulty],
+                    accessoryColor: trainerColors[difficulty],
+                  }}
+                  size={40}
                 />
               </div>
-              <div
-                className="classic-preview-rival battle-placed-actor"
-                style={actorStyle(scene.actors.rival)}
-              >
-                <BattleSprite
-                  speciesId={lobbyRivals[0]?.speciesId || 7}
-                  side="rival"
-                  actor={scene.actors.rival}
-                  manifest={rivalBody}
-                  reducedMotion={state.profile.reducedMotion}
-                />
+            </header>
+            <div className={'lobby-stage-wrap' + (!chosen.length ? ' awaiting-team' : '')}>
+              <div ref={field} className="classic-preview-field">
+                <FieldGround scene={scene} lobby />
+                {chosen.length ? (
+                  <>
+                    <div
+                      className="classic-preview-player battle-placed-actor"
+                      style={actorStyle(scene.actors.player)}
+                    >
+                      <BattleSprite
+                        speciesId={chosen[0].speciesId}
+                        shiny={chosen[0].shiny}
+                        side="player"
+                        actor={scene.actors.player}
+                        manifest={playerBody}
+                        reducedMotion={state.profile.reducedMotion}
+                      />
+                    </div>
+                    <div
+                      className="classic-preview-rival battle-placed-actor"
+                      style={actorStyle(scene.actors.rival)}
+                    >
+                      <BattleSprite
+                        speciesId={lobbyRivals[0]?.speciesId || 7}
+                        side="rival"
+                        actor={scene.actors.rival}
+                        manifest={rivalBody}
+                        reducedMotion={state.profile.reducedMotion}
+                      />
+                    </div>
+                    <div className="lobby-lead-name">
+                      <strong>{pokemonById(chosen[0].speciesId).name}</strong>
+                      <span>Lv. {chosen[0].level}</span>
+                    </div>
+                    <div className="lobby-rival-name">
+                      <strong>{pokemonById(lobbyRivals[0].speciesId).name}</strong>
+                      <span>Lv. {lobbyRivals[0].level}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {(['player', 'rival'] as const).map((side) => (
+                      <div
+                        className={'lobby-waiting-ball lobby-waiting-' + side}
+                        key={side}
+                        style={{
+                          left: scene.actors[side].ground.x,
+                          top: scene.actors[side].ground.y,
+                        }}
+                      >
+                        <Pokeball size={48} />
+                      </div>
+                    ))}
+                    <p className="lobby-empty-message">Who’s on your team?</p>
+                  </>
+                )}
               </div>
-              <span className="classic-preview-versus">VS</span>
             </div>
             <BattleTeamPicker
               pokemon={state.pokemon}
@@ -1275,22 +1329,14 @@ export function BattlesPage() {
               }}
               disabled={launching}
             />
-            <div className="classic-lobby-actions">
-              <span>{chosen.length ? chosen.length + ' Pokémon selected' : ''}</span>
-              <Button disabled={!chosen.length || launching} onClick={() => start()}>
-                {launching ? 'Preparing battle…' : 'Start battle'}
-                <Icon name="Swords" size={17} />
-              </Button>
-            </div>
-            {launchError && (
-              <p className="battle-load-error" role="alert">
-                {launchError}
-              </p>
-            )}
           </section>
-          <aside className="classic-rival-desk">
-            <h2>Choose a rival</h2>
-            <p>How tough should the match be?</p>
+          <aside className="classic-rival-desk lobby-rival-panel">
+            <header className="lobby-rival-heading">
+              <h2>Choose a rival</h2>
+              <a href="#/guide?topic=battles" aria-label="Battle guide" title="Battle guide">
+                <Icon name="Info" size={19} />
+              </a>
+            </header>
             <DifficultyPicker
               value={difficulty}
               onChange={(value) => {
@@ -1298,16 +1344,35 @@ export function BattlesPage() {
                 setDifficulty(value);
               }}
             />
-            <div className="classic-difficulty-note">
+            <div className="classic-difficulty-note" aria-live="polite">
               <strong>{difficulty} challenge</strong>
               <p>{DIFFICULTIES[difficulty].detail}</p>
               {streak > 0 && <span>{streak} wins in a row</span>}
             </div>
-            <a href="#/guide?topic=battles">
-              <Icon name="BookOpen" size={16} />
-              Battle guide
-              <Icon name="ArrowUpRight" size={14} />
-            </a>
+            <div className="lobby-match-rules">
+              <span>
+                <Icon name="Pokeball" size={16} />
+                Up to 3 Pokémon
+              </span>
+              <span>
+                <Icon name="Backpack" size={16} />
+                Equal bags
+              </span>
+            </div>
+            <div className="classic-lobby-actions">
+              <span>
+                {chosen.length ? chosen.length + ' Pokémon ready' : 'Choose a Pokémon to begin'}
+              </span>
+              <Button disabled={!chosen.length || launching} onClick={() => start()}>
+                {launching ? 'Preparing battle…' : 'Start battle'}
+                <Icon name="Swords" size={19} />
+              </Button>
+            </div>
+            {launchError && (
+              <p className="battle-load-error" role="alert">
+                {launchError}
+              </p>
+            )}
           </aside>
         </div>
       ) : (

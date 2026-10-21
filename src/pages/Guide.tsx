@@ -64,7 +64,7 @@ const topics: GuideTopic[] = [
         title: 'A coin image and a Pokémon have different jobs',
         text: [
           'The coin image is the token’s identity beside its name and ticker. Its Pokémon is the mascot on the card and launch preview. Upload an image independently of the Pokémon you choose.',
-          'Launch with an available Pokémon from your inventory or choose your own trainer. Locked Pokémon cannot be selected. Your trainer is available even when you already own Pokémon. A paired Pokémon can also fill vacancies in that coin’s gym.',
+          'Launch with an available Pokémon from your inventory or choose your own trainer. Locked Pokémon cannot be selected. Your trainer is available even when you already own Pokémon. One copy of a paired Pokémon can also join that coin’s gym if it has fewer than three defenders.',
         ],
       },
       {
@@ -252,13 +252,13 @@ const topics: GuideTopic[] = [
         title: 'Support one gym',
         text: [
           'Choose one active coin community to support. You must hold its coin to join. Moving gyms moves your contribution rather than adding it to several teams.',
-          'The three strongest Pokémon owned by supporting holders lead its defence. If fewer than three are available, Lv. 20 battle-only copies of the coin’s paired Pokémon fill the remaining places. A trainer-led coin has no fallback and shows only its actual defenders.',
+          'The three strongest Pokémon owned by supporting holders lead its defence. If fewer than three are available, one Lv. 20 battle-only copy of the coin’s paired Pokémon joins the defence. A new paired gym can start with that one defender. A trainer-led coin has no fallback and shows only its actual defenders.',
         ],
       },
       {
         title: 'How defence and league points work',
         text: [
-          'A gym needs three defenders before it can be challenged. All defence copies start at full HP; originals stay with their owners, and gym partners cannot be collected or redeemed. Strength is the sum of the defenders’ combat stats. SOL value and shiny colour do not add strength.',
+          'A gym needs at least one defender before it can be challenged; your challenge team still has three Pokémon. All defence copies start at full HP; originals stay with their owners, and gym partners cannot be collected or redeemed. Strength is the sum of the defenders’ combat stats. SOL value and shiny colour do not add strength.',
           'Your first win against each away gym per UTC day earns one badge, points and supplies, up to five different gyms per day. Home-gym and repeat battles are practice. Tougher defences give more points and supplies. Weekly points reset on Monday; career points and badges remain.',
         ],
       },

@@ -135,8 +135,8 @@ export function useGymChallenge(enabled: boolean, coinId: string) {
         });
       }
       const gym = gymRankings(state).find((g) => g.coinId === coinId);
-      if (!gym || gym.defenders.length !== 3 || pokemon.length !== 3)
-        throw new Error('Both gym teams need three Pokémon.');
+      if (!gym || !gym.defenders.length || pokemon.length !== 3)
+        throw new Error('Choose three Pokémon and a gym with at least one defender.');
       const rivals = createPlayerTeam(
         gym.defenders.map((p) => ({ ...p, id: 'defender:' + p.id })) as unknown as OwnedPokemon[],
       );
