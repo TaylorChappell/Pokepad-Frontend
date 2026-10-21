@@ -1,3 +1,4 @@
+import { completeGymDefenders } from '../game/gym-defenders';
 import { GYMS } from '../data/demo';
 import { MOVE_OPTIONS } from '../data/moves';
 import { DEMO_TRAINERS } from '../services/trainers';
@@ -34,12 +35,15 @@ export function gymRankings(state: AppSnapshot) {
         );
       const defenders =
         live?.defenders ||
-        demo
-          .sort(
-            (a, b) =>
-              b.strength - a.strength || a.speciesId - b.speciesId || a.id.localeCompare(b.id),
-          )
-          .slice(0, 3);
+        completeGymDefenders(
+          demo
+            .sort(
+              (a, b) =>
+                b.strength - a.strength || a.speciesId - b.speciesId || a.id.localeCompare(b.id),
+            )
+            .slice(0, 3),
+          state.gyms ? { id: coin.id, launchKind: 'trainer' } : coin,
+        );
       const strength = live?.strength ?? defenders.reduce((sum, p) => sum + p.strength, 0);
       return {
         coin,

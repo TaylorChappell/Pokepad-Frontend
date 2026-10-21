@@ -22,23 +22,25 @@ npm run build
 
 ## Interface and implemented flows
 
-| Area               | Current behavior                                                                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Shell              | Kanto emblem and wordmark loading screen, trainer shoulder portraits, keyboard-accessible search, notifications and account settings                               |
-| Discover           | Compact starter banner, main-token starter link, market-cap cards, separate coin logos and hover mascots, socials, launch age and watchlist                        |
-| Search             | Coin name/ticker/contract search and public trainer name/wallet lookup                                                                                             |
-| Create coin        | Four-step Details/Partner/Rewards/Review wizard, image upload, expandable social links, owned Pokémon or trainer partner, wallet signing and confirmation recovery |
-| Coin               | Market-cap line chart, creator profile, trades, rewards, gym and signed buy/sell flow                                                                              |
-| Portfolio          | Verified holdings, holding streaks, current Pokémon backing, Rare Candy and pending/confirmed redemptions                                                          |
-| Rewards            | Eggs/Packs/Opened tabs, source coins, incubation progress and synchronized hatch/pack/evolution reveals                                                            |
-| Walking            | Mobile location sessions and server-calculated egg acceleration in live mode; labelled simulation in demo mode                                                     |
-| My PC              | Actionable evolutions/moves first, then combat strength; separate SOL sorting, favourites, search, filters, HP and readiness indicators                            |
-| Pokémon summary    | Separate Stats and Moves tabs, details dialog, Use item/Teach move actions, funded evolution button and exact-value redemption                                     |
-| Pokédex            | All 151 Kanto species, separate normal/shiny discovery history and catalogue reference totals                                                                      |
-| Battles            | One-to-three Pokémon team picker, searchable roster, selected slots, HP/types/strength, favourites first, online rooms and four offline bot difficulties           |
-| Gyms               | One supported gym, coin-image badges, server-scored supporter value and trainer profiles                                                                           |
-| Analytics          | Reward SOL earned by trainers, platform trading volume, active users and refreshing Trainer Activity                                                               |
-| Account and How-to | Autosaving appearance/name/art/sound preferences, wallet controls and categorized instructions                                                                     |
+| Area               | Current behavior                                                                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shell              | Kanto emblem and wordmark loading screen, trainer shoulder portraits, keyboard-accessible search, notifications and account settings                                   |
+| Discover           | Compact starter banner, main-token starter link, market-cap cards, separate coin logos and hover mascots, socials, launch age and watchlist                            |
+| Search             | Coin name/ticker/contract search and public trainer name/wallet lookup                                                                                                 |
+| Create coin        | Four-step Details/Partner/Rewards/Review wizard, image upload, always-visible social links, owned Pokémon or trainer partner, wallet signing and confirmation recovery |
+| Coin               | Market-cap line chart, creator profile, trades, rewards, gym and signed buy/sell flow                                                                                  |
+| Portfolio          | Verified holdings, holding streaks, current Pokémon backing, Rare Candy and pending/confirmed redemptions                                                              |
+| Rewards            | Eggs/Packs/Opened tabs, source coins, incubation progress and synchronized hatch/pack/evolution reveals                                                                |
+| Walking            | Mobile location sessions and server-calculated egg acceleration in live mode; labelled simulation in demo mode                                                         |
+| My PC              | Partner first, then favourites and combat strength; ready-to-evolve/learn and SOL sorts, search, filters and HP                                                        |
+| Pokémon summary    | Separate Stats and Moves tabs, details dialog, Use item/Teach move actions, funded evolution button and exact-value redemption                                         |
+| Pokédex            | All 151 Kanto species, separate normal/shiny discovery history and catalogue reference totals                                                                          |
+| Battles            | One-to-three Pokémon team picker, searchable roster, selected slots, HP/types/strength, favourites first, online rooms and four offline bot difficulties               |
+| Gyms               | Three strongest supporter Pokémon, paired-Pokémon fallback, coin-image badges, daily item/manual rewards and trainer profiles                                          |
+| Analytics          | Reward SOL earned by trainers, platform trading volume, active users and refreshing Trainer Activity                                                                   |
+| Account and How-to | Autosaving appearance/name/art/sound preferences, wallet controls and categorized instructions                                                                         |
+
+The shell and footer span the available width beside the sidebar. Discover adds columns on wide screens; data views expand while forms and instructions remain centred at readable widths. The battle lobby has a compact rival panel, and the launch wizard sizes each step to its content with persistent navigation.
 
 The trainer portrait contains only the trainer. Pixel artwork is the default, with drawn artwork available in settings. The loader shows only the Kanto emblem and wordmark. Search preserves the page width when opening or closing, and the sidebar becomes a drawer on mobile.
 
@@ -47,6 +49,8 @@ Eligible authenticated main-token holders automatically receive a mandatory star
 Favourites improve collection and team selection without changing Pokémon stats or SOL value. Pokédex discoveries remain after ownership ends. Its normal/shiny catalogue totals describe the full reference catalogue; they are **not owned inventory value or redeemable backing**. Older discovery records with no known variant remain unknown rather than being assigned a colour.
 
 There is no marketplace or player asking-price flow. Selling redeems an eligible Pokémon for its recorded funded SOL amount. A pending payout is not displayed as paid, and a locked Pokémon cannot be used in conflicting actions.
+
+Gyms with fewer than three eligible defenders fill missing places with battle-only Lv. 20 copies of the coin’s paired Pokémon. Trainer-led coins show only real defenders and need three to accept challenges. These fallback copies do not enter inventories or create SOL liabilities; live clients use the server’s exact defender snapshot.
 
 ## Battles, animation and sound
 

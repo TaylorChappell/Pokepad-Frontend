@@ -38,7 +38,6 @@ export function CreateCoinPage() {
   const isLive = appMode === 'live';
   const eligible = useMemo(() => state.pokemon.filter((p) => !p.locked), [state.pokemon]);
   const [step, setStep] = useState(0);
-  const [linksOpen, setLinksOpen] = useState(false);
   const [launchKind, setLaunchKind] = useState<'pokemon' | 'trainer'>(
     eligible.length ? 'pokemon' : 'trainer',
   );
@@ -381,48 +380,51 @@ export function CreateCoinPage() {
                       )}
                     </div>
                     <div className="coin-name-fields">
-                      <label className="creation-label" htmlFor="coin-name">
-                        Coin name
-                      </label>
-                      <input
-                        id="coin-name"
-                        className="creation-input"
-                        value={name}
-                        maxLength={32}
-                        minLength={3}
-                        required
-                        placeholder="e.g. Moonstone Club"
-                        onChange={(e) => setName(e.target.value)}
-                      />
-                      <span className="creation-field-note">3–32 characters</span>
-                      <label className="creation-label" htmlFor="coin-ticker">
-                        Ticker
-                      </label>
-                      <div className="creation-ticker-field">
-                        <span aria-hidden="true">$</span>
+                      <div>
+                        <label className="creation-label" htmlFor="coin-name">
+                          Coin name
+                        </label>
                         <input
-                          id="coin-ticker"
-                          value={ticker}
-                          maxLength={isLive ? 13 : 10}
+                          id="coin-name"
+                          className="creation-input"
+                          value={name}
+                          maxLength={32}
+                          minLength={3}
                           required
-                          placeholder="e.g. moon club"
-                          autoCapitalize="off"
-                          autoCorrect="off"
-                          spellCheck={false}
-                          onChange={(e) => setTicker(e.target.value)}
-                          aria-invalid={
-                            ticker.length > 0 &&
-                            (isLive
-                              ? new TextEncoder().encode(ticker).length > 13 || !ticker.trim()
-                              : !isValidCoinTicker(ticker))
-                          }
-                          aria-describedby="ticker-help"
+                          placeholder="e.g. Moonstone Club"
+                          onChange={(e) => setName(e.target.value)}
                         />
+                        <span className="creation-field-note">3–32 characters</span>
                       </div>
-                      <span id="ticker-help" className="creation-field-note">
-                        {isLive ? 'Up to 13 UTF-8 bytes' : '1–10 characters'} · case and spaces are
-                        kept
-                      </span>
+                      <div>
+                        <label className="creation-label" htmlFor="coin-ticker">
+                          Ticker
+                        </label>
+                        <div className="creation-ticker-field">
+                          <span aria-hidden="true">$</span>
+                          <input
+                            id="coin-ticker"
+                            value={ticker}
+                            maxLength={isLive ? 13 : 10}
+                            required
+                            placeholder="e.g. moon club"
+                            autoCapitalize="off"
+                            autoCorrect="off"
+                            spellCheck={false}
+                            onChange={(e) => setTicker(e.target.value)}
+                            aria-invalid={
+                              ticker.length > 0 &&
+                              (isLive
+                                ? new TextEncoder().encode(ticker).length > 13 || !ticker.trim()
+                                : !isValidCoinTicker(ticker))
+                            }
+                            aria-describedby="ticker-help"
+                          />
+                        </div>
+                        <span id="ticker-help" className="creation-field-note">
+                          {isLive ? 'Up to 13 UTF-8 bytes' : '1–10 characters'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   {imageError && (
@@ -453,40 +455,15 @@ export function CreateCoinPage() {
                     onChange={(e) => setDescription(e.target.value)}
                   />
                   <div className="creation-field-footer">
-                    <span>Your coin image is separate from your partner.</span>
                     <span>{description.length}/280</span>
                   </div>
                 </div>
-                <div
-                  className={
-                    'creation-links-disclosure' + (linksOpen || invalidSocial ? ' is-open' : '')
-                  }
-                >
-                  <button
-                    type="button"
-                    className="creation-links-toggle"
-                    aria-expanded={linksOpen || invalidSocial}
-                    aria-controls="creation-social-links"
-                    onClick={() => setLinksOpen(!linksOpen)}
-                  >
-                    <Icon name="Link" size={17} />
-                    <span>
-                      Add social links <small>(optional)</small>
-                    </span>
-                    {invalidSocial ? (
-                      <span className="creation-links-status has-error">Check your links</span>
-                    ) : Object.values(socials).some((value) => value.trim()) ? (
-                      <span className="creation-links-status">
-                        {Object.values(socials).filter((value) => value.trim()).length} added
-                      </span>
-                    ) : null}
-                    <Icon name="ChevronDown" size={14} />
-                  </button>
-                  <div
-                    id="creation-social-links"
-                    className="creation-links-panel"
-                    hidden={!linksOpen && !invalidSocial}
-                  >
+                <section className="creation-socials" aria-labelledby="creation-socials-title">
+                  <h3 id="creation-socials-title">
+                    <Icon name="Link" size={16} />
+                    Social links <small>optional</small>
+                  </h3>
+                  <div id="creation-social-links" className="creation-links-panel">
                     <div className="creation-social-fields">
                       {SOCIAL_FIELDS.map(({ key, label, placeholder }) => (
                         <div key={key}>
@@ -516,7 +493,7 @@ export function CreateCoinPage() {
                       ))}
                     </div>
                   </div>
-                </div>
+                </section>
               </>
             )}
             {step === 1 && (
@@ -695,7 +672,6 @@ export function CreateCoinPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setLinksOpen(false);
                       setStep(0);
                     }}
                   >
@@ -734,7 +710,6 @@ export function CreateCoinPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setLinksOpen(true);
                           focusLinksOnReturn.current = true;
                           setStep(0);
                         }}
@@ -823,10 +798,9 @@ export function CreateCoinPage() {
             </Button>
           </footer>
         </form>
-        <aside className="creation-preview" aria-label="Live coin preview">
+        <aside className="creation-preview" aria-label="Your coin preview">
           <div className="creation-preview-header">
             <strong>Your coin</strong>
-            <span>Live preview</span>
           </div>
           <div className="creation-preview-stage">{partnerArt}</div>
           <div className="creation-preview-identity">

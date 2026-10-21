@@ -43,6 +43,7 @@ import './trainer-battle-v18.css';
 import './loading-polish-v19.css';
 import './pokemon-summary.css';
 import './site-footer.css';
+import './arena-launch-polish.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')!).render(<App />);

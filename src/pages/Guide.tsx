@@ -33,15 +33,15 @@ const topics: GuideTopic[] = [
       {
         title: 'Choose a starter',
         text: [
-          'Holding the main POKE token unlocks one starter choice: Bulbasaur, Charmander, or Squirtle. A balance strictly above 1% of the main token’s supply also unlocks Pikachu.',
-          'Your starter appears in My PC and can be equipped as your partner. It begins with no redemption value; its first funded evolution can make it a funded Pokémon. You cannot repeatedly claim new starters.',
+          'Holding the main Kanto token unlocks one starter choice: Bulbasaur, Charmander, or Squirtle. A balance strictly above 1% of the main token’s supply also unlocks Pikachu. On your first eligible wallet connection, the choice opens automatically and remains until you choose.',
+          'Your chosen starter is saved to your account, so connecting again does not give another choice. It appears in My PC, starts with no redemption value, and can become a funded Pokémon through its first funded evolution.',
         ],
       },
       {
         title: 'Know what is connected',
         text: [
-          'This version is a frontend with a local demo account. Explore rewards, collection management, coin creation, and offline battles. Demo progress is saved in this browser.',
-          'Wallet transactions, live trading, verified walking, redemptions, and online settlement need the connected backend. A preview confirmation does not move real funds.',
+          'With no live service connected, Kanto opens a local demo account. Demo coins, Pokémon and balances are sample data saved in this browser. Creating a demo coin or redeeming a demo Pokémon does not move real funds.',
+          'Live mode uses connected wallet and backend services for real launches, trading, rewards and settlement. Features can be unavailable while those services are offline. A pending transaction is not a confirmed payment.',
         ],
         note: 'Resetting demo data clears this browser’s saved collection and settings. It does not affect a blockchain wallet.',
       },
@@ -64,7 +64,7 @@ const topics: GuideTopic[] = [
         title: 'A coin image and a Pokémon have different jobs',
         text: [
           'The coin image is the token’s identity beside its name and ticker. Its Pokémon is the mascot on the card and launch preview. Upload an image independently of the Pokémon you choose.',
-          'Launch with an available Pokémon from your inventory or choose your own trainer. Listed or locked Pokémon cannot be selected. Your trainer is available even when you already own Pokémon.',
+          'Launch with an available Pokémon from your inventory or choose your own trainer. Locked Pokémon cannot be selected. Your trainer is available even when you already own Pokémon. A paired Pokémon can also fill vacancies in that coin’s gym.',
         ],
       },
       {
@@ -77,8 +77,8 @@ const topics: GuideTopic[] = [
       {
         title: 'Complete the launch wizard',
         text: [
-          'The four steps are Details, Partner, Rewards, and Review. Details contains your name, ticker, image, description, and social links. Choose a Pokémon or trainer partner, select rewards, then review. You can go back before submitting.',
-          'Website, X, Telegram, and Discord links are optional. Use full links and check them in the review. Here, completion creates a local coin draft. Actual token creation will require a wallet transaction.',
+          'The four steps are Details, Partner, Rewards, and Review. Enter your name, ticker, image and description. Optional Website, X, Telegram and Discord fields are always visible below the description. Choose your partner and rewards, then review.',
+          'Use full links and check them in Review. Edit takes you back to the relevant step without clearing your entries. Demo mode creates a local coin draft; a live launch requires a separate wallet transaction.',
         ],
       },
     ],
@@ -103,7 +103,7 @@ const topics: GuideTopic[] = [
       {
         title: 'Open a pack or hatch an egg',
         text: [
-          'Rewards has separate Eggs and Packs tabs. Each item shows its source coin. A pack opens whenever you are ready; an egg becomes hatchable when its timer reaches zero.',
+          'Rewards has separate Eggs and Packs tabs, with a source coin shown on every reward. Packs can open immediately. New Standard eggs take 20 minutes, Rare eggs 1 hour and Epic eggs 4 hours before walking boosts.',
           'Inspect possible outcomes before opening. All 151 Kanto species, including legendaries and shiny variants, can appear in the configured pools when the source coin can fund them. A reveal adds the result to My PC and records its species in the Pokédex.',
         ],
       },
@@ -111,7 +111,7 @@ const topics: GuideTopic[] = [
         title: 'Walking helps the timer',
         text: [
           'The egg screen shows time and walking progress. Walking speeds incubation; it is not required for the timer to finish.',
-          'The current walking control is a demonstration. Production walking must be verified before it earns progress. Browser GPS alone cannot promise that cheating is impossible.',
+          'Walking is available on phones; desktop shows a reminder to use your phone. Demo walking simulates progress. In live mode, allow location access and keep the page visible while the server checks movement. Browser GPS checks reduce abuse but cannot make spoofing impossible.',
         ],
         note: 'An egg being ready does not reveal its Pokémon. The reveal happens when you choose to hatch it.',
       },
@@ -133,8 +133,15 @@ const topics: GuideTopic[] = [
       {
         title: 'My PC is your current inventory',
         text: [
-          'Select a Pokémon to see its level, HP, typing, battle stats, moves, Rare Candy, and SOL value. Equip it as your partner or manage an available evolution, move, or redemption.',
-          'Your equipped Pokémon appears beside your avatar and in the sidebar. Listed or locked Pokémon cannot take conflicting actions. Ownership is individual, so you can own several Pokémon of the same species.',
+          'Select a Pokémon to open its summary. Stats and Moves are separate tabs. The circular i button opens collection details; Use item and Teach move are direct actions. An obvious Evolve button appears when its evolution is ready.',
+          'Your partner appears in the sidebar. My PC starts with your partner, then favourites, then strongest to weakest. Change the sort for SOL value, readiness or other views. Move and evolution markers highlight available actions. The three-dot menu beside Favourite gives quick access to items and manuals.',
+        ],
+      },
+      {
+        title: 'Care for your Pokémon',
+        text: [
+          'Use item in the summary or the PC’s three-dot menu opens your supplies. Sitrus Berries restore 25% of maximum HP, Potions restore 30%, and Revives bring a fainted Pokémon back at 50% HP. Each use consumes one item.',
+          'Only usable items are enabled. Berries and Potions cannot revive a fainted Pokémon, and a Revive needs a fainted target. Locked Pokémon cannot use PC items during a battle.',
         ],
       },
       {
@@ -148,7 +155,7 @@ const topics: GuideTopic[] = [
         title: 'The Pokédex keeps your history',
         text: [
           'A species stays discovered after you sell, redeem, or lose your last Pokémon of that species. A Pokédex entry is a record, not an extra Pokémon to equip or battle with.',
-          'Use My PC for ownership and the Pokédex for all 151 species and discovery progress. Switching between pixel and drawn artwork changes presentation, not stats or value.',
+          'The Pokédex has separate normal and shiny sections. Sort by Pokémon number or SOL value and inspect the total reference value of the catalogue. That total is not your owned balance or an amount you can redeem. Artwork settings change presentation, not stats or value.',
         ],
       },
     ],
@@ -179,13 +186,13 @@ const topics: GuideTopic[] = [
           'The current demo policy consumes 1,000 Rare Candy and raises value by 50%, with a minimum increase of 0.02 SOL. Its evolution budget is reserved as Candy is granted.',
           'Candy pauses before the threshold if more backing is needed. These demo amounts are provisional economy settings. Eevee randomly becomes Vaporeon, Jolteon, or Flareon, each with a one-third chance.',
         ],
-        note: 'You cannot choose an Eevee result. Each successful evolution updates that individual Pokémon and consumes its required candy and funding.',
+        note: 'A ready evolution opens a popup. Choose Evolve or Later; the summary keeps an Evolve button available. Evolution silhouettes keep the reveal a mystery. Eevee’s three outcomes each have a one-third chance.',
       },
       {
         title: 'Moves are earned opportunities',
         text: [
-          'When a move is available, a prompt appears on the Pokémon. With fewer than four moves, add it to an empty slot. With four, choose a move to forget.',
-          'Declining permanently resolves that opportunity for the Pokémon. There is no unrestricted “learn anything” menu. The demo seeds a curated set of earned opportunities; full progression and learnsets need the live game system.',
+          'A new earned move opens a popup. Preview its looping battle animation and description, then choose to learn it, decline, or come back Later. If all four slots are full, accepting Learn opens a separate choice of which move to forget; you can still choose not to learn it.',
+          'Later keeps the offer available in My PC. Declining permanently resolves that opportunity. Circular i buttons beside moves reopen their animation and details. A successful learn plays a sound when effects are enabled. Gym manuals are separate, consumable items that you must own before teaching their move.',
         ],
       },
     ],
@@ -237,7 +244,7 @@ const topics: GuideTopic[] = [
     icon: 'Shield',
     title: 'Take on the Kanto league',
     intro:
-      'Each coin fields its holders’ three strongest Pokémon, with its coin image as the gym badge.',
+      'Each coin has a gym and a badge made from its coin image. Support a community, strengthen its defence and challenge other gyms.',
     pokemon: 68,
     color: '#e7edf9',
     sections: [
@@ -245,21 +252,21 @@ const topics: GuideTopic[] = [
         title: 'Support one gym',
         text: [
           'Choose one active coin community to support. You must hold its coin to join. Moving gyms moves your contribution rather than adding it to several teams.',
-          'The defence updates from eligible holders’ current Pokémon. Battle copies start at full health; owners keep their originals.',
+          'The three strongest Pokémon owned by supporting holders lead its defence. If fewer than three are available, Lv. 20 battle-only copies of the coin’s paired Pokémon fill the remaining places. A trainer-led coin has no fallback and shows only its actual defenders.',
         ],
       },
       {
         title: 'How defence and league points work',
         text: [
-          'Defence strength is the sum of each defender’s six combat stats at its current level. Shiny colour and SOL value do not make it stronger.',
-          'The first away-gym victory each UTC day gives points and supplies, up to five different gyms per day. Tougher defences award more. Weekly league points reset every Monday; your career points and badges remain.',
+          'A gym needs three defenders before it can be challenged. All defence copies start at full HP; originals stay with their owners, and gym partners cannot be collected or redeemed. Strength is the sum of the defenders’ combat stats. SOL value and shiny colour do not add strength.',
+          'Your first win against each away gym per UTC day earns one badge, points and supplies, up to five different gyms per day. Home-gym and repeat battles are practice. Tougher defences give more points and supplies. Weekly points reset on Monday; career points and badges remain.',
         ],
       },
       {
         title: 'Badges and progress',
         text: [
           'Each gym uses its coin’s image as its badge. Your profile shows the badges you have earned and the gym you support. A badge is a trainer achievement and team identity, not another tradeable Pokémon.',
-          'Each rewarded gym win earns one badge, points, berries and revives. Gyms below 1,200 strength do not drop move manuals. Stronger gyms have a 25%, 40% or 60% chance of dropping one random manual, from pools of 10, 20 or 30 moves. View every move and its preview in the gym manual catalogue. An owned manual teaches any Pokémon once and is consumed only when you confirm learning.',
+          'Each rewarded win earns exactly one badge. Gyms below 1,200 strength do not drop manuals. At 1,200 strength, a 25% chance draws from 10 moves; at 1,800, 40% draws from 20; at 2,400, 60% draws from all 30. The manual catalogue lists every possible move with an i button for its preview. You might receive no manual or another copy of one you already own.',
         ],
       },
     ],
@@ -285,17 +292,31 @@ const topics: GuideTopic[] = [
         ],
       },
       {
+        title: 'Choose your team',
+        text: [
+          'Press one of the three team spaces to open the Pokémon picker. Favourites appear first, then combat strength. You can change the same sorting and filters used in My PC. Use i to inspect a Pokémon and its moves before choosing.',
+          'Previous team shows the Pokémon it will reuse. Offline matches accept up to three Pokémon; online rooms specify their team size, and gym challenges use three.',
+        ],
+      },
+      {
         title: 'Play the matchup',
         text: [
           'Check the opponent’s types. Type advantages, your own typing, speed, PP, and the move’s effect all matter. A useful status move or a well-timed switch can beat the strongest-looking attack.',
-          'Switching uses a turn. Save an answer for a difficult opponent and watch the whole team’s HP. The current rules are a strategic demo, not a complete cartridge-accurate reproduction of every original move and rule.',
+          'Fight selects a move and Pokémon switches a teammate. A voluntary switch uses your turn. When a Pokémon faints, choose its living replacement before attacks resume. Bots can choose moves, switch and use their allowed items; gym defenders use the same tactical AI.',
+        ],
+      },
+      {
+        title: 'Bag, recovery and surrender',
+        text: [
+          'The standard battle bag gives both players 2 Potions, 1 Revive and 1 Full Heal. Online players can agree to disable items instead. Extra items owned in My PC cannot be brought into a match. An item use takes a turn.',
+          'Bag keeps Back available even when no items can be used. Surrender asks for confirmation and ends a started battle as a loss, including any agreed wager. Offline practice does not change your collection’s HP; online and gym battles can leave Pokémon needing recovery.',
         ],
       },
       {
         title: 'Online and wagers',
         text: [
           'Challenge another trainer in a friendly or wagered match. Review both teams and agree the levels, item limits and stake before you both accept.',
-          'A lost Pokémon wager would transfer the selected team—up to all three Pokémon—to the winner. It would not merely start a healing timer. Review the exact team and stake before accepting.',
+          'A lost Pokémon wager transfers the selected team—up to all three Pokémon—to the winner. Live SOL or coin-token stakes also require confirmed deposits and settlement. Changes to teams, rules or stakes reset both acceptances. Check the exact agreement before accepting.',
         ],
         note: 'Demo mode does not connect online matchmaking or real wagers. An offline practice match never becomes a wager.',
       },
@@ -303,6 +324,33 @@ const topics: GuideTopic[] = [
     links: [
       { label: 'Open Battle arena', path: '/battles' },
       { label: 'Build your team', path: '/pokemon' },
+    ],
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics & activity',
+    icon: 'Activity',
+    title: 'See what is happening across Kanto',
+    intro: 'Platform totals and recent trainer discoveries in one place.',
+    pokemon: 137,
+    color: '#e2f2ef',
+    sections: [
+      {
+        title: 'Read the platform totals',
+        text: [
+          'Analytics shows total SOL rewards, platform trading volume and active users. These are platform-wide measures, not your personal balance. Use Portfolio for your own holdings, Pokémon value and redemption status.',
+        ],
+      },
+      {
+        title: 'Trainer Activity',
+        text: [
+          'Trainer Activity refreshes with supported events such as packs being opened, eggs hatching and Pokémon evolving. Open the linked trainer or coin for more context. Demo activity is sample data; live activity comes from the connected service.',
+        ],
+      },
+    ],
+    links: [
+      { label: 'Open Analytics', path: '/analytics' },
+      { label: 'My portfolio', path: '/portfolio' },
     ],
   },
   {
@@ -317,7 +365,7 @@ const topics: GuideTopic[] = [
       {
         title: 'Your trainer profile',
         text: [
-          'Open the account menu beside the bell for profile and settings. Choose a display name, classic trainer avatar, and accessory colour. Without a display name, a shortened wallet address is used.',
+          'Open the account menu beside the bell for your profile and Settings. Choose a display name, classic trainer and accessory colour, or upload a custom profile picture under Trainer. Pick a preset banner or upload your own. Without a display name, your shortened wallet address is used.',
           'Appearance saves automatically. Searching a registered trainer’s wallet opens their profile; an unknown address is not automatically a Kanto account.',
         ],
       },
@@ -331,7 +379,7 @@ const topics: GuideTopic[] = [
       {
         title: 'Notifications and your wallet',
         text: [
-          'The bell’s red dot means unread notifications. Open it for ready eggs, funded evolutions, and available actions, or mark the list as read.',
+          'The bell’s red dot means unread notifications. The Rewards count includes unopened packs and eggs ready to hatch, not eggs still incubating. New earned moves and evolutions also open decision popups; Later keeps those actions available in My PC.',
           'The wallet area contains connection settings. This demo cannot sign real transactions. Balances, purchases, and payouts become live only when the backend and wallet flow are connected.',
         ],
       },
@@ -339,6 +387,8 @@ const topics: GuideTopic[] = [
     links: [
       { label: 'Trainer settings', path: '/settings' },
       { label: 'My activity', path: '/activity' },
+      { label: 'Terms of Service', path: '/terms' },
+      { label: 'Privacy Policy', path: '/privacy' },
     ],
   },
 ];
@@ -347,27 +397,23 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
   const replacements: Record<string, string[]> = {
     'Rare Candy and active holdings': [
       'Your equipped Pokémon earns Rare Candy from verified holdings in active coins. Selling can reset holding progress; inactive coins do not keep generating candy.',
-      'A free starter with no SOL backing earns candy only from its originating main-token holding. After its first funded evolution, it can train from any eligible active coin.',
+      'Each Candy grant is covered by reserved evolution funding, so progress pauses if the next grant cannot be funded. A free starter with no SOL backing earns candy only from its originating main-token holding; after its first funded evolution, it can train from any eligible active coin.',
     ],
     'Complete the launch wizard': [
-      'The four steps are Details, Partner, Rewards, and Review. Add your own PNG, JPG, or WebP coin image, name, ticker, description, and optional social links. Choose an available Pokémon or your trainer and a reward mode.',
+      'The four steps are Details, Partner, Rewards, and Review. Add your coin image, name, ticker and description. Website, X, Telegram and Discord fields stay visible below the description. Choose an available Pokémon or your trainer and a reward mode; Review lets you return to edit without losing entries.',
       'Review the wallet transaction before signing. Kanto saves the prepared operation for recovery and lists the coin only after its Solana transaction confirms.',
     ],
     'Open a pack or hatch an egg': [
-      'Rewards has separate Eggs and Packs tabs. Packs open immediately. Standard eggs take 20 minutes, Rare eggs 1 hour, and Epic eggs 4 hours; walking can shorten these timers.',
+      'Rewards has separate Eggs and Packs tabs. Packs open immediately. Standard eggs take 20 minutes, Rare eggs 1 hour, and Epic eggs 4 hours; walking can shorten these timers. The Rewards indicator counts only unopened packs and hatchable eggs.',
       'Your Pokémon and its full financial backing are sealed when the reward is awarded. Opening reveals that result without rerolling. A reveal adds the individual to My PC and its species to your Pokédex.',
     ],
     'Walking helps the timer': [
-      'Open Walking on a phone, allow location access, and keep the page visible. Walking accelerates eggs that are already incubating; their timers also progress normally.',
+      'Open Walking on a phone, allow location access, and keep the page visible. Desktop directs you to your phone. Walking accelerates eggs already incubating; their timers also progress normally.',
       'The server checks sample timing, accuracy, speed, and distance, and applies daily and incubation caps. Browser GPS can still be spoofed; it does not provide cheat-proof verification.',
     ],
     'Selling your Pokémon': [
       'Open an eligible Pokémon, choose Sell, and review its displayed redemption amount. A locked Pokémon or free starter cannot be redeemed.',
       'The Pokémon is locked while the payout is processed. Check Redemptions in Portfolio: pending does not mean paid. The payment is complete only after its Solana transaction confirms. Your Pokédex discovery remains.',
-    ],
-    'How defence and league points work': [
-      'The three strongest Pokémon owned by eligible supporting holders defend each gym. Combat stats determine strength; SOL value and shiny colour do not.',
-      'The server selects each gym’s three strongest defenders and verifies victories. Weekly league points come from rewarded away-gym wins.',
     ],
     'Online and wagers': [
       'Online rooms use server-controlled teams, turns, and results. Inspect both teams, discuss changes in room chat, and accept the same team, rules and stake. Changes reset both acceptances. Reconnect to restore a running match.',
@@ -379,7 +425,7 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
       'Launching and trading require a separate wallet transaction approval. Feature availability depends on the connected services; pending transactions remain pending until confirmed on Solana.',
     ],
     'Notifications and your wallet': [
-      'The bell marks unread notifications for eggs, evolutions, and other available actions. Your wallet settings let you reconnect or disconnect.',
+      'The bell marks unread notifications. Rewards counts only unopened packs and hatchable eggs. An eligible first connection opens starter selection; that choice is saved. New moves and evolutions open their own popups, with Later keeping the action available in My PC.',
       'Login tokens stay in memory. A secure session cookie can restore your account after reloading; browsers that block it require a fresh sign-in. Changing wallet accounts signs you out.',
     ],
   };

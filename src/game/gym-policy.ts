@@ -87,6 +87,8 @@ export function gymPrize(strength: number): GymPrize {
   };
 }
 export interface GymDefender {
+  /** Only set for a battle-only copy of the coin's launch partner. */
+  source?: 'partner';
   id: string;
   speciesId: number;
   level: number;

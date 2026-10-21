@@ -19,53 +19,54 @@ export function GymDefenders({
   const [preview, setPreview] = useState<{ move: string; pokemon: GymDefender } | null>(null);
   return (
     <>
-      <div className={'gym-defenders ' + (compact ? 'compact' : '')}>
-        {[0, 1, 2].map((index) => {
-          const p = defenders[index];
-          return (
-            <div className={'gym-defender ' + (!p ? 'empty' : '')} key={p?.id || index}>
-              {p ? (
+      {defenders.length ? (
+        <div className={'gym-defenders ' + (compact ? 'compact' : '')}>
+          {defenders.map((p) => (
+            <div
+              className={'gym-defender' + (p.source === 'partner' ? ' gym-partner-defender' : '')}
+              key={p.id}
+            >
+              <span className="gym-defender-level">Lv. {p.level}</span>
+              <div className="gym-sprite-stage">
+                <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+              </div>
+              <strong>{pokemonById(p.speciesId).name}</strong>
+              {p.source === 'partner' && <span className="gym-partner-label">Gym partner</span>}
+              {!compact && (
                 <>
-                  <span className="gym-defender-level">Lv. {p.level}</span>
-                  <div className="gym-sprite-stage">
-                    <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                  <div className="type-row">
+                    {pokemonById(p.speciesId).types.map((t) => (
+                      <TypeChip key={t} type={t} />
+                    ))}
                   </div>
-                  <strong>{pokemonById(p.speciesId).name}</strong>
-                  {!compact && (
-                    <>
-                      <div className="type-row">
-                        {pokemonById(p.speciesId).types.map((t) => (
-                          <TypeChip key={t} type={t} />
-                        ))}
-                      </div>
-                      <small>{p.strength.toLocaleString()} strength</small>
-                      <a href={'#/trainer/' + p.trainerWallet}>{p.trainerName}</a>
-                      <div className="gym-defender-moves">
-                        {p.moves.map((move) => (
-                          <button
-                            key={move}
-                            onClick={() => setPreview({ move, pokemon: p })}
-                            aria-label={'Preview ' + move}
-                          >
-                            <span>{move}</span>
-                            <Icon name="Info" size={14} />
-                          </button>
-                        ))}
-                      </div>
-                    </>
+                  <small>{p.strength.toLocaleString()} strength</small>
+                  {p.source !== 'partner' && p.trainerWallet && (
+                    <a href={'#/trainer/' + p.trainerWallet}>{p.trainerName}</a>
                   )}
-                </>
-              ) : (
-                <>
-                  <Icon name="Pokeball" size={28} />
-                  <strong>Open slot</strong>
-                  {!compact && <small>Filled by supporters’ Pokémon.</small>}
+                  <div className="gym-defender-moves">
+                    {p.moves.map((move) => (
+                      <button
+                        key={move}
+                        onClick={() => setPreview({ move, pokemon: p })}
+                        aria-label={'Preview ' + move}
+                      >
+                        <span>{move}</span>
+                        <Icon name="Info" size={14} />
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className={'gym-defence-empty' + (compact ? ' compact' : '')}>
+          <Icon name="Gym" size={compact ? 22 : 32} />
+          <span>No defenders yet</span>
+          {!compact && <p>Supporters’ Pokémon will form this gym’s team.</p>}
+        </div>
+      )}
       {preview && (
         <MoveInfoDialog
           name={preview.move}
@@ -264,7 +265,11 @@ export function GymDetailPage({ id }: { id: string }) {
           <header>
             <div>
               <h2>The defending team</h2>
-              <p>The three strongest Pokémon from this gym’s supporters.</p>
+              <p>
+                {gym.defenders.some((p) => p.source === 'partner')
+                  ? 'Supporters lead the team. The coin’s paired Pokémon fills any remaining places.'
+                  : 'The three strongest Pokémon from this gym’s supporters.'}
+              </p>
             </div>
             <span className="gym-strength-pill">{gym.strength.toLocaleString()} strength</span>
           </header>
@@ -280,6 +285,11 @@ export function GymDetailPage({ id }: { id: string }) {
           </button>
           {rules && (
             <div className="gym-rules-copy">
+              <p>
+                Missing defenders are filled by Lv. 20 copies of the coin’s paired Pokémon.
+                Trainer-led coins have no fallback. A complete team of three is needed to challenge.
+                These copies cannot be owned or redeemed.
+              </p>
               <p>
                 Defenders are full-health copies. Your team uses its current HP and stays locked
                 during the challenge. Injured Pokémon recover afterward or can use items in My PC.
@@ -342,7 +352,7 @@ export function GymDetailPage({ id }: { id: string }) {
               ? own || claimed || cap
                 ? 'Practice against this gym'
                 : 'Choose your team'
-              : 'Waiting for 3 defenders'}
+              : 'Waiting for defenders'}
             <Icon name="Swords" />
           </a>
           <small>No entry fee · no SOL rewards</small>

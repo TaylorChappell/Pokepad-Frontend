@@ -1,0 +1,340 @@
+/* The shared shell and footer span the space beside the sidebar.
+   Reading/forms keep their own centred limits; data views use the available width. */
+.app-shell > .main-content {
+  max-width: none;
+}
+.analytics-page,
+.kanto-market-page,
+.gym-league-page,
+.gym-detail-v2 {
+  max-width: none;
+}
+@media (min-width: 1281px) {
+  .market-section .coin-grid {
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  }
+}
+/* The rival card keeps its natural height instead of stretching with the arena. */
+.battle-v8:not(.classic-match) {
+  width: 100%;
+  max-width: none;
+}
+.classic-lobby-grid {
+  grid-template-columns: minmax(0, 1fr) 290px;
+  align-items: start;
+  gap: 24px;
+}
+.battle-v8 .arena-hero.classic-lobby-board {
+  height: 100%;
+  max-height: 800px;
+  border: 1px solid #cbded6;
+  border-radius: 18px;
+  box-shadow:
+    0 4px 0 #e0e9e4,
+    0 12px 32px #31534506;
+}
+.classic-lobby-board .classic-preview-field {
+  min-height: 0;
+  border-radius: 17px 17px 0 0;
+  background: linear-gradient(180deg, #d8eee5, #e9f2dc 43%, #bfdda9);
+}
+.classic-lobby-board .classic-preview-caption h2 {
+  color: #345e53;
+}
+.classic-lobby-board .slot-party-desk {
+  background: #fcfdfb;
+}
+.classic-rival-desk {
+  align-self: start;
+  height: auto;
+  padding: 20px;
+  border-radius: 18px;
+  border-color: #d4e2df;
+  box-shadow: 0 4px 0 #e6edeb;
+  border-top: 4px solid #8fb7a1;
+}
+.classic-rival-desk > h2 {
+  color: #375e50;
+}
+.classic-rival-desk > a {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid #e5ece8;
+}
+.classic-rival-desk .classic-difficulties > button {
+  border-radius: 10px;
+  transition:
+    background 160ms,
+    border-color 160ms,
+    box-shadow 160ms;
+}
+.classic-rival-desk .classic-difficulties > button.selected {
+  border-color: #78a58b;
+  background: #edf6ef;
+  box-shadow: inset 3px 0 #78a58b;
+}
+.classic-rival-desk .classic-difficulty-note {
+  margin-top: 16px;
+}
+/* The wizard ends at its content instead of stretching to the bottom of a tall screen.
+   Small screens retain a bounded step area with the navigation always in reach. */
+.creation-v7 {
+  height: 100%;
+  max-height: 100%;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  margin: 0 auto;
+  gap: 14px;
+}
+.creation-v7 .creation-layout {
+  align-items: start;
+  max-height: 100%;
+}
+.creation-v7 .creation-form {
+  height: auto;
+  max-height: 100%;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.creation-v7 .creation-section {
+  padding: 14px 24px;
+}
+.creation-v7 .creation-field-footer {
+  justify-content: flex-end;
+}
+.creation-socials {
+  border-top: 1px solid #e5edf0;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+.creation-socials h3 {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 12px;
+  color: #466c7d;
+  margin: 0 0 8px;
+}
+.creation-socials h3 small {
+  color: #8a9ba7;
+  font-size: 10px;
+  font-weight: 600;
+}
+.creation-v7 .creation-social-fields {
+  gap: 12px 16px;
+}
+.creation-v7 .creation-links-panel:not([hidden]) {
+  padding-top: 0;
+  animation: none;
+}
+.creation-v7 .creation-preview {
+  border-top: 3px solid #a6c5bb;
+}
+.gym-partner-label {
+  color: #528169;
+  font-size: 10px;
+  font-weight: 800;
+}
+.gym-defenders.compact .gym-partner-label {
+  font-size: 8px;
+}
+.gym-defence-empty {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  min-height: 170px;
+  padding: 20px;
+  background: #f2f6f3;
+  border-radius: 12px;
+  color: #7a8f85;
+  text-align: center;
+}
+.gym-defence-empty > span {
+  color: #5a7566;
+  font-weight: 800;
+  font-size: 13px;
+}
+.gym-defence-empty p {
+  font-size: 11px;
+  margin: 0;
+}
+.gym-defence-empty.compact {
+  min-height: 80px;
+  padding: 10px;
+  flex-direction: row;
+}
+.gym-defence-empty.compact > span {
+  font-size: 11px;
+}
+@media (max-width: 1100px) and (min-width: 761px) {
+  .classic-lobby-grid {
+    grid-template-columns: minmax(0, 1fr) 245px;
+    gap: 16px;
+  }
+  .classic-rival-desk {
+    padding: 16px;
+  }
+}
+@media (max-width: 760px) {
+  .classic-lobby-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+  .classic-rival-desk {
+    padding: 10px;
+  }
+  .classic-rival-desk > h2 {
+    margin-bottom: 8px;
+  }
+  .classic-rival-desk > a {
+    display: none;
+  }
+  .gym-directory-row > .gym-defence-empty {
+    grid-column: 1 / -1;
+  }
+  .creation-v7 .creation-section {
+    padding: 14px;
+  }
+  .creation-v7 .creation-social-fields {
+    gap: 10px;
+  }
+}
+@container battle-page (max-height: 640px) {
+  .classic-rival-desk {
+    padding: 12px;
+  }
+  .classic-rival-desk .classic-difficulty-note {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+}
+@container battle-page (max-height: 330px) {
+  .classic-rival-desk .classic-difficulty-note,
+  .classic-rival-desk > a {
+    display: none;
+  }
+  .classic-rival-desk .classic-difficulties {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .classic-rival-desk .classic-difficulties > button {
+    transition: none;
+  }
+}
+
+/* Keep the identity and links compact on desktop; narrow screens keep two link columns. */
+@media (min-width: 1181px) {
+  .creation-v7 .coin-name-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .creation-v7 .creation-identity-fields {
+    grid-template-columns: 105px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .creation-v7 .coin-image-upload {
+    width: 84px;
+    height: 84px;
+  }
+  .creation-v7 .creation-social-fields {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .creation-v7 .creation-social-fields input {
+    padding-inline: 9px;
+  }
+}
+.creation-v7 .coin-name-fields > div + div > .creation-label {
+  margin-top: 12px;
+}
+@media (min-width: 1181px) {
+  .creation-v7 .coin-name-fields > div + div > .creation-label {
+    margin-top: 0;
+  }
+}
+@media (max-height: 560px) {
+  .creation-v7 {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .classic-lobby-board .classic-preview-caption {
+    display: none;
+  }
+}
+@container battle-page (max-height: 330px) {
+  .classic-lobby-board .battle-party-slots,
+  .classic-lobby-board .battle-party-slot {
+    min-height: 64px;
+    max-height: 64px;
+  }
+  .classic-lobby-board .battle-party-slot {
+    padding: 15px 4px 4px;
+  }
+  .classic-lobby-board .slot-party-desk > footer {
+    display: none;
+  }
+  .classic-lobby-board .previous-party {
+    min-height: 29px;
+    padding: 1px 6px;
+  }
+  .classic-lobby-board .previous-party button {
+    padding: 4px 6px;
+    min-height: 26px;
+    font-size: 9px;
+  }
+  .classic-lobby-board .classic-lobby-actions {
+    padding: 4px 10px 2px;
+  }
+  .classic-lobby-board .classic-lobby-actions .button {
+    min-height: 30px;
+    padding: 5px 12px;
+    font-size: 10px;
+  }
+  .classic-rival-desk .classic-difficulties > button {
+    min-height: 42px;
+  }
+  .classic-rival-desk > h2 {
+    margin-bottom: 6px;
+  }
+}
+
+.creation-v7 .wizard-step-kicker {
+  display: none;
+}
+.creation-v7 .creation-section-label {
+  margin-bottom: 10px;
+}
+/* Match the short-window two-column navigation to its actual drawer behavior. */
+@media (min-width: 761px) and (max-width: 900px) and (max-height: 540px) {
+  .app-shell > .main-content {
+    margin-left: 0;
+  }
+  .brand-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .mobile-menu {
+    display: flex;
+    width: 28px;
+  }
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 65;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: var(--top) 0 0;
+    background: #343b4940;
+    z-index: 60;
+  }
+}

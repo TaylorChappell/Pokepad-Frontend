@@ -476,7 +476,7 @@ test('the how-to supports categories and search, and the sidebar Pokémon reacts
   const app = await mountApp('/guide');
   const { document, click } = app;
   try {
-    assert.equal(document.querySelectorAll('.howto-topic-button').length, 9);
+    assert.equal(document.querySelectorAll('.howto-topic-button').length, 10);
     await click(app.button('Offline & online battles'));
     assert.match(document.querySelector('.howto-article')?.textContent || '', /Master/);
     assert.match(
@@ -493,7 +493,7 @@ test('the how-to supports categories and search, and the sidebar Pokémon reacts
     await app.fill('[aria-label="Search the how-to"]', 'unfindable-topic');
     assert.ok(document.querySelector('.howto-no-results'));
     await click(app.button('Show all topics'));
-    assert.equal(document.querySelectorAll('.howto-topic-button').length, 9);
+    assert.equal(document.querySelectorAll('.howto-topic-button').length, 10);
     await click(document.querySelector('[aria-label="Pet Charmander"]'));
     assert.ok(document.querySelector('.sidebar-buddy.mood-petted'));
     assert.match(
@@ -785,21 +785,18 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
         ?.startsWith('data:image/png;base64,'),
     );
     assert.equal(document.querySelector('.creation-details-tabs'), null);
-    assert.equal(
-      document.querySelector('.creation-links-toggle')?.getAttribute('aria-expanded'),
-      'false',
-    );
-    await click(document.querySelector('.creation-links-toggle'));
-    assert.equal(
-      document.querySelector('.creation-links-toggle')?.getAttribute('aria-expanded'),
-      'true',
+    assert.equal(document.querySelector('.creation-links-toggle'), null);
+    assert.equal(document.querySelector('#creation-social-links')?.hasAttribute('hidden'), false);
+    assert.equal(document.querySelectorAll('.creation-social-fields input').length, 4);
+    assert.doesNotMatch(
+      document.querySelector('main')?.textContent || '',
+      /Live preview|case and spaces are kept|Your coin image is separate from your partner/,
     );
     await fill('#coin-social-x', 'javascript:alert(1)');
     assert.equal(app.button('Next: Partner').disabled, true);
     assert.equal(document.querySelector('#coin-social-x')?.getAttribute('aria-invalid'), 'true');
     await fill('#coin-social-x', 'https://x.com/moonstone');
     await fill('#coin-social-website', 'https://moonstone.example/');
-    await click(document.querySelector('.creation-links-toggle'));
     await click(app.button('Next: Partner'));
     assert.equal(
       document.querySelector('#coin-name'),
@@ -838,10 +835,8 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
       (row) => row.querySelector('dt')?.textContent === 'Community links',
     );
     await click(linksReview?.querySelector('button') || null);
-    assert.equal(
-      document.querySelector('.creation-links-toggle')?.getAttribute('aria-expanded'),
-      'true',
-    );
+    assert.equal(document.querySelector('#creation-social-links')?.hasAttribute('hidden'), false);
+    assert.equal(document.activeElement, document.querySelector('#coin-social-website'));
     assert.equal(
       document.querySelector<HTMLInputElement>('#coin-social-x')?.value,
       'https://x.com/moonstone',
@@ -1556,6 +1551,34 @@ test('Stats and Moves have separate tab panels and support arrow-key navigation'
     await app.click(stats);
     assert.ok(app.document.querySelector('.summary-stats'));
     assert.equal(app.document.querySelector('.pokemon-move-set'), null);
+  } finally {
+    await app.close();
+  }
+});
+
+test('gym vacancies use paired Pokémon and unpaired gyms render no empty slot cards', async () => {
+  const app = await mountApp('/gym/paired', (s) => {
+    s.coins = [
+      { ...s.coins[0], id: 'paired', launchKind: 'pokemon', pokemonId: 25 },
+      { ...s.coins[0], id: 'unpaired', launchKind: 'trainer', pokemonId: 0 },
+    ];
+    s.profile.supportedGym = undefined;
+  });
+  try {
+    assert.equal(app.document.querySelectorAll('.gym-partner-defender').length, 3);
+    assert.equal(app.document.querySelectorAll('.gym-defender.empty').length, 0);
+    assert.equal(
+      app.document.querySelectorAll('.gym-partner-defender a[href^="#/trainer/"]').length,
+      0,
+    );
+    assert.ok(app.document.querySelector('a[href="#/battles?gym=paired"]'));
+    await app.go('/gym/unpaired');
+    assert.equal(app.document.querySelectorAll('.gym-defender').length, 0);
+    assert.match(
+      app.document.querySelector('.gym-defence-empty')?.textContent || '',
+      /No defenders yet/,
+    );
+    assert.equal(app.document.querySelector('a[href="#/battles?gym=unpaired"]'), null);
   } finally {
     await app.close();
   }
