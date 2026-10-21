@@ -566,7 +566,10 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
     await click(document.querySelector('.arena-hero .button'));
     await click(document.querySelector('.team-select-card'));
     await click(document.querySelector('.battle-review>.button'));
-    assert.ok(document.querySelector('.battle-field'));
+    await app.until(
+      () => !!document.querySelector('.battle-field'),
+      'Battle artwork finishes loading before the commands appear',
+    );
     assert.equal(document.querySelectorAll('.classic-root-actions > button').length, 2);
     assert.equal(
       document.querySelector('.classic-player [data-facing]')?.getAttribute('data-facing'),
