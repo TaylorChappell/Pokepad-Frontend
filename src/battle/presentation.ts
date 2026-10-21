@@ -133,6 +133,20 @@ export function getBattleCue(
   events: BattleEvent[] = [event],
 ): BattleCue | null {
   const side = event.side || 'player';
+  if (event.kind === 'item') {
+    // Bench items remain in the dialogue; never put their effect on the active Pokémon.
+    const active = event.frame?.[side][event.frame.active[side]];
+    if (!active || event.itemTargetId !== active.id) return null;
+    return {
+      ...getMovePresentation('Recover'),
+      id: `${index}-item`,
+      kind: 'item',
+      side,
+      targetSide: side,
+      moveName: 'Recover',
+      outcome: 'hit',
+    };
+  }
   if (event.kind === 'move') {
     const name = event.moveName;
     if (!name) return null;
@@ -211,7 +225,14 @@ export function createBattlePlayback(
       cue,
       displayState: structuredClone(display),
       durationMs:
-        cue?.durationMs || (event.kind === 'damage' ? 420 : event.kind === 'result' ? 700 : 540),
+        cue?.durationMs ||
+        (event.kind === 'item'
+          ? 850
+          : event.kind === 'damage'
+            ? 420
+            : event.kind === 'result'
+              ? 700
+              : 540),
     };
     if (outgoing && cue) {
       const side = cue.side;

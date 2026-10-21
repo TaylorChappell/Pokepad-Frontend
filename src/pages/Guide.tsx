@@ -293,7 +293,7 @@ const topics: GuideTopic[] = [
       {
         title: 'Online and wagers',
         text: [
-          'Online is intended for another trainer, with friendly play and optional SOL, coin-token, or Pokémon stakes. It needs a live opponent, authoritative rules, and backend settlement.',
+          'Challenge another trainer in a friendly or wagered match. Review both teams and agree the levels, item limits and stake before you both accept.',
           'A lost Pokémon wager would transfer the selected team—up to all three Pokémon—to the winner. It would not merely start a healing timer. Review the exact team and stake before accepting.',
         ],
         note: 'Demo mode does not connect online matchmaking or real wagers. An offline practice match never becomes a wager.',
@@ -369,7 +369,7 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
       'Scores come from the server and include each supporter once. Changing your gym moves your contribution.',
     ],
     'Online and wagers': [
-      'Online rooms use server-controlled teams, turns, and results. Both trainers must confirm the exact team and stake. Reconnect to restore a running match.',
+      'Online rooms use server-controlled teams, turns, and results. Inspect both teams, discuss changes in room chat, and accept the same team, rules and stake. Changes reset both acceptances. Reconnect to restore a running match.',
       'Friendly battles and Pokémon stakes are available when the battle service is ready. Losing a Pokémon wager transfers the selected team to the winner. If a Pokémon faints, choose a living teammate before the next attack turn.',
       'SOL and supported coin-token wagers appear when the connected service has verified its deployed escrow program and worker. Review the matching amount and asset, then approve your deposit in your wallet. Both deposits must confirm before battle; a win is not paid until settlement confirms.',
     ],

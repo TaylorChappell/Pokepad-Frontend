@@ -1,4 +1,4 @@
-# Kanto frontend · interface v15
+# Kanto frontend · interface v16
 
 A Pokémon launchpad built with React, TypeScript and Vite. This repository contains the frontend; the matching API and workers live in [TaylorChappell/kanto-backend](https://github.com/TaylorChappell/kanto-backend).
 
@@ -50,7 +50,7 @@ There is no marketplace or player asking-price flow. Selling redeems an eligible
 
 ## Battles, animation and sound
 
-The viewport-constrained battlefield uses Gen III-inspired HP panels and a fixed Fight/Pokémon command menu. Full-body PMDCollab Mystery Dungeon sprites supply front/back directions and normal/shiny animation frames for all 151 species. The current engine has 48 playable attacks, with authored timing, native pixel effects, source-frame anchors and matching original sound samples. These are reusable source action families and a modernized ruleset, not 151 newly drawn animations per attack or all 165 original Gen 1 moves.
+The viewport-constrained battlefield uses Gen III-inspired HP panels and a fixed Fight/Pokémon/Bag/Surrender command menu. Full-body PMDCollab Mystery Dungeon sprites supply front/back directions and normal/shiny animation frames for all 151 species. The current engine has 48 playable attacks, with authored timing, native pixel effects, source-frame anchors and matching original sound samples. These are reusable source action families and a modernized ruleset, not 151 newly drawn animations per attack or all 165 original Gen 1 moves.
 
 Switching uses Poké Ball recall and release. After fainting, the trainer explicitly chooses a living replacement; simultaneous replacement choices stay private until all required trainers submit. Replacement does not consume another attack turn. Music and effects share the sound preference; hidden pages, cancellation and reduced motion are handled. Reward reveal audio follows the visual timeline, and unavailable or stalled audio cannot block an already-confirmed reveal.
 
@@ -100,3 +100,11 @@ docs/           Integration contract and design notes
 ```
 
 Asset provenance is recorded in `public/assets/ASSET-SOURCES.md`. Tests cover accounting, collection history, favourites, auth lifecycle, transaction recovery, walking, team selection, wager terms, replacement phases and UI interactions. Source and DOM checks supplement, rather than replace, real-browser and funded deployment acceptance.
+
+### Battle review and equal bags
+
+Online rooms now wait in a review stage after a rival joins. Both trainers inspect the complete team snapshots (levels, HP, stats and moves), discuss changes, and explicitly accept the same review version. Either trainer can propose a new team, equal Lv. 50, no items, a standard bag, or a revised monetary stake. Every change clears both acceptances. Wager type and team size stay fixed; create a different room to change those. Leaving during review releases the teams without a forfeit. New rooms require the backend’s `reviewRequired` capability.
+
+The standard battle bag grants each side two Potions (30% maximum HP), one Revive (50% HP), and one Full Heal. Supplies are match-only and identical; a trainer’s collectible inventory cannot increase them. Each valid item use consumes a turn and a single supply. Supplies and legal targets are enforced by the backend, and the offline bot uses the same limits. Items cannot interrupt charge/recharge or substitute for a mandatory faint replacement. Surrender requires confirmation and settles a started wager as a loss.
+
+Deploy the backend migration `090_battle_review.sql` before this frontend. This change adds no purchasable or redeemable items and does not yet distribute gym reward items.

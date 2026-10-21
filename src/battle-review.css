@@ -1,0 +1,622 @@
+.battle-room-review {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fffdf7;
+  border: 2px solid #d6e1df;
+  border-radius: 20px;
+  overflow: hidden;
+  color: #2c435a;
+  box-shadow: 0 8px 25px #25435a08;
+}
+.battle-review-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  background: #eff6ee;
+  border-bottom: 1px solid #d6e1df;
+}
+.battle-review-heading h2 {
+  margin: 4px 0;
+  font:
+    900 24px Nunito,
+    system-ui,
+    sans-serif;
+}
+.battle-review-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: #64797b;
+}
+.battle-review-heading > div > span {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  font-weight: 900;
+  color: #63847b;
+}
+.battle-review-stake {
+  text-align: right;
+  display: grid;
+  gap: 4px;
+}
+.battle-review-stake strong {
+  font-size: 17px;
+  color: #b44b46;
+}
+.battle-review-stake small {
+  font-size: 11px;
+}
+.battle-review-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 10px 24px;
+  border-bottom: 1px solid #e1e7df;
+}
+.battle-review-tabs button {
+  flex: 1;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  padding: 10px 8px;
+  color: #6b7c87;
+  font-size: 12px;
+  font-weight: 850;
+  transition:
+    background 0.16s,
+    color 0.16s;
+}
+.battle-review-tabs button[aria-pressed='true'] {
+  background: #dcece6;
+  color: #285b4a;
+}
+.battle-review-tabs b {
+  margin-left: 6px;
+  background: #fff;
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.battle-review-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.battle-review-rule-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.battle-review-rule-strip span {
+  font-size: 11px;
+  padding: 5px 9px;
+  border: 1px solid #e1e4d8;
+  border-radius: 7px;
+  background: #f8f6e9;
+}
+.battle-review-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 160px;
+}
+.battle-review-teams article {
+  border: 1px solid #dbe5df;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f6f9f8;
+}
+.battle-review-teams article > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #edf3f2;
+  gap: 8px;
+}
+.battle-review-teams article > header strong {
+  font-size: 13px;
+  display: block;
+}
+.battle-review-teams article > header small {
+  font-size: 10px;
+  display: block;
+  color: #697f86;
+}
+.battle-review-teams article > header > span {
+  font-size: 10px;
+  font-weight: 850;
+  border-radius: 6px;
+  padding: 4px 7px;
+  background: #e0e5e7;
+  color: #5d7582;
+}
+.battle-review-teams article > header > span.accepted {
+  background: #cfe9d1;
+  color: #286b3c;
+}
+.battle-review-teams article > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 8px;
+}
+.battle-review-teams article button {
+  min-width: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: inherit;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+  transition: background 0.16s;
+}
+.battle-review-teams article button:hover {
+  background: #e3efea;
+}
+.battle-review-teams .pokemon-art {
+  width: 82px;
+  height: 82px;
+  max-width: 100%;
+}
+.battle-review-teams article button strong {
+  font-size: 11px;
+}
+.battle-review-teams article button small {
+  font-size: 9px;
+  white-space: nowrap;
+  color: #526d76;
+}
+.battle-review-teams article button > span {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #75848c;
+  text-align: center;
+}
+.battle-strength-note {
+  margin: 0;
+  font-size: 11px;
+  color: #6a7c84;
+}
+.battle-review-detail {
+  position: relative;
+  text-align: center;
+  border: 1px solid #dbe5df;
+  border-radius: 14px;
+  background: #f5f9f6;
+  padding: 12px;
+}
+.battle-review-detail > button {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  border: 0;
+  background: none;
+  color: #426c5a;
+  font-size: 11px;
+}
+.battle-review-detail > .pokemon-art {
+  width: 90px;
+  height: 90px;
+  margin: 0 auto;
+}
+.battle-review-detail h3 {
+  font-size: 16px;
+  margin: 3px 0 9px;
+}
+.battle-review-detail dl {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin: 14px 0;
+}
+.battle-review-detail dt {
+  font-size: 10px;
+  color: #77888c;
+}
+.battle-review-detail dd {
+  margin: 4px 0;
+  font-size: 14px;
+  font-weight: 850;
+}
+.battle-review-detail p {
+  font-size: 12px;
+}
+.battle-review-rules {
+  max-width: 620px;
+  width: 100%;
+  margin: auto;
+  display: grid;
+  gap: 12px;
+}
+.battle-review-rules label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 850;
+}
+.battle-review-rules input,
+.battle-review-rules select,
+.battle-room-chat input {
+  font: inherit;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #cddbd5;
+  background: #fff;
+  border-radius: 9px;
+  color: #344f59;
+}
+.battle-review-rules p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6f8084;
+  margin: 0;
+}
+.battle-review-team-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.battle-review-team-editor > .battle-party-desk {
+  flex: 1;
+  min-height: 220px;
+  box-shadow: none;
+  padding: 12px;
+  gap: 8px;
+}
+.battle-review-team-editor > .button {
+  align-self: flex-end;
+}
+.battle-room-chat {
+  flex: 1;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.battle-room-messages {
+  flex: 1;
+  overflow: auto;
+  background: #f3f7f4;
+  border: 1px solid #dbe5df;
+  border-radius: 10px;
+  padding: 12px;
+}
+.battle-room-messages p {
+  margin: 0 0 12px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.battle-room-messages strong {
+  display: block;
+  font-size: 10px;
+  color: #619478;
+  margin-bottom: 3px;
+}
+.battle-room-chat form {
+  display: flex;
+  gap: 10px;
+}
+.battle-room-chat input {
+  flex: 1;
+}
+.battle-review-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  background: #f5f5ed;
+  border-top: 1px solid #dce5dc;
+}
+.battle-review-footer label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+.battle-review-footer input {
+  accent-color: #48856e;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+.battle-review-footer small {
+  display: block;
+  font-size: 10px;
+  color: #73827e;
+  margin-top: 6px;
+}
+.battle-review-footer p {
+  font-size: 12px;
+  color: #34754f;
+  margin: 0;
+}
+.battle-review-footer > div:last-child {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.classic-match .classic-root-actions {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 6px;
+}
+.classic-match .classic-root-actions button {
+  font-size: clamp(11px, 1.3vw, 17px);
+  gap: 8px;
+  min-height: 0;
+  padding: 8px;
+}
+.classic-match .classic-root-actions .classic-bag {
+  background: #f2dfad;
+  color: #725721;
+}
+.classic-match .classic-root-actions .classic-surrender {
+  background: #f1e6e0;
+  color: #92675d;
+}
+.battle-bag-menu {
+  grid-column: 1/-1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #344e5b;
+}
+.battle-bag-menu header,
+.battle-bag-menu footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.battle-bag-menu header strong {
+  font-size: 13px;
+}
+.battle-bag-menu header span,
+.battle-bag-menu footer small {
+  font-size: 10px;
+  color: #6d7c7c;
+}
+.battle-bag-items,
+.battle-bag-targets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+.battle-bag-items > button,
+.battle-bag-targets > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #cdd9cf;
+  background: #f8f8ed;
+  color: inherit;
+  border-radius: 10px;
+  padding: 8px;
+  min-width: 0;
+}
+.battle-bag-items > button:disabled,
+.battle-bag-targets > button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.battle-bag-items strong,
+.battle-bag-targets strong {
+  display: block;
+  font-size: 12px;
+  text-align: left;
+}
+.battle-bag-items small,
+.battle-bag-targets small {
+  display: block;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: left;
+  margin-top: 4px;
+}
+.battle-bag-items strong b {
+  color: #6c9371;
+}
+.battle-bag-targets .pokemon-art {
+  width: 54px;
+  height: 54px;
+  flex-shrink: 0;
+}
+.battle-bag-menu footer button {
+  border: 0;
+  background: none;
+  color: #557465;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+.battle-item-art {
+  width: 24px;
+  height: 30px;
+  flex-shrink: 0;
+  image-rendering: pixelated;
+  background: #b281c3;
+  border: 3px solid #514a67;
+  border-radius: 2px;
+  position: relative;
+  box-shadow:
+    inset 4px 0 #e4bcdf,
+    inset -3px -4px #9262a4;
+}
+.battle-item-art:before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 6px;
+  left: 1px;
+  top: -8px;
+  background: #d27392;
+  border: 2px solid #514a67;
+}
+.battle-item-art:after {
+  content: '+';
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: #fff;
+  font: 900 19px monospace;
+}
+.battle-item-art.item-revive {
+  background: #f0d35f;
+  transform: rotate(45deg);
+  width: 20px;
+  height: 20px;
+  box-shadow:
+    inset 3px 0 #fff1ad,
+    inset -3px -3px #c6a63e;
+}
+.battle-item-art.item-revive:before,
+.battle-item-art.item-revive:after {
+  display: none;
+}
+.battle-item-art.item-full-heal {
+  background: #e1bc66;
+  box-shadow:
+    inset 4px 0 #f2dfa5,
+    inset -3px -4px #bb914c;
+}
+.battle-item-art.item-full-heal:before {
+  background: #718bb4;
+}
+@media (max-width: 800px) {
+  .battle-review-heading {
+    padding: 12px 16px;
+  }
+  .battle-review-tabs {
+    padding: 8px 12px;
+    gap: 3px;
+  }
+  .battle-review-tabs button {
+    font-size: 11px;
+    padding: 8px 4px;
+  }
+  .battle-review-content {
+    padding: 12px;
+    gap: 8px;
+  }
+  .battle-review-teams {
+    gap: 8px;
+  }
+  .battle-review-teams article > div {
+    grid-template-columns: 1fr;
+  }
+  .battle-review-teams article button {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 3px;
+    text-align: left;
+  }
+  .battle-review-teams .pokemon-art {
+    grid-row: 1/3;
+    width: 44px;
+    height: 44px;
+  }
+  .battle-review-teams article button > span {
+    display: none;
+  }
+  .battle-review-teams article button strong,
+  .battle-review-teams article button small {
+    font-size: 10px;
+    white-space: normal;
+  }
+  .battle-review-footer {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .battle-review-footer > div:last-child {
+    margin-left: auto;
+  }
+  .battle-review-heading h2 {
+    font-size: 20px;
+  }
+  .battle-review-detail dl {
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .battle-bag-items > button,
+  .battle-bag-targets > button {
+    gap: 5px;
+    padding: 6px;
+  }
+  .battle-bag-items small {
+    font-size: 9px;
+  }
+  .battle-item-art {
+    transform: scale(0.8);
+  }
+  .battle-bag-menu footer small {
+    font-size: 8px;
+  }
+  .battle-bag-items strong {
+    font-size: 10px;
+  }
+  .battle-bag-targets .pokemon-art {
+    width: 36px;
+    height: 36px;
+  }
+}
+@media (max-height: 700px) {
+  .battle-review-heading {
+    padding: 9px 16px;
+  }
+  .battle-review-heading p {
+    display: none;
+  }
+  .battle-review-teams .pokemon-art {
+    width: 56px;
+    height: 56px;
+  }
+  .battle-review-footer {
+    padding: 8px 14px;
+  }
+  .battle-review-tabs button {
+    padding: 6px;
+  }
+  .battle-review-content {
+    padding: 10px 14px;
+  }
+  .battle-review-rule-strip span {
+    padding: 3px 7px;
+  }
+  .battle-bag-menu {
+    gap: 5px;
+    padding: 4px 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-review-tabs button,
+  .battle-review-teams article button {
+    transition: none;
+  }
+}

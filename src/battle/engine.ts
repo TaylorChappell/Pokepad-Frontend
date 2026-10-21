@@ -1,3 +1,15 @@
+import {
+  BATTLE_ITEMS,
+  DEFAULT_BATTLE_RULES,
+  battleBag,
+  prepareBattleTeam,
+  legalBattleItem,
+  useBattleItem,
+  chooseBattleItem,
+  type BattleBag,
+  type BattleRules,
+  type BattleItem,
+} from './rules';
 import type { OwnedPokemon, Move } from '../types';
 import { POKEMON, pokemonById } from '../data/pokemon';
 import { BASE_STATS, getPokemonStats } from '../data/stats';
@@ -26,17 +38,24 @@ export interface Fighter {
   trainingScale: number;
 }
 export interface BattleEvent {
+  itemName?: BattleItem;
+  itemTargetId?: string;
   text: string;
   side?: Side;
-  kind: 'move' | 'damage' | 'status' | 'switch' | 'faint' | 'result' | 'info';
+  kind: 'item' | 'move' | 'damage' | 'status' | 'switch' | 'faint' | 'result' | 'info';
   /** Presentation metadata is independent of translated battle messages. */
   moveName?: string;
   movePhase?: 'charge' | 'release';
   targetSide?: Side;
   outcome?: 'miss' | 'immune';
-  frame?: Pick<BattleState, 'player' | 'rival' | 'active' | 'winner' | 'replacementRequired'>;
+  frame?: Pick<
+    BattleState,
+    'player' | 'rival' | 'active' | 'winner' | 'replacementRequired' | 'bags'
+  >;
 }
 export interface BattleState {
+  bags?: Record<Side, BattleBag>;
+  rules?: BattleRules;
   player: Fighter[];
   rival: Fighter[];
   active: Record<Side, number>;
@@ -49,6 +68,7 @@ export interface BattleState {
   lastRivalSwitch: number;
 }
 export type BattleAction =
+  | { kind: 'item'; item: BattleItem; index: number }
   | { kind: 'move'; index: number }
   | { kind: 'switch'; index: number }
   | { kind: 'replace'; index: number };
@@ -389,15 +409,18 @@ export function createBattle(
   team: OwnedPokemon[],
   rivals: Fighter[],
   difficulty: Difficulty,
+  rules: BattleRules = DEFAULT_BATTLE_RULES,
 ): BattleState {
   if (!team.length || !rivals.length) throw new Error('Both teams need a Pokémon.');
-  const player = createPlayerTeam(team);
-  const rival = structuredClone(rivals.slice(0, player.length));
+  const player = prepareBattleTeam(createPlayerTeam(team), rules);
+  const rival = prepareBattleTeam(rivals.slice(0, player.length), rules);
   const opening: BattleEvent = {
     kind: 'info',
     text: `${DIFFICULTIES[difficulty].trainer} sends out ${pokemonById(rival[0].speciesId).name}. Choose your opening move!`,
   };
   return {
+    rules,
+    bags: { player: battleBag(rules), rival: battleBag(rules) },
     player,
     rival,
     active: { player: 0, rival: 0 },
@@ -475,6 +498,8 @@ function moveScore(actor: Fighter, target: Fighter, name: string) {
   return 8;
 }
 export function chooseRivalAction(state: BattleState, random = Math.random): BattleAction {
+  const item = chooseBattleItem(state, 'rival');
+  if (item) return item;
   const actor = state.rival[state.active.rival];
   const target = state.player[state.active.player];
   const choices = actor.moves
@@ -567,6 +592,7 @@ export function resolveReplacements(
         active: state.active,
         winner: state.winner,
         replacementRequired: state.replacementRequired,
+        bags: state.bags,
       }),
     });
   }
@@ -618,6 +644,8 @@ export function resolveTurn(
     });
   }
   if (action.kind === 'replace') return previous;
+  if (action.kind === 'item' && !legalBattleItem(previous, 'player', action.item, action.index))
+    return previous;
   const player = previous.player[previous.active.player];
   if (action.kind === 'switch') {
     if (
@@ -630,6 +658,7 @@ export function resolveTurn(
     )
       return previous;
   } else if (
+    action.kind === 'move' &&
     !player.charging &&
     !player.recharge &&
     (action.index === -1
@@ -656,7 +685,14 @@ export function resolveTurn(
         side,
         choice,
         actorId: actor.id,
-        priority: choice.kind === 'switch' ? 6 : name === 'Quick Attack' ? 1 : 0,
+        priority:
+          choice.kind === 'item'
+            ? 7
+            : choice.kind === 'switch'
+              ? 6
+              : name === 'Quick Attack'
+                ? 1
+                : 0,
         speed: effectiveSpeed(actor),
         tie: random(),
       };
@@ -679,6 +715,7 @@ export function resolveTurn(
         active: state.active,
         winner: state.winner,
         replacementRequired: state.replacementRequired,
+        bags: state.bags,
       }),
     });
   const status = (target: Fighter, value: Status, side: Side, turns = 0) => {
@@ -704,6 +741,20 @@ export function resolveTurn(
     const target = state[other][state.active[other]];
     if (actor.hp <= 0 || target.hp <= 0 || actor.id !== actorId) continue;
     const actorName = pokemonById(actor.speciesId).name;
+    if (choice.kind === 'item') {
+      if (useBattleItem(state, side, choice.item, choice.index)) {
+        log(
+          `${side === 'player' ? 'You' : 'Your rival'} used ${BATTLE_ITEMS[choice.item].name} on ${pokemonById(state[side][choice.index].speciesId).name}!`,
+          side,
+          'item',
+        );
+        Object.assign(events[events.length - 1], {
+          itemName: choice.item,
+          itemTargetId: state[side][choice.index].id,
+        });
+      }
+      continue;
+    }
     if (choice.kind === 'switch') {
       target.trapped = 0;
       actor.stages = blankStages();

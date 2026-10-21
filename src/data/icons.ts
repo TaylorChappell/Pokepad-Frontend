@@ -1,5 +1,9 @@
 // Pixelarticons 1.8.1, MIT. Source: https://github.com/halfmage/pixelarticons
 export const PIXEL_ICONS = {
+  // Kanto-authored pixel icons.
+  Backpack:
+    'M8 2h8v2h2v3h2v15H4V7h2V4h2V2zm2 2v3h4V4h-4zM6 9v11h12V9H6zm2 3h8v6H8v-6zm2 2v2h4v-2h-4z',
+  Flag: 'M4 2h2v2h14v10H6v8H4V2zm2 4v6h12V6H6z',
   ArrowRight:
     'M4 11v2h12v2h2v-2h2v-2h-2V9h-2v2H4zm10-4h2v2h-2V7zm0 0h-2V5h2v2zm0 10h2v-2h-2v2zm0 0h-2v2h2v-2z',
   ArrowLeft:

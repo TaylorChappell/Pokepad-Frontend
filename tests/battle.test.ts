@@ -39,7 +39,11 @@ function owned(
   };
 }
 function match(player: OwnedPokemon[], enemy: OwnedPokemon[], difficulty: Difficulty = 'Easy') {
-  return createBattle(player, createPlayerTeam(enemy), difficulty);
+  // These move and replacement fixtures explicitly exercise the no-items ruleset.
+  return createBattle(player, createPlayerTeam(enemy), difficulty, {
+    items: 'none',
+    levels: 'original',
+  });
 }
 const calm = () => 0.5;
 

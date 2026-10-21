@@ -570,7 +570,9 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
       () => !!document.querySelector('.battle-field'),
       'Battle artwork finishes loading before the commands appear',
     );
-    assert.equal(document.querySelectorAll('.classic-root-actions > button').length, 2);
+    assert.equal(document.querySelectorAll('.classic-root-actions > button').length, 4);
+    assert.ok(document.querySelector('.classic-bag'));
+    assert.ok(document.querySelector('.classic-surrender'));
     assert.equal(
       document.querySelector('.classic-player [data-facing]')?.getAttribute('data-facing'),
       'back',
@@ -589,6 +591,20 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
       8000,
     );
     assert.match(document.querySelector('.battle-page-heading')?.textContent || '', /Turn 2/);
+    await click(document.querySelector('.classic-surrender'));
+    assert.match(
+      document.querySelector('[role="dialog"]')?.textContent || '',
+      /Surrender this battle/,
+    );
+    await click(
+      [...document.querySelectorAll('button')].find(
+        (button) => button.textContent?.trim() === 'Confirm surrender',
+      ),
+    );
+    assert.ok(
+      document.querySelector('.classic-result'),
+      'Surrender shows the result without restarting the match',
+    );
   } finally {
     await app.close();
   }

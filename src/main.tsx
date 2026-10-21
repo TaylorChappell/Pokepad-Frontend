@@ -1,3 +1,4 @@
+import './battle-review.css';
 import './styles.css';
 import './pixel-theme.css';
 import './collection-v2.css';

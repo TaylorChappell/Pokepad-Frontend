@@ -1,4 +1,4 @@
-# Kanto frontend API contract · interface v15
+# Kanto frontend API contract · interface v16
 
 The server lives in [TaylorChappell/kanto-backend](https://github.com/TaylorChappell/kanto-backend). Its [API documentation](https://github.com/TaylorChappell/kanto-backend/blob/main/docs/api.md), migrations and tests define authoritative behavior. This document records what the frontend consumes.
 
@@ -77,13 +77,13 @@ Desktop initiation is disabled. The browser never submits an arbitrary distance 
 
 Wager is `friendly`, `pokemon`, `sol` or `token`. Monetary terms are `wagerAmount` (positive raw integer string), `wagerMint` for tokens and `acceptMonetaryRisk:true`. Room views also supply `wagerDecimals` and `wagerSymbol`. The joiner accepts the exact host amount and asset, without rounded float comparison. Pokémon stakes require explicit whole-team loss consent.
 
-Commands use phase `turn` for `move`/`switch`, and `replacement` for `replace`. Perspective-correct `state.replacementRequired:{player,rival}` identifies who must choose a living reserve. Only required seats submit; simultaneous choices remain private until all required seats are ready. Replacement changes active Pokémon without incrementing the attack turn. Idempotency includes the phase, and `submitted`/`opponentSubmitted` refer to the current phase. Clients discard older revisions that arrive after newer command responses.
+Commands use phase `turn` for `move`/`switch`/`item`, and `replacement` for `replace`. Perspective-correct `state.replacementRequired:{player,rival}` identifies who must choose a living reserve. Only required seats submit; simultaneous choices remain private until all required seats are ready. Replacement changes active Pokémon without incrementing the attack turn. Idempotency includes the phase, and `submitted`/`opponentSubmitted` refer to the current phase. Clients discard older revisions that arrive after newer command responses.
 
 ## SOL and token escrow
 
 Cash wagering is implemented but capability-gated. It requires a separately deployed on-chain program whose upgrade authority is permanently revoked, verified program configuration and an operating worker. Supported tokens come from eligible indexed Kanto/Pump coins and on-chain mint checks. Code availability is not evidence of live deployment or successful funded acceptance.
 
-After both trainers join, the room enters `funding`. The worker initializes escrow; prepare may return `409 ESCROW_INITIALIZING` until that initialization is finalized. The UI waits for `escrow.initialized` and an address before asking for a deposit. The operator funds setup rent; trainers approve their own stake and network fee. Both equal deposits must confirm before the battle becomes active.
+After both trainers join, the room enters `review`. Only after both accept the same current review version does a monetary room enter `funding`. The worker initializes escrow; prepare may return `409 ESCROW_INITIALIZING` until that initialization is finalized. The UI waits for `escrow.initialized` and an address before asking for a deposit. The operator funds setup rent; trainers approve their own stake and network fee. Both equal deposits must confirm before the battle becomes active.
 
 | Endpoint                                       | Contract                                                                                     |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -111,3 +111,14 @@ The frontend opens mandatory starter selection only for an authenticated wallet 
 Pending earned move offers and server-funded `evolutionPreview.canEvolve` opportunities queue individual dialogs. Evolution prompts respect the account’s evolution notification preference. Later does not dispatch a decline or spend Rare Candy; it records a browser-local acknowledgement scoped to API origin, wallet and offer/evolution stage. Manual My PC actions remain available. No new backend endpoint or schema is required.
 
 Visible authenticated accounts poll bootstrap every 10 seconds and refresh on window focus/visibility. Background reads are single-flight and are discarded after another action, reload, disconnect or wallet change. Failures preserve the current screen and retry later. Live egg notification updates use this read flow rather than the demo’s timer-triggered sync action.
+
+## Room review and battle supplies (v16)
+
+- `reviewRequired:true` and `battleItems:true` in capabilities identify this protocol. New-room controls stay disabled against older backends.
+- `POST /v1/battles/:id/review` accepts `{version,pokemonIds?,rules?,wagerAmount?}`. `rules` is `{items:"none"|"standard",levels:"original"|"level50"}`. Team count, asset and wager mode remain fixed.
+- `POST /v1/battles/:id/accept` accepts `{version,accepted,acceptPokemonRisk,acceptMonetaryRisk}`. Both seats must explicitly accept the current version. Stale versions fail; edits reset consent.
+- `POST /v1/battles/:id/messages` accepts `{body}` up to 280 characters, private to the participants before acceptance; messages are rate limited and rendered as plain text.
+- Room `review` supplies `version`, `rules`, both teams with `accepted` flags and full battle snapshots, and recent messages. Chat revisions do not invalidate acceptance; rule/team/stake changes do.
+- Item commands are `{kind:"item",item:"potion"|"revive"|"full-heal",index}` with the ordinary turn, phase and retry UUID. `index` targets the trainer’s own team. Remaining supplies are perspective-correct `state.bags.player` and `.rival`.
+
+The standard bag is two Potions, one Revive and one Full Heal per side. Items consume a turn with priority above switching/attacks. They cannot be used with no eligible target, during charge/recharge, during a required replacement or after defeat. A wiped-out party cannot revive after the result. Bag supplies exist only within the match, cannot be topped up from personal inventory, and never affect funded redemption value. Equal levels affect battle snapshots only; settlement maps health back to the Pokémon’s real maximum HP.

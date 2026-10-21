@@ -1,3 +1,4 @@
+import { BattleBagMenu } from '../components/BattleBagMenu';
 import {
   useEffect,
   useLayoutEffect,
@@ -254,7 +255,7 @@ export function BattlesPage() {
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const launchAttempt = useRef(0);
-  const [command, setCommand] = useState<'root' | 'fight' | 'pokemon' | 'log'>('root');
+  const [command, setCommand] = useState<'root' | 'fight' | 'pokemon' | 'bag' | 'log'>('root');
   const [streak, setStreak] = useState(0);
   const [cue, setCue] = useState<BattleCue | null>(null);
   const [cueStartedAt, setCueStartedAt] = useState(0);
@@ -431,6 +432,14 @@ export function BattlesPage() {
         }
         return;
       }
+      if (frame.event.kind === 'item' && frame.event.itemTargetId) {
+        const revivedId = frame.event.itemTargetId;
+        setVisualFaintedIds((previous) => {
+          const next = new Set(previous);
+          next.delete(revivedId);
+          return next;
+        });
+      }
       setDisplayBattle(frame.displayState);
       setDialogue(frame.event.text);
       const durationMs = state.profile.reducedMotion
@@ -446,6 +455,7 @@ export function BattlesPage() {
       else if (frame.event.kind === 'switch' && frame.switch?.phase !== 'recall')
         audio.playCue('switch');
       else if (frame.event.kind === 'faint') audio.playCue('faint');
+      else if (frame.event.kind === 'item') audio.playMove('Recover');
       timer.current = setTimeout(advance, durationMs);
     };
     advance();
@@ -529,7 +539,7 @@ export function BattlesPage() {
     setPhase('lobby');
   };
   const leave = () => {
-    if (mode === 'online' && online.room?.status === 'active') {
+    if (battle && !battle.winner && (mode === 'offline' || online.room?.status === 'active')) {
       setForfeitConfirm(true);
       return;
     }
@@ -647,7 +657,7 @@ export function BattlesPage() {
               ? 'Both teams gave it everything.'
               : mode === 'online'
                 ? 'Your rival won this battle.'
-                : 'Your team has fainted.'
+                : 'Your rival won the practice battle.'
           : choosingReplacement
             ? 'Choose your next Pokémon.'
             : current.recharge
@@ -690,28 +700,50 @@ export function BattlesPage() {
           </Modal>
         )}
         {forfeitConfirm && (
-          <Modal title="Forfeit this battle?" onClose={() => setForfeitConfirm(false)}>
+          <Modal
+            title="Surrender this battle?"
+            onClose={() => setForfeitConfirm(false)}
+            closeDisabled={mode === 'online' && online.pending}
+          >
             <div className="modal-body">
               <p>
-                {online.room?.wager === 'pokemon'
+                {mode === 'online' && online.room?.wager === 'pokemon'
                   ? 'Your full selected team will transfer to the other trainer. This cannot be undone.'
                   : monetary && online.room
                     ? `Forfeiting awards your ${battleWagerLabel(online.room)} stake to your rival. Your Pokémon stay yours.`
-                    : 'The other trainer wins. Your Pokémon stay in your collection.'}
+                    : mode === 'offline'
+                      ? 'The practice match ends in a loss. Your Pokémon and items in your collection are unchanged.'
+                      : 'The other trainer wins. Your Pokémon stay in your collection.'}
               </p>
               <Button
-                disabled={online.pending}
+                disabled={mode === 'online' && online.pending}
                 onClick={async () => {
-                  if (await online.leave()) {
+                  if (mode === 'offline') {
                     setForfeitConfirm(false);
-                    online.clear();
-                    resetMatch();
+                    clearTimeout(timer.current);
+                    const result: BattleState = {
+                      ...battle,
+                      winner: 'rival',
+                      events: [{ kind: 'result', text: 'You surrendered the practice battle.' }],
+                    };
+                    setBusy(false);
+                    setBattle(result);
+                    setDisplayBattle(result);
+                    setCue(null);
+                    setCommand('root');
+                    audio.playCue('lose');
+                  } else if (await online.leave()) {
+                    setForfeitConfirm(false);
                   }
                 }}
               >
-                Confirm forfeit
+                Confirm surrender
               </Button>
-              <Button variant="secondary" onClick={() => setForfeitConfirm(false)}>
+              <Button
+                variant="secondary"
+                disabled={mode === 'online' && online.pending}
+                onClick={() => setForfeitConfirm(false)}
+              >
                 Keep battling
               </Button>
             </div>
@@ -911,8 +943,34 @@ export function BattlesPage() {
                     <Pokeball size={24} />
                     Pokémon
                   </button>
+                  <button
+                    className="classic-bag"
+                    disabled={controlsBusy}
+                    onClick={() => {
+                      audio.playCue('select');
+                      setCommand('bag');
+                    }}
+                  >
+                    <Icon name="Backpack" size={22} />
+                    Bag
+                  </button>
+                  <button
+                    className="classic-surrender"
+                    disabled={online.pending && mode === 'online'}
+                    onClick={() => setForfeitConfirm(true)}
+                  >
+                    <Icon name="Flag" size={22} />
+                    Surrender
+                  </button>
                 </div>
               </>
+            ) : command === 'bag' && !partyMenu ? (
+              <BattleBagMenu
+                state={battle}
+                disabled={controlsBusy}
+                onUse={play}
+                onBack={() => setCommand('root')}
+              />
             ) : command === 'fight' && !partyMenu ? (
               <>
                 <div className="battle-moves classic-moves">

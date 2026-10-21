@@ -1,3 +1,5 @@
+import { BattleRoomReview } from './BattleRoomReview';
+import type { BattleRules } from '../battle/rules';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
@@ -8,6 +10,9 @@ import { shortWallet } from '../state/model';
 import { Button, Icon, PokemonArt, Pokeball } from './UI';
 import {
   battleWagerLabel,
+  proposeBattleReview,
+  acceptBattleReview,
+  sendBattleMessage,
   formatRawAmount,
   loadBattleCapabilities,
   monetaryTerms,
@@ -86,7 +91,7 @@ export function useOnlineBattle(enabled: boolean) {
       try {
         if (roomRef.current) {
           if (
-            ['active', 'waiting', 'funding'].includes(roomRef.current.status) ||
+            ['active', 'waiting', 'review', 'funding'].includes(roomRef.current.status) ||
             (roomRef.current.escrow &&
               !['settled', 'refunded'].includes(roomRef.current.escrow.status))
           ) {
@@ -143,7 +148,11 @@ export function useOnlineBattle(enabled: boolean) {
       if (epoch !== generation.current) return null;
       const previousStatus = roomRef.current?.status;
       accept(next);
-      if (next.status === 'waiting' || (next.status === 'active' && previousStatus !== 'active'))
+      if (
+        next.status === 'waiting' ||
+        next.status === 'review' ||
+        (next.status === 'active' && previousStatus !== 'active')
+      )
         void reload();
       return next;
     } catch (cause) {
@@ -190,6 +199,25 @@ export function useOnlineBattle(enabled: boolean) {
       ),
     join: (id: string, ids: string[], wager: OnlineWager, code?: string, terms?: MonetaryTerms) =>
       mutation(() => joinOnlineBattle(id, ids, wager, code, terms)),
+    propose: (
+      version: number,
+      changes: { pokemonIds?: string[]; rules?: BattleRules; wagerAmount?: string },
+    ) => {
+      const current = roomRef.current;
+      return current
+        ? mutation(() => proposeBattleReview(current.id, version, changes))
+        : Promise.resolve(null);
+    },
+    ready: (version: number, accepted: boolean) => {
+      const current = roomRef.current;
+      return current
+        ? mutation(() => acceptBattleReview(current.id, version, accepted, current.wager))
+        : Promise.resolve(null);
+    },
+    message: (body: string) => {
+      const current = roomRef.current;
+      return current ? mutation(() => sendBattleMessage(current.id, body)) : Promise.resolve(null);
+    },
     command: (action: BattleAction) => {
       const current = roomRef.current;
       if (!current?.state || current.submitted || current.status !== 'active')
@@ -617,6 +645,8 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
     );
     if (next) setApproved(false);
   }
+  if (room?.status === 'review' && room.review)
+    return <BattleRoomReview key={room.id} room={room} online={online} />;
   if (room) {
     const monetaryRoom = room.wager === 'sol' || room.wager === 'token';
     return (
@@ -640,7 +670,9 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
             </h2>
             <p>
               {room.status === 'waiting'
-                ? 'Invite a rival with ' + room.teamSize + ' Pokémon.'
+                ? 'Invite a rival with ' +
+                  room.teamSize +
+                  ' Pokémon. You will both review and accept before the battle begins.'
                 : room.status === 'funding'
                   ? 'The match begins only when both equal deposits confirm.'
                   : 'Your room and transaction status are saved on the server.'}
@@ -1057,6 +1089,7 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
             disabled={
               !enabled ||
               !permitted ||
+              caps?.reviewRequired !== true ||
               !ids.length ||
               online.pending ||
               (risk && !approved) ||
@@ -1074,7 +1107,11 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                 : 'Create room'}
             <Icon name="ArrowRight" size={16} />
           </Button>
-          <small>{caps?.turnSeconds || 60}s per turn · server-controlled matches</small>
+          <small>
+            {enabled && caps && caps.reviewRequired !== true
+              ? 'The battle server needs the room-review update before new matches can start.'
+              : 'Both trainers review and accept before the match starts.'}
+          </small>
         </footer>
       </aside>
     </section>

@@ -1,3 +1,5 @@
+import type { BattleRules } from '../battle/rules';
+import type { Fighter } from '../battle/engine';
 import type { BattleAction, BattleState } from '../battle/engine';
 import type { Profile } from '../types';
 import { apiRequest } from './http';
@@ -16,6 +18,8 @@ export interface BattleTerms {
   wagerSymbol?: string | null;
 }
 export interface BattleCapabilities {
+  reviewRequired?: boolean;
+  battleItems?: boolean;
   friendly: boolean;
   pokemon: boolean;
   sol: boolean;
@@ -51,9 +55,16 @@ export interface BattleEscrow {
   settlementSignature?: string | null;
   recipientTokenAccounts?: { host?: string; guest?: string };
 }
+export interface BattleReview {
+  version: number;
+  rules: BattleRules;
+  teams: { wallet: string; seat: 0 | 1; accepted: boolean; pokemon: Fighter[] }[];
+  messages: { id: string; wallet: string; body: string; createdAt: string }[];
+}
 export interface BattleRoom extends BattleTerms {
+  review?: BattleReview;
   id: string;
-  status: 'waiting' | 'funding' | 'active' | 'finished' | 'cancelled';
+  status: 'waiting' | 'review' | 'funding' | 'active' | 'finished' | 'cancelled';
   visibility: 'public' | 'invite';
   teamSize: number;
   revision: number;
@@ -73,6 +84,7 @@ export interface BattleRoom extends BattleTerms {
   escrow?: BattleEscrow;
 }
 export interface OpenBattleRoom extends BattleTerms {
+  rules?: BattleRules;
   id: string;
   teamSize: number;
   hostWallet: string;
@@ -174,6 +186,30 @@ export function createBattleClient(request: typeof apiRequest = apiRequest) {
           ...stakeBody(wager, terms),
         },
       }),
+    propose: (
+      id: string,
+      version: number,
+      changes: { pokemonIds?: string[]; rules?: BattleRules; wagerAmount?: string },
+    ) =>
+      request<BattleRoom>('/v1/battles/' + encodeURIComponent(id) + '/review', {
+        method: 'POST',
+        json: { version, ...changes },
+      }),
+    ready: (id: string, version: number, accepted: boolean, wager: OnlineWager) =>
+      request<BattleRoom>('/v1/battles/' + encodeURIComponent(id) + '/accept', {
+        method: 'POST',
+        json: {
+          version,
+          accepted,
+          acceptPokemonRisk: accepted && wager === 'pokemon',
+          acceptMonetaryRisk: accepted && (wager === 'sol' || wager === 'token'),
+        },
+      }),
+    message: (id: string, body: string) =>
+      request<BattleRoom>('/v1/battles/' + encodeURIComponent(id) + '/messages', {
+        method: 'POST',
+        json: { body },
+      }),
     command: (
       id: string,
       turn: number,
@@ -183,7 +219,16 @@ export function createBattleClient(request: typeof apiRequest = apiRequest) {
     ) =>
       request<BattleRoom>('/v1/battles/' + encodeURIComponent(id) + '/commands', {
         method: 'POST',
-        json: { turn, phase, action: { kind: action.kind, index: action.index }, requestId },
+        json: {
+          turn,
+          phase,
+          action: {
+            kind: action.kind,
+            index: action.index,
+            ...(action.kind === 'item' ? { item: action.item } : {}),
+          },
+          requestId,
+        },
       }),
     leave: (id: string) =>
       request<BattleRoom>('/v1/battles/' + encodeURIComponent(id) + '/leave', {
@@ -201,6 +246,9 @@ export const readBattleRoom = client.read;
 export const createOnlineBattle = client.create;
 export const joinOnlineBattle = client.join;
 export const sendBattleCommand = client.command;
+export const proposeBattleReview = client.propose;
+export const acceptBattleReview = client.ready;
+export const sendBattleMessage = client.message;
 export const leaveOnlineBattle = client.leave;
 /** Discard stale polls that raced a command response. */
 export const newestBattleRoom = (current: BattleRoom | null, incoming: BattleRoom) =>

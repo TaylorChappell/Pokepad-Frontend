@@ -84,3 +84,31 @@ test('a forced replacement command keeps its phase distinct from a normal move o
     requestId: 'replacement-request',
   });
 });
+
+test('review acceptance binds the viewed version and item commands send no fabricated supplies', async () => {
+  const { api, calls } = transport();
+  await api.ready('room', 3, true, 'sol');
+  assert.deepEqual(calls[0].options?.json, {
+    version: 3,
+    accepted: true,
+    acceptPokemonRisk: false,
+    acceptMonetaryRisk: true,
+  });
+  await api.propose('room', 3, { rules: { items: 'none', levels: 'level50' } });
+  assert.deepEqual(calls[1].options?.json, {
+    version: 3,
+    rules: { items: 'none', levels: 'level50' },
+  });
+  await api.command(
+    'room',
+    1,
+    { kind: 'item', item: 'revive', index: 2, quantity: 999 } as BattleAction,
+    'item-request',
+  );
+  assert.deepEqual(calls[2].options?.json, {
+    turn: 1,
+    phase: 'turn',
+    action: { kind: 'item', item: 'revive', index: 2 },
+    requestId: 'item-request',
+  });
+});
