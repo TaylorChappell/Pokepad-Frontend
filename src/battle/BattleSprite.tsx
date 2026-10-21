@@ -13,6 +13,13 @@ import {
   type BodyFrameSelection,
 } from './body-animation';
 import { getBodyAssetState, preloadBattleBodies, subscribeBodyAsset } from './body-registry';
+import {
+  getBodyTransitionStyle,
+  sampleBodyTransition,
+  type BodyTransition,
+} from './body-transition';
+
+export type { BodyTransition } from './body-transition';
 
 function useReducedMotion(explicit: boolean) {
   const [system, setSystem] = useState(
@@ -32,6 +39,43 @@ function useReducedMotion(explicit: boolean) {
 }
 
 const now = () => (typeof performance === 'undefined' ? 0 : performance.now());
+function useBodyTransition(transition: BodyTransition | undefined, reducedMotion: boolean) {
+  const key = transition
+    ? `${transition.phase}:${transition.startedAt}:${transition.durationMs}:${reducedMotion}`
+    : '';
+  const [clock, setClock] = useState({ key, time: now() });
+  const time = clock.key === key ? clock.time : now();
+  useEffect(() => {
+    if (!transition) return;
+    if (reducedMotion) {
+      const cutoff = transition.phase === 'recall' ? 0.5 : 0.45;
+      const deadline = transition.startedAt + transition.durationMs * cutoff;
+      const timer = window.setTimeout(
+        () => setClock({ key, time: Math.max(now(), deadline) }),
+        Math.max(0, deadline - now()),
+      );
+      return () => window.clearTimeout(timer);
+    }
+    let raf = 0;
+    let previous = '';
+    const tick = (timeMs: number) => {
+      const sampled = sampleBodyTransition(transition, timeMs - transition.startedAt);
+      const next = `${sampled.density}:${sampled.silhouette}`;
+      if (previous !== next) {
+        previous = next;
+        setClock({ key, time: timeMs });
+      }
+      if (timeMs - transition.startedAt < transition.durationMs)
+        raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [transition?.phase, transition?.startedAt, transition?.durationMs, reducedMotion]);
+  return transition
+    ? sampleBodyTransition(transition, Math.max(0, time - transition.startedAt), reducedMotion)
+    : undefined;
+}
+
 function useBodyFrame(
   manifest: BodyManifest,
   side: Side,
@@ -99,6 +143,7 @@ export function BattleSprite({
   cueStartedAt = 0,
   reducedMotion = false,
   paused = false,
+  transition,
 }: {
   speciesId: number;
   shiny?: boolean;
@@ -111,6 +156,7 @@ export function BattleSprite({
   cueStartedAt?: number;
   reducedMotion?: boolean;
   paused?: boolean;
+  transition?: BodyTransition;
 }) {
   const species = pokemonById(speciesId);
   const subscribe = useMemo(
@@ -124,7 +170,16 @@ export function BattleSprite({
       ? supplied
       : state.manifest || supplied || getBodyPreviewManifest(species.id);
   const reduced = useReducedMotion(reducedMotion);
-  const selection = useBodyFrame(manifest, side, shiny, cue, cueStartedAt, reduced, paused);
+  const transitionSample = useBodyTransition(transition, reduced);
+  const selection = useBodyFrame(
+    manifest,
+    side,
+    shiny,
+    cue,
+    cueStartedAt,
+    reduced,
+    paused || !!transition,
+  );
   useEffect(() => {
     void preloadBattleBodies([{ speciesId: species.id, shiny }]).catch(() => {});
   }, [species.id, shiny]);
@@ -145,6 +200,9 @@ export function BattleSprite({
       data-body-action={selection.clip.action}
       data-body-frame={selection.frameIndex}
       data-body-phase={selection.phase}
+      data-body-transition={transition?.phase}
+      data-body-density={transitionSample?.density}
+      data-body-silhouette={transitionSample?.silhouette || undefined}
       style={{
         display: 'block',
         width: '100%',
@@ -154,7 +212,14 @@ export function BattleSprite({
       }}
     >
       {canRender ? (
-        <span className="battle-body-canvas" style={{ width: '100%', height: '100%' }}>
+        <span
+          className="battle-body-canvas"
+          style={{
+            width: '100%',
+            height: '100%',
+            ...getBodyTransitionStyle(transition, transitionSample, actor?.pixelScale),
+          }}
+        >
           <span
             className="battle-body-frame"
             style={{

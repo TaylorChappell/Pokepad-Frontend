@@ -336,6 +336,9 @@ test('zero HP remains visible through real faint frames and stays hidden after t
   replace('requestAnimationFrame', requestFrame);
   replace('cancelAnimationFrame', cancelFrame);
   dom.window.HTMLImageElement.prototype.decode = async () => {};
+  // This DOM fixture checks faint visibility and event timing. Native canvas
+  // drawing is covered separately; JSDOM has no raster context implementation.
+  dom.window.HTMLCanvasElement.prototype.getContext = () => null;
   dom.window.scrollTo = () => {};
   replace('fetch', async (input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;

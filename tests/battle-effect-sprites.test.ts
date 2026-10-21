@@ -15,6 +15,9 @@ import {
   resolveEffectAnchors,
   sampleSpriteLayer,
 } from '../src/battle/effect-sprites';
+import { NATIVE_EFFECT_ASSETS, nativeMoveAssetIds } from '../src/battle/native-effect-art';
+import { snapNativePoint } from '../src/battle/native-effect-renderer';
+import { compileNativeEffects } from '../src/battle/native-effect-scene';
 import { EFFECT_ATLASES, effectFrameAt, effectFrameGeometry } from '../src/battle/effect-atlases';
 
 const scene = createBattleScene({
@@ -196,22 +199,30 @@ test('charge and self-moves stay with their caster; Fly release dives toward the
   assert.equal(fly.script.motion, 'leap');
 });
 
-test('renderer uses raster source crops and one static cue for reduced motion', () => {
+test('renderer provides three native pixel planes and a static reduced-motion cue', () => {
   const cue = cueFor('Hydro Pump');
   const markup = renderToStaticMarkup(createElement(BattleEffects, { cue, scene }));
-  assert.ok(markup.includes('sheet-02.png'));
-  assert.ok(markup.includes('data-sprite-frame="0"'));
-  assert.ok(!markup.includes('<svg'));
-  assert.ok(!markup.includes('NaN'));
-  const reduced = renderToStaticMarkup(
-    createElement(BattleEffects, { cue, scene, reducedMotion: true }),
+  assert.equal((markup.match(/<canvas/g) || []).length, 3);
+  assert.ok(markup.includes('data-depth="rear"'));
+  assert.ok(markup.includes('data-depth="middle"'));
+  assert.ok(markup.includes('data-depth="front"'));
+  assert.ok(!markup.includes('sheet-02.png'));
+  assert.ok(!markup.includes('rotate('));
+  const fractional = { ...scene, width: 900.4, height: 460.6 };
+  const sized = renderToStaticMarkup(createElement(BattleEffects, { cue, scene: fractional }));
+  assert.ok(
+    sized.includes('width:900px;height:461px'),
+    'Canvas display does not stretch to fractional field pixels',
   );
-  assert.ok(reduced.includes('pixel-vfx-reduced-cue'));
-  assert.ok(!reduced.includes('pixel-vfx-particle'));
-  assert.equal((reduced.match(/data-sprite-frame/g) || []).length, 1);
+  assert.ok(!markup.includes('NaN'));
+  const timeline = buildSpriteTimeline(cue, scene);
+  const reduced = compileNativeEffects(timeline, cue, scene, scene, 0, true);
+  assert.equal(reduced.sprites.length, 1);
+  assert.equal(reduced.beams.length, 0);
+  assert.ok(NATIVE_EFFECT_ASSETS[reduced.sprites[0].assetId]);
 });
 
-test('effect preloading decodes each sheet once and retries a failed load', async () => {
+test('effect preloading decodes native source art once and retries a failed load', async () => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'Image');
   const created: string[] = [];
   let fail = true;
@@ -221,7 +232,7 @@ test('effect preloading decodes each sheet once and retries a failed load', asyn
     src = '';
     decode() {
       created.push(this.src);
-      return this.src.includes('sheet-05') && fail
+      return this.src.includes('/scratch.svg') && fail
         ? Promise.reject(new Error('offline'))
         : Promise.resolve();
     }
@@ -236,13 +247,13 @@ test('effect preloading decodes each sheet once and retries a failed load', asyn
       preloadEffectSprites(['Ember', 'Fire Blast']),
       preloadEffectSprites(['Hyper Beam']),
     ]);
-    assert.equal(created.filter((url) => url.includes('sheet-01')).length, 1);
+    assert.equal(created.filter((url) => url.includes('/ember.svg')).length, 1);
     await assert.rejects(preloadEffectSprites(['Scratch']), /could not load/);
     fail = false;
     await preloadEffectSprites(['Scratch']);
-    await preloadEffectSprites(['Slash']);
+    await preloadEffectSprites(['Scratch']);
     assert.equal(
-      created.filter((url) => url.includes('sheet-05')).length,
+      created.filter((url) => url.includes('/scratch.svg')).length,
       2,
       'The rejected promise is evicted, the successful retry stays cached',
     );
@@ -317,8 +328,16 @@ test('beam and vine endpoints track current pose anchors throughout emission', (
       const anchors = resolveEffectAnchors(cue, current);
       const start = sampleSpriteLayer(first, timeline, cue, scene, current, now);
       const end = sampleSpriteLayer(last, timeline, cue, scene, current, now);
-      assert.deepEqual(start.position, anchors.source, `${name}: live source`);
-      assert.deepEqual(end.position, anchors.target, `${name}: live target`);
+      assert.deepEqual(
+        start.position,
+        snapNativePoint(anchors.source, start.pixelScale, start.gridOrigin),
+        `${name}: live source`,
+      );
+      assert.deepEqual(
+        end.position,
+        snapNativePoint(anchors.target, end.pixelScale, end.gridOrigin),
+        `${name}: live target`,
+      );
       assert.ok(start.opacity > 0 && end.opacity > 0, `${name}: no detached tail`);
     }
   }
@@ -364,4 +383,114 @@ test('the shared cue epoch catches up delayed mounts and all 48 move launches fo
       assert.ok(layer.delay >= Math.floor(cue.durationMs * timeline.script.releaseAt), name);
     }
   }
+});
+
+test('native choreography uses connected beams, single complete tethers and straddled area clips', () => {
+  for (const name of PRESENTED_MOVES) {
+    for (const side of ['player', 'rival'] as const) {
+      for (const outcome of ['hit', 'miss', 'immune', 'charge'] as const) {
+        const cue = cueFor(name, side, outcome),
+          timeline = buildSpriteTimeline(cue, scene);
+        for (const phase of [0.2, 0.5, 0.78]) {
+          const compiled = compileNativeEffects(
+            timeline,
+            cue,
+            scene,
+            scene,
+            cue.durationMs * phase,
+          );
+          for (const command of compiled.sprites) {
+            assert.ok(NATIVE_EFFECT_ASSETS[command.assetId], name);
+            assert.ok(Number.isInteger(command.paint.pixelScale));
+            assert.ok(command.paint.frameIndex < NATIVE_EFFECT_ASSETS[command.assetId].frameCount);
+            if ((outcome === 'miss' || outcome === 'immune') && cue.target !== 'self')
+              assert.ok(!['impact', 'return', 'self'].includes(command.role), `${name}:${outcome}`);
+          }
+        }
+      }
+    }
+  }
+  const fire = cueFor('Flamethrower'),
+    fireTime = buildSpriteTimeline(fire, scene);
+  const beam = compileNativeEffects(fireTime, fire, scene, scene, fire.durationMs * 0.5);
+  assert.equal(beam.beams.length, 1);
+  assert.ok(
+    beam.sprites.filter((s) => s.role === 'travel').length <= 1,
+    'No chain of flame stamps',
+  );
+  for (const name of ['Fire Spin', 'Night Shade', 'Rock Slide']) {
+    const cue = cueFor(name),
+      timeline = buildSpriteTimeline(cue, scene);
+    const compiled = compileNativeEffects(timeline, cue, scene, scene, cue.durationMs * 0.82);
+    assert.ok(
+      compiled.sprites.some((s) => s.assetId.endsWith('_back') && s.depth === 'rear'),
+      name,
+    );
+    assert.ok(
+      compiled.sprites.some((s) => s.assetId.endsWith('_front') && s.depth === 'middle'),
+      name,
+    );
+  }
+  assert.ok(nativeMoveAssetIds('Flamethrower').every((id) => NATIVE_EFFECT_ASSETS[id]));
+});
+
+test('equal-size actors keep impact pixels on the victim lattice and reduced misses stay at source', () => {
+  const equal = structuredClone(scene);
+  equal.actors.player.pixelScale = 6;
+  equal.actors.rival.pixelScale = 6;
+  equal.actors.player.origin = { x: -22, y: 95 };
+  equal.actors.rival.origin = { x: 442, y: -41 };
+  const cue = cueFor('Ember');
+  const timeline = buildSpriteTimeline(cue, equal);
+  const effect = compileNativeEffects(timeline, cue, equal, equal, cue.durationMs * 0.76);
+  const impact = effect.sprites.find((s) => s.role === 'impact')!;
+  assert.deepEqual(impact.paint.gridOrigin, equal.actors.rival.origin);
+  for (const outcome of ['miss', 'immune'] as const) {
+    const failed = cueFor('Ember', 'player', outcome);
+    const reduced = compileNativeEffects(
+      buildSpriteTimeline(failed, equal),
+      failed,
+      equal,
+      equal,
+      0,
+      true,
+    );
+    assert.equal(reduced.sprites[0].role, 'release');
+    assert.deepEqual(reduced.sprites[0].paint.gridOrigin, equal.actors.player.origin);
+  }
+});
+
+test('native tethers reach the current target in either direction and small swords orbit at actor scale', () => {
+  for (const name of ['Vine Whip', 'Lick'])
+    for (const side of ['player', 'rival'] as const) {
+      const cue = cueFor(name, side),
+        timeline = buildSpriteTimeline(cue, scene);
+      const compiled = compileNativeEffects(timeline, cue, scene, scene, cue.durationMs * 0.76);
+      assert.equal(compiled.tethers.length, 1);
+      assert.equal(compiled.tethers[0].progress, 1);
+      const anchors = resolveEffectAnchors(cue, scene);
+      assert.deepEqual(compiled.tethers[0].source, anchors.source);
+      assert.deepEqual(compiled.tethers[0].target, anchors.target);
+    }
+  const cue = cueFor('Swords Dance'),
+    timeline = buildSpriteTimeline(cue, scene);
+  const compiled = compileNativeEffects(timeline, cue, scene, scene, cue.durationMs * 0.4);
+  assert.equal(compiled.sprites.length, 3);
+  assert.ok(compiled.sprites.every((s) => s.assetId === 'sword_lightblue'));
+  assert.equal(new Set(compiled.sprites.map((s) => s.depth)).size, 2);
+  const harden = cueFor('Harden');
+  const guarded = compileNativeEffects(
+    buildSpriteTimeline(harden, scene),
+    harden,
+    scene,
+    scene,
+    harden.durationMs * 0.4,
+  );
+  assert.equal(guarded.sprites.length, 3);
+  assert.ok(guarded.sprites.every((s) => NATIVE_EFFECT_ASSETS[s.assetId].frameWidth <= 16));
+  assert.ok(
+    guarded.sprites.every(
+      (s) => s.clip === scene.actors.player.activeBounds || s.clip === scene.actors.player.bounds,
+    ),
+  );
 });

@@ -24,6 +24,7 @@ import {
 } from '../battle/body-registry';
 import { useBattleAudio } from '../battle/audio';
 import { BattleEffects } from '../components/BattleEffects';
+import { BattleSwitchEffects } from '../battle/BattleSwitchEffects';
 import { createBattlePlayback, type BattleCue } from '../battle/presentation';
 import {
   DIFFICULTIES,
@@ -417,19 +418,20 @@ export function BattlesPage() {
       }
       setDisplayBattle(frame.displayState);
       setDialogue(frame.event.text);
+      const durationMs = state.profile.reducedMotion
+        ? Math.min(frame.durationMs, 450)
+        : frame.durationMs;
       setCueStartedAt(performance.now());
-      setCue(frame.cue);
+      setCue(frame.cue ? { ...frame.cue, durationMs } : null);
       if (frame.cue?.kind === 'faint') {
         const side = frame.cue.side;
         completedFaint = frame.displayState[side][frame.displayState.active[side]].id;
       }
       if (frame.cue?.moveName) audio.playMove(frame.cue.moveName);
-      else if (frame.event.kind === 'switch') audio.playCue('switch');
+      else if (frame.event.kind === 'switch' && frame.switch?.phase !== 'recall')
+        audio.playCue('switch');
       else if (frame.event.kind === 'faint') audio.playCue('faint');
-      timer.current = setTimeout(
-        advance,
-        state.profile.reducedMotion ? Math.min(frame.durationMs, 450) : frame.durationMs,
-      );
+      timer.current = setTimeout(advance, durationMs);
     };
     advance();
   };
@@ -565,7 +567,18 @@ export function BattlesPage() {
                 manifest={rivalBody}
                 cue={cue}
                 cueStartedAt={cueStartedAt}
-                paused={rivalFainted || (busy && !cue)}
+                transition={
+                  cue?.switchPhase && cue.side === 'rival'
+                    ? {
+                        phase: cue.switchPhase,
+                        startedAt: cueStartedAt,
+                        durationMs: cue.durationMs,
+                      }
+                    : undefined
+                }
+                paused={
+                  rivalFainted || (busy && !cue) || (cue?.kind === 'switch' && cue.side === 'rival')
+                }
                 reducedMotion={state.profile.reducedMotion}
               />
             </div>
@@ -584,11 +597,30 @@ export function BattlesPage() {
                 manifest={playerBody}
                 cue={cue}
                 cueStartedAt={cueStartedAt}
-                paused={playerFainted || (busy && !cue)}
+                transition={
+                  cue?.switchPhase && cue.side === 'player'
+                    ? {
+                        phase: cue.switchPhase,
+                        startedAt: cueStartedAt,
+                        durationMs: cue.durationMs,
+                      }
+                    : undefined
+                }
+                paused={
+                  playerFainted ||
+                  (busy && !cue) ||
+                  (cue?.kind === 'switch' && cue.side === 'player')
+                }
                 reducedMotion={state.profile.reducedMotion}
               />
             </div>
             <BattleEffects
+              cue={cue?.kind === 'switch' ? null : cue}
+              scene={scene}
+              cueStartedAt={cueStartedAt}
+              reducedMotion={state.profile.reducedMotion}
+            />
+            <BattleSwitchEffects
               cue={cue}
               scene={scene}
               cueStartedAt={cueStartedAt}

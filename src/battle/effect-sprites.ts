@@ -1,6 +1,8 @@
+import { asset } from '../utils';
 import type { BattleCue } from './presentation';
 import type { BattleScene } from './geometry';
-import { asset } from '../utils';
+import { NATIVE_EFFECT_ASSETS, nativeMoveAssetIds } from './native-effect-art';
+import { preloadNativeEffectImages, snapNativePoint } from './native-effect-renderer';
 
 export type AttackOrigin = 'mouth' | 'hand' | 'cannon' | 'body' | 'feet' | 'crown';
 export type AttackMotion =
@@ -49,7 +51,7 @@ export interface MoveSpriteScript {
   origin: AttackOrigin;
   motion: AttackMotion;
   recipe: SpriteRecipe;
-  /** Size at the 1000 by 600 reference battlefield, independently tuned for this move. */
+  /** Choreography spread at the reference battlefield; native art uses the actor pixel scale. */
   size: number;
   count: number;
   spread: number;
@@ -84,7 +86,7 @@ const move = (
   impactAt,
 });
 
-/** Every playable move owns a six-frame strip and an authored release/impact sequence. */
+/** Every playable move owns an authored release, travel, impact and recovery sequence. */
 export const MOVE_SPRITE_SCRIPTS: Readonly<Record<string, MoveSpriteScript>> = Object.freeze(
   Object.fromEntries(
     [
@@ -148,46 +150,43 @@ export const EFFECT_ATLAS_ROWS = 6;
 export const effectSheetPath = (sheet: number) =>
   `battle/effects/sheet-${String(sheet).padStart(2, '0')}.png`;
 
-const spriteLoads = new Map<string, Promise<void>>();
-/** Wait for decoded art before the first command; failures are evicted so Retry is meaningful. */
+let ballLoad: Promise<void> | undefined;
+function preloadBattleBall(): Promise<void> {
+  if (typeof Image === 'undefined') return Promise.resolve();
+  if (ballLoad) return ballLoad;
+  ballLoad = new Promise<void>((resolve, reject) => {
+    const image = new Image();
+    let settled = false;
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      image.onload = null;
+      image.onerror = null;
+      error ? reject(error) : resolve();
+    };
+    const failed = () => finish(new Error('Battle effects could not load. Please try again.'));
+    const timeout = setTimeout(failed, 15000);
+    image.onerror = failed;
+    image.onload = () => {
+      if (typeof image.decode !== 'function') finish();
+    };
+    image.src = asset('pixel/items/poke-ball.png');
+    if (typeof image.decode === 'function') image.decode().then(() => finish(), failed);
+    else if (image.complete && image.naturalWidth > 0) finish();
+  }).catch((error) => {
+    ballLoad = undefined;
+    throw error;
+  });
+  return ballLoad;
+}
+
+/** Decode native art before commands and switches; failed decodes remain retryable. */
 export async function preloadEffectSprites(moveNames?: readonly string[]): Promise<void> {
-  if (typeof Image === 'undefined') return;
-  const sheets = moveNames
-    ? [...new Set(moveNames.map((name) => getMoveSpriteScript(name).sheet))]
-    : [1, 2, 3, 4, 5, 6, 7, 8];
-  await Promise.all(
-    sheets.map((sheet) => {
-      const url = asset(effectSheetPath(sheet));
-      const cached = spriteLoads.get(url);
-      if (cached) return cached;
-      const pending = new Promise<void>((resolve, reject) => {
-        const sprite = new Image();
-        let settled = false;
-        const finish = (error?: Error) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timeout);
-          sprite.onload = null;
-          sprite.onerror = null;
-          error ? reject(error) : resolve();
-        };
-        const failed = () => finish(new Error('Battle effects could not load. Please try again.'));
-        const timeout = setTimeout(failed, 15000);
-        sprite.onerror = failed;
-        sprite.onload = () => {
-          if (typeof sprite.decode !== 'function') finish();
-        };
-        sprite.src = url;
-        if (typeof sprite.decode === 'function') sprite.decode().then(() => finish(), failed);
-        else if (sprite.complete && sprite.naturalWidth > 0) finish();
-      }).catch((error) => {
-        spriteLoads.delete(url);
-        throw error;
-      });
-      spriteLoads.set(url, pending);
-      return pending;
-    }),
-  );
+  const ids = moveNames
+    ? [...moveNames.flatMap(nativeMoveAssetIds), 'materialize', 'synthesis_sparkle']
+    : Object.keys(NATIVE_EFFECT_ASSETS);
+  await Promise.all([preloadNativeEffectImages(ids), preloadBattleBall()]);
 }
 export type EffectPoint = { x: number; y: number };
 export interface EffectSpriteLayer {
@@ -215,6 +214,8 @@ export interface SpriteTimeline {
   target: EffectPoint;
   origin: AttackOrigin;
   layers: EffectSpriteLayer[];
+  releaseSource?: EffectPoint;
+  releaseTarget?: EffectPoint;
 }
 const lerp = (a: EffectPoint, b: EffectPoint, t: number): EffectPoint => ({
   x: a.x + (b.x - a.x) * t,
@@ -811,6 +812,16 @@ export function bindSpriteTimeline(
 ): SpriteTimeline {
   return {
     ...timeline,
+    releaseSource: resolveEffectAnchors(
+      cue,
+      sceneAt(timeline.script.releaseAt * cue.durationMs),
+      timeline.script,
+    ).source,
+    releaseTarget: resolveEffectAnchors(
+      cue,
+      sceneAt(timeline.script.impactAt * cue.durationMs),
+      timeline.script,
+    ).target,
     layers: timeline.layers.map((layer) => {
       if (layer.space !== 'flight') return layer;
       const adjust = (p: EffectPoint, elapsed: number, binding: 'source' | 'target' | 'path') => {
@@ -843,10 +854,91 @@ export function bindSpriteTimeline(
   };
 }
 
+export type EffectDepth = 'rear' | 'middle' | 'front';
+export const EFFECT_DEPTH_Z: Record<EffectDepth, number> = { rear: 1, middle: 3, front: 5 };
+const actorScale = (value: number) => Math.max(1, Math.round(value));
+function pathFraction(position: EffectPoint, source: EffectPoint, target: EffectPoint) {
+  const dx = target.x - source.x,
+    dy = target.y - source.y;
+  const length = dx * dx + dy * dy;
+  return length
+    ? clamp01(((position.x - source.x) * dx + (position.y - source.y) * dy) / length)
+    : 0;
+}
+export function getEffectPixelScale(
+  layer: EffectSpriteLayer,
+  timeline: SpriteTimeline,
+  cue: BattleCue,
+  scene: BattleScene,
+  position: EffectPoint,
+): number {
+  const source = actorScale(scene.actors[cue.side].pixelScale);
+  const target = actorScale(scene.actors[cue.targetSide].pixelScale);
+  if (layer.space === 'source' || layer.role === 'self') return source;
+  if (layer.space === 'target' || layer.role === 'impact') return target;
+  return actorScale(
+    source + (target - source) * pathFraction(position, timeline.source, timeline.target),
+  );
+}
+export function getEffectGridOrigin(
+  scene: BattleScene,
+  cue: BattleCue,
+  scale: number,
+  owner?: 'source' | 'target',
+  position?: EffectPoint,
+): EffectPoint {
+  if (owner === 'source') return scene.actors[cue.side].origin;
+  if (owner === 'target') return scene.actors[cue.targetSide].origin;
+  const source = scene.actors[cue.side],
+    target = scene.actors[cue.targetSide];
+  if (scale === actorScale(source.pixelScale) && scale === actorScale(target.pixelScale)) {
+    const progress = position
+      ? pathFraction(position, source.anchors.body, target.anchors.body)
+      : 0;
+    return progress > 0.5 ? target.origin : source.origin;
+  }
+  if (scale === actorScale(source.pixelScale)) return source.origin;
+  if (scale === actorScale(target.pixelScale)) return target.origin;
+  return { x: 0, y: 0 };
+}
+const behindActor = (side: BattleCue['side']): EffectDepth =>
+  side === 'player' ? 'middle' : 'rear';
+const beforeActor = (side: BattleCue['side']): EffectDepth =>
+  side === 'player' ? 'front' : 'middle';
+export function getEffectDepth(
+  layer: EffectSpriteLayer,
+  timeline: SpriteTimeline,
+  cue: BattleCue,
+  scene: BattleScene,
+  position: EffectPoint,
+): EffectDepth {
+  if (layer.role === 'self' || layer.space === 'source') return behindActor(cue.side);
+  if (layer.role === 'impact' || layer.space === 'target') return beforeActor(cue.targetSide);
+  if (layer.space === 'ground') return behindActor(cue.targetSide);
+  const inside = (side: BattleCue['side']) => {
+    const box = scene.actors[side].activeBounds || scene.actors[side].bounds;
+    return (
+      position.x >= box.x &&
+      position.x <= box.x + box.width &&
+      position.y >= box.y &&
+      position.y <= box.y + box.height
+    );
+  };
+  const t = pathFraction(position, timeline.source, timeline.target);
+  if (t < 0.35 && inside(cue.side))
+    return layer.role === 'return' ? beforeActor(cue.side) : behindActor(cue.side);
+  if (t > 0.65 && inside(cue.targetSide))
+    return layer.role === 'return' ? behindActor(cue.targetSide) : beforeActor(cue.targetSide);
+  return 'middle';
+}
+
 export interface EffectSpriteSample {
   position: EffectPoint;
   opacity: number;
   rotation: number;
+  pixelScale: number;
+  depth: EffectDepth;
+  gridOrigin: EffectPoint;
 }
 
 /** Position, opacity and crop frame all share the cue clock, including delayed particles. */
@@ -889,7 +981,23 @@ export function sampleSpriteLayer(
       : progress > 0.82
         ? (1 - progress) / 0.18
         : 1;
-  return { position: point(position), opacity: fade * layer.opacity, rotation };
+  const pixelScale = getEffectPixelScale(layer, timeline, cue, currentScene, position);
+  const owner =
+    layer.role === 'impact' || layer.space === 'target'
+      ? 'target'
+      : layer.role === 'self' || layer.space === 'source'
+        ? 'source'
+        : undefined;
+  const gridOrigin = getEffectGridOrigin(currentScene, cue, pixelScale, owner, position);
+  position = snapNativePoint(position, pixelScale, gridOrigin);
+  return {
+    position,
+    opacity: fade * layer.opacity,
+    rotation,
+    pixelScale,
+    depth: getEffectDepth(layer, timeline, cue, currentScene, position),
+    gridOrigin,
+  };
 }
 
 /** A late-mounted frame catches up to the existing cue instead of restarting its animation. */

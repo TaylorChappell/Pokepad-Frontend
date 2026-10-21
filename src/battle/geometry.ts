@@ -19,6 +19,7 @@ export interface BattleActorGeometry {
   rect: { x: number; y: number; width: number; height: number; size: number };
   /** Union of all actual animation pixels, at one scale for every clip. */
   bounds: { x: number; y: number; width: number; height: number };
+  activeBounds?: { x: number; y: number; width: number; height: number };
   anchors: Record<BattleAnchor, BattlePoint>;
   ground: BattlePoint & { rx: number; ry: number };
   origin: BattlePoint;
@@ -136,6 +137,12 @@ export function getBattleActorGeometry(
   };
   for (const anchor of anchors)
     actor.anchors[anchor] = bodyPointOnField(actor, idle.frame.anchors[anchor]);
+  const idlePoint = bodyPointOnField(actor, [idle.frame.bounds[0], idle.frame.bounds[1]]);
+  actor.activeBounds = {
+    ...idlePoint,
+    width: idle.frame.bounds[2] * pixelScale,
+    height: idle.frame.bounds[3] * pixelScale,
+  };
   return actor;
 }
 
@@ -196,6 +203,11 @@ export function sampleBattleSceneAt(
     });
     sampled.actors[side] = {
       ...actor,
+      activeBounds: {
+        ...bodyPointOnField(actor, [sample.frame.bounds[0], sample.frame.bounds[1]]),
+        width: sample.frame.bounds[2] * actor.pixelScale,
+        height: sample.frame.bounds[3] * actor.pixelScale,
+      },
       anchors: Object.fromEntries(
         anchors.map((anchor) => [anchor, bodyPointOnField(actor, sample.frame.anchors[anchor])]),
       ) as Record<BattleAnchor, BattlePoint>,

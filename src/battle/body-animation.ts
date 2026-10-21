@@ -168,6 +168,17 @@ const finiteRect = (r: unknown): r is BodyRect =>
 const rectInside = ([x, y, w, h]: BodyRect, width: number, height: number) =>
   x >= 0 && y >= 0 && x + w <= width + 0.001 && y + h <= height + 0.001;
 
+// Measured in the source Attack frames. These follow each frame's moving head
+// landmark; a screen-space offset would drift as the arena or Pokémon changes.
+const hornFromHead: Record<number, Record<BodyFacing, BodyPoint>> = {
+  29: { back: [-1, -4], front: [3, -4] },
+  30: { back: [-2, -2], front: [-1, -7] },
+  31: { back: [0, -6], front: [3, -9] },
+  32: { back: [-2, -6], front: [2, -7] },
+  33: { back: [-1, -9], front: [4, -8] },
+  34: { back: [4, -8], front: [5, -12] },
+};
+
 function bodyAnchors(
   frame: PmdFrame,
   side: Side,
@@ -176,15 +187,20 @@ function bodyAnchors(
   const { body, head, leftHand, rightHand, feet } = frame.anchors;
   const hand = side === 'player' ? rightHand : leftHand;
   const direction = side === 'player' ? 1 : -1;
-  const mouth: BodyPoint = [
-    head[0] + direction * Math.min(3, frame.bounds[2] * 0.06),
-    head[1] - direction,
-  ];
+  const horn = hornFromHead[speciesId]?.[side === 'player' ? 'back' : 'front'];
+  // PMD's authored head point follows the open mouth in the firing frames.
+  // Adding an arbitrary forward/up offset moves Charizard's flame off its jaw
+  // and makes the same offset point behind the muzzle in several front poses.
+  const mouth: BodyPoint = [head[0], head[1]];
   // PMD supplies a moving head marker and both hands. Species anatomy adds the
   // bulb/horn/cannon points which the original offset format does not encode.
   const crown: BodyPoint = [1, 2, 3].includes(speciesId)
     ? [body[0] - direction * frame.bounds[2] * 0.1, frame.bounds[1] + frame.bounds[3] * 0.19]
-    : [head[0], head[1] - Math.min(4, frame.bounds[3] * 0.12)];
+    : speciesId === 13
+      ? [frame.bounds[0] + frame.bounds[2] * (side === 'player' ? 0.44 : 0.23), frame.bounds[1] + 1]
+      : horn
+        ? [head[0] + horn[0], head[1] + horn[1]]
+        : [head[0], head[1] - Math.min(4, frame.bounds[3] * 0.12)];
   const cannon: BodyPoint =
     speciesId === 9
       ? [
@@ -192,7 +208,16 @@ function bodyAnchors(
           body[1] - Math.min(10, frame.bounds[3] * 0.26) - direction,
         ]
       : mouth;
-  return { body, mouth, hand, cannon, feet, crown };
+  // Anatomical adjustments remain on the same native pixel grid as the body.
+  const pixel = (point: BodyPoint): BodyPoint => [Math.round(point[0]), Math.round(point[1])];
+  return {
+    body: pixel(body),
+    mouth: pixel(mouth),
+    hand: pixel(hand),
+    cannon: pixel(cannon),
+    feet: pixel(feet),
+    crown: pixel(crown),
+  };
 }
 
 function normalizeClip(
@@ -396,9 +421,12 @@ export function getBodyPreviewManifest(speciesId: number): BodyManifest {
 export function getBodyView(manifest: BodyManifest, side: Side, shiny = false): BodyView {
   return manifest.variants[shiny ? 'shiny' : 'normal'][side === 'player' ? 'back' : 'front'];
 }
-export function resolveBodyAction(view: BodyView, moveName: string): BodyClip {
+export function resolveBodyAction(view: BodyView, moveName: string, speciesId?: number): BodyClip {
   const choices = BODY_MOVE_ACTIONS[moveName];
   if (!choices) throw new Error(`Body animation mapping unavailable for ${moveName}`);
+  // Weedle Strike's marker belongs to its baked yellow arc, not its horn.
+  // Its authored Shoot pose gives Poison Sting a stable physical origin.
+  if (speciesId === 13 && moveName === 'Poison Sting' && view.clips.Shoot) return view.clips.Shoot;
   for (const name of choices) if (view.clips[name]) return view.clips[name];
   if (view.clips.Attack) return view.clips.Attack;
   throw new Error(`Body animation unavailable for ${moveName}`);
@@ -462,8 +490,8 @@ export function getBodyFrameAt(
     } else if (cue.kind === 'move' && cue.side === side && cue.moveName) {
       clip =
         cue.outcome === 'charge'
-          ? view.clips.Charge || resolveBodyAction(view, cue.moveName)
-          : resolveBodyAction(view, cue.moveName);
+          ? view.clips.Charge || resolveBodyAction(view, cue.moveName, manifest.speciesId)
+          : resolveBodyAction(view, cue.moveName, manifest.speciesId);
       animation = cue.moveName;
       const timing = getBodyMoveTiming(cue.moveName);
       phase =

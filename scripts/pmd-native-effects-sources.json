@@ -1,0 +1,572 @@
+{
+  "source": {
+    "repository": "PMDCollab/RawAsset",
+    "commit": "03c80dad937911572f8fb19903771a47956fc696"
+  },
+  "assets": [
+    {
+      "id": "ember",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Ember.None.png",
+      "gitBlobSha": "aae684faec6834460b0aab5d7f7d8ff09fb38a0b"
+    },
+    {
+      "id": "burned",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Burned.None.png",
+      "gitBlobSha": "df756636e94fc4627be3f3f7da64de2aadeb5e54"
+    },
+    {
+      "id": "flamethrower",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Flamethrower.None.png",
+      "gitBlobSha": "631081c7044a147a4199011c5f29264389db69c7"
+    },
+    {
+      "id": "beam_column_red_head",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Red/Head.png",
+      "metadataPath": "Beam/Column_Red/BeamData.xml",
+      "gitBlobSha": "2a99d7167d93a95e361c02e29cb8bc08615a5df3",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_red_body",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Red/Body.png",
+      "metadataPath": "Beam/Column_Red/BeamData.xml",
+      "gitBlobSha": "f7565b0b16da2ba5f668ea66f59d58b96c6c660b",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_red_tail",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Red/Tail.png",
+      "metadataPath": "Beam/Column_Red/BeamData.xml",
+      "gitBlobSha": "081f2baffafd3747bc5853d76e2e03ef23461575",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "fire_blast",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Fire_Blast.None.png",
+      "gitBlobSha": "83fd4b73d30ed92ab76ac743ad841e1cb1ed78f3"
+    },
+    {
+      "id": "fire_spin_fireball",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Fire_Spin_Fireball.None.png",
+      "gitBlobSha": "90367baa439cc89bf6549628232ca1b904ce4277"
+    },
+    {
+      "id": "fire_spin_back",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Fire_Spin_Back.None.png",
+      "gitBlobSha": "7d154b851bcfd245c252e7d9bc13d840f7da4d68"
+    },
+    {
+      "id": "fire_spin_front",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Fire_Spin_Front.None.png",
+      "gitBlobSha": "e4458d47d808b6030194869e86f4f516a05c90ef"
+    },
+    {
+      "id": "dragon_pulse_charge",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Dragon_Pulse_Charge.None.png",
+      "gitBlobSha": "0a7dee3bcf2a4171aee96f06788fd710a0d9ee0a"
+    },
+    {
+      "id": "dragon_pulse_ball",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Dragon_Pulse_Ball.None.png",
+      "gitBlobSha": "3af37dfb907324d2249d56247fe1afaa6d1d31bc"
+    },
+    {
+      "id": "charge_beam_start",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Charge_Beam_Start.None.png",
+      "gitBlobSha": "5e1989fca44dfc38b69d9bac526589110f69fb1c"
+    },
+    {
+      "id": "explosion",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Explosion.None.png",
+      "gitBlobSha": "818404cbed027b908b5b266037564b365efdab1c"
+    },
+    {
+      "id": "beam_column_yellow_head",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Yellow/Head.png",
+      "metadataPath": "Beam/Column_Yellow/BeamData.xml",
+      "gitBlobSha": "82f8e1d10ed617f019fce26a05108a081f1f28cc",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_yellow_body",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Yellow/Body.png",
+      "metadataPath": "Beam/Column_Yellow/BeamData.xml",
+      "gitBlobSha": "bbfd5833c3d3f17e0db00376de020ca27dfd0680",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_yellow_tail",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Yellow/Tail.png",
+      "metadataPath": "Beam/Column_Yellow/BeamData.xml",
+      "gitBlobSha": "081f2baffafd3747bc5853d76e2e03ef23461575",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "water_spout_splash",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Water_Spout_Splash.None.png",
+      "gitBlobSha": "b825ad1031362667f84c5f20904eb41b42bdda41"
+    },
+    {
+      "id": "beam_column_blue_head",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Blue/Head.png",
+      "metadataPath": "Beam/Column_Blue/BeamData.xml",
+      "gitBlobSha": "5b4c4268437ea4f53772ffd7d6972cb5e6d0c019",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_blue_body",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Blue/Body.png",
+      "metadataPath": "Beam/Column_Blue/BeamData.xml",
+      "gitBlobSha": "12aa1e0bbb685c2719ffd0ab16387ad3437ce379",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_blue_tail",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Blue/Tail.png",
+      "metadataPath": "Beam/Column_Blue/BeamData.xml",
+      "gitBlobSha": "081f2baffafd3747bc5853d76e2e03ef23461575",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "aqua_tail_wave",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Aqua_Tail_Wave.None.png",
+      "gitBlobSha": "0b6b1e09f2f93366c7c4793f66bedd588a0729f5"
+    },
+    {
+      "id": "hydro_cannon",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Hydro_Cannon.None.png",
+      "gitBlobSha": "af89f302c7f531e5d6a99122a4b34dc8fe0821a5"
+    },
+    {
+      "id": "icy_wind_particle",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Icy_Wind_Particle.None.png",
+      "gitBlobSha": "84b9bef854f07da58cdd0bb79d23f44018df4969"
+    },
+    {
+      "id": "ice_rse",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Ice_RSE.None.png",
+      "gitBlobSha": "d3b1b6f7c960610de11949747889ca1e0fe284b3"
+    },
+    {
+      "id": "beam_column_white_head",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_White/Head.png",
+      "metadataPath": "Beam/Column_White/BeamData.xml",
+      "gitBlobSha": "c63350b22c7cfe6311cb223ea32ac38ec7bf3c3e",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_white_body",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_White/Body.png",
+      "metadataPath": "Beam/Column_White/BeamData.xml",
+      "gitBlobSha": "2c91f9db78a129648fe39598d259a75618517472",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_white_tail",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_White/Tail.png",
+      "metadataPath": "Beam/Column_White/BeamData.xml",
+      "gitBlobSha": "081f2baffafd3747bc5853d76e2e03ef23461575",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "shock_wave",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Shock_Wave.None.png",
+      "gitBlobSha": "c7826b506ce53f578a4aacfd465b880d9cd0d62b"
+    },
+    {
+      "id": "spark",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Spark.None.png",
+      "gitBlobSha": "978f9a476923f651433fb5d28e34c01479711dfd"
+    },
+    {
+      "id": "beam_lightning_head",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Lightning/Head.png",
+      "metadataPath": "Beam/Lightning/BeamData.xml",
+      "gitBlobSha": "499b865c08d51045add03326e38fcf526ed9342a",
+      "metadataGitBlobSha": "27aa7c1298a709ddeaf28efb9fd50f371ad73b04"
+    },
+    {
+      "id": "beam_lightning_body",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Lightning/Body.png",
+      "metadataPath": "Beam/Lightning/BeamData.xml",
+      "gitBlobSha": "b0a85f28f013e60ed2a80c045034b91a7ccf67ca",
+      "metadataGitBlobSha": "27aa7c1298a709ddeaf28efb9fd50f371ad73b04"
+    },
+    {
+      "id": "beam_lightning_tail",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Lightning/Tail.png",
+      "metadataPath": "Beam/Lightning/BeamData.xml",
+      "gitBlobSha": "d699f3244e59235898ce51450d8909881cfb227f",
+      "metadataGitBlobSha": "27aa7c1298a709ddeaf28efb9fd50f371ad73b04"
+    },
+    {
+      "id": "charge_up",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Charge_Up.None.png",
+      "gitBlobSha": "cacad505438c565c700b0176e5b765fc147a572c"
+    },
+    {
+      "id": "discharge_hit",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Discharge_Hit.None.png",
+      "gitBlobSha": "beb3b504012e5fc0896db7bb671e6d10558b1ecd"
+    },
+    {
+      "id": "wave_circle_yellow",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Wave_Circle_Yellow.Dir5.png",
+      "gitBlobSha": "361aea785c0f503ee86c3a5934897cae9550a3fb"
+    },
+    {
+      "id": "confuse_ray",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Confuse_Ray.None.png",
+      "gitBlobSha": "9c9c160cc3320360aef35c374ed237f184914f2b"
+    },
+    {
+      "id": "wave_circle_pink",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Wave_Circle_Pink.Dir5.png",
+      "gitBlobSha": "e6f06175d0af3083ecb49d9abb1e3d986f0a5382"
+    },
+    {
+      "id": "circle_purple_out",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Circle_Purple_Out.None.png",
+      "gitBlobSha": "9b7db033ef36bb7083685c5e944537a77a203c2c"
+    },
+    {
+      "id": "wave_circle_purple",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Wave_Circle_Purple.Dir5.png",
+      "gitBlobSha": "703eef323928380dc4c1df1e1707916e3e0feb6d"
+    },
+    {
+      "id": "sleep_z",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Sleep_Z.None.png",
+      "gitBlobSha": "0bb8234561eeb772adbd7b860c277e5eec7d6b6d"
+    },
+    {
+      "id": "grudge_lights",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Grudge_Lights.None.png",
+      "gitBlobSha": "e7950e31260e12838250b292d4de2a737b6671e1"
+    },
+    {
+      "id": "dark_pulse_back",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Dark_Pulse_Back.None.png",
+      "gitBlobSha": "49bbe3728821a7a441ac973bab7a544b3ce74e26"
+    },
+    {
+      "id": "dark_pulse_front",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Dark_Pulse_Front.None.png",
+      "gitBlobSha": "233ab41e0110fe70910777f6577283da53cc89c2"
+    },
+    {
+      "id": "light_ball_purple",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Light_Ball_Purple.None.png",
+      "gitBlobSha": "71bf8a3d8660e55b668fef1fa7381b16d9b56219"
+    },
+    {
+      "id": "absorb",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Absorb.None.png",
+      "gitBlobSha": "b4970bf8e0b02d202bb7e12adeb72f52027f9630"
+    },
+    {
+      "id": "vine_whip",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Vine_Whip.Dir1.png",
+      "gitBlobSha": "7dbdbcb11caa82850b0f2dc65a9ca72b75c65180"
+    },
+    {
+      "id": "vine_whip_2",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Vine_Whip_2.None.png",
+      "gitBlobSha": "05b06827852467194859b03626d6e5197bbe0132"
+    },
+    {
+      "id": "razor_leaf_charge",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Razor_Leaf_Charge.None.png",
+      "gitBlobSha": "bea7b9d8af1fecdc1f1a246293aa09954d8d173f"
+    },
+    {
+      "id": "razor_leaf",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Razor_Leaf.None.png",
+      "gitBlobSha": "9749a17f7a3c2ff2183508127aeda5bff864ad9c"
+    },
+    {
+      "id": "hit_neutral",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Hit_Neutral.None.png",
+      "gitBlobSha": "4737eb5523be44a8309dd04702f49b47405c60e9"
+    },
+    {
+      "id": "solar_beam_charge",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Solar_Beam_Charge.None.png",
+      "gitBlobSha": "4c9f76a446ec77d07cf3bf264340ee63937db1d6"
+    },
+    {
+      "id": "solar_beam_particle",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Solar_Beam_Particle.None.png",
+      "gitBlobSha": "d42bd2db2e16b81af40fa0a06dced1f0ea672e5c"
+    },
+    {
+      "id": "hit_super_effective",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Hit_Super_Effective.None.png",
+      "gitBlobSha": "2d92c53a4110d1cdfe1029fc800155f681fb29a0"
+    },
+    {
+      "id": "beam_column_green_head",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Green/Head.png",
+      "metadataPath": "Beam/Column_Green/BeamData.xml",
+      "gitBlobSha": "5b812d468ce8a96e5fcac409ce365a626fd0ca04",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_green_body",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Green/Body.png",
+      "metadataPath": "Beam/Column_Green/BeamData.xml",
+      "gitBlobSha": "967c31a6710c1fcac3ad9835c95c80d170edd352",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "beam_column_green_tail",
+      "sourceKind": "beam",
+      "sourcePath": "Beam/Column_Green/Tail.png",
+      "metadataPath": "Beam/Column_Green/BeamData.xml",
+      "gitBlobSha": "081f2baffafd3747bc5853d76e2e03ef23461575",
+      "metadataGitBlobSha": "b3b36e1c7ef2555ae1597f1c7128b41532f75c9c"
+    },
+    {
+      "id": "spores_rse_green",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Spores_RSE_Green.None.png",
+      "gitBlobSha": "42b85197b503d3c4d88b0acf01e0deebe690f2be"
+    },
+    {
+      "id": "spores_rse_purple",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Spores_RSE_Purple.None.png",
+      "gitBlobSha": "abae9cd1c3e96f6e62f70b2b075e5b06cdc077de"
+    },
+    {
+      "id": "bubbles_purple",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Bubbles_Purple.None.png",
+      "gitBlobSha": "bdca51c7b0a504e5dfc33c5d226d5df6a9819eb9"
+    },
+    {
+      "id": "thorn_pink",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Thorn_Pink.Dir2.png",
+      "gitBlobSha": "2f677945308b0c826a7218134e6b0fffb52a2b18"
+    },
+    {
+      "id": "scratch",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Scratch.Dir1.png",
+      "gitBlobSha": "28fdc88f5f7c99ec06fa853ad18c2a5f49fc7848"
+    },
+    {
+      "id": "slash",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Slash.None.png",
+      "gitBlobSha": "3a452b26524f80d5460be1c0454f1186d43ea9a7"
+    },
+    {
+      "id": "bite",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Bite.Dir8.png",
+      "gitBlobSha": "95d4d4a783bc8d81a1a773302bc838fee0172332"
+    },
+    {
+      "id": "lick",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Lick.None.png",
+      "gitBlobSha": "571a51bf7645224f8e7be35e7a92073142644e78"
+    },
+    {
+      "id": "print_foot",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Print_Foot.None.png",
+      "gitBlobSha": "daa14d9c2fbbac20e611af7f1c1e5ddf08d8316d"
+    },
+    {
+      "id": "wing_attack",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Wing_Attack.None.png",
+      "gitBlobSha": "0d5fc45289956550959e41e360e3f360157d3bd4"
+    },
+    {
+      "id": "charge_beam_glow",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Charge_Beam_Glow.None.png",
+      "gitBlobSha": "cc87d50399d9c75374bb76382097404851a59fa0"
+    },
+    {
+      "id": "tailwind",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Tailwind.Dir1.png",
+      "gitBlobSha": "5fd0fc6c75278d0b394237246ae80992394ff0b2"
+    },
+    {
+      "id": "sky_attack",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Sky_Attack.Dir2.png",
+      "gitBlobSha": "32f02ce183d71c8edec041c5ce75017e0f79be97"
+    },
+    {
+      "id": "growl",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Growl.Dir8.png",
+      "gitBlobSha": "bdce27043d036b710f6d0294328b1c924cf2176b"
+    },
+    {
+      "id": "swift_star",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Swift_Star.None.png",
+      "gitBlobSha": "af365c80f5687fd526aa6fb28d234377f75fdda7"
+    },
+    {
+      "id": "sparkle_rse",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Sparkle_RSE.None.png",
+      "gitBlobSha": "6c61a56d6b381a237b57d83d90270650448f106e"
+    },
+    {
+      "id": "sand_tomb_sand",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Sand_Tomb_Sand.None.png",
+      "gitBlobSha": "b72fc48c829b2ed41214796f48d8371694092015"
+    },
+    {
+      "id": "puff_brown",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Puff_Brown.None.png",
+      "gitBlobSha": "83489f58e3bbea7991abb95910fc6b806d2ff829"
+    },
+    {
+      "id": "earthquake_ranger",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Earthquake_Ranger.None.png",
+      "gitBlobSha": "942688914aecae18db58ac5fd014865270472134"
+    },
+    {
+      "id": "rock_pieces",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Rock_Pieces.None.png",
+      "gitBlobSha": "c140b1e346e5188e61e6e39aa0f74b8b75c850fe"
+    },
+    {
+      "id": "rock_slide_back",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Rock_Slide_Back.79.png",
+      "gitBlobSha": "fa4f2ac56fefc91e5875cabba77e6fed04884ec8"
+    },
+    {
+      "id": "rock_slide_front",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Rock_Slide_Front.62.png",
+      "gitBlobSha": "9123dde4e3aed44b31cf46743d1e2d8add4cf1ea"
+    },
+    {
+      "id": "string_shot_ball",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/String_Shot_Ball.None.png",
+      "gitBlobSha": "0248b204bae74c6c752dfdca69f759ef22ac4684"
+    },
+    {
+      "id": "string_shot_web",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/String_Shot_Web.None.png",
+      "gitBlobSha": "2bdb158c159f90e808feca038140ca2ec6fbe800"
+    },
+    {
+      "id": "synthesis_sparkle",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Synthesis_Sparkle.None.png",
+      "gitBlobSha": "aef25e1b78e3822feaf04a4268035dcd8a2c21c2"
+    },
+    {
+      "id": "materialize",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Materialize.None.png",
+      "gitBlobSha": "c0e0b412bd493543352cf3eade86627028d4341a"
+    },
+    {
+      "id": "harden_rse",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Harden_RSE.None.png",
+      "gitBlobSha": "7eb4409dfa4b99efca6ac812e3cedaf18a6d4f3b"
+    },
+    {
+      "id": "swords_dance",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Swords_Dance.None.png",
+      "gitBlobSha": "c10efb552d93a256eac41308116782127d14df6d"
+    },
+    {
+      "id": "circle_white_in",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Circle_White_In.None.png",
+      "gitBlobSha": "b047a63e6afd9061f51806c1a1f8831b0b39cad7"
+    },
+    {
+      "id": "circle_white_out",
+      "sourceKind": "particle",
+      "sourcePath": "Particle/Circle_White_Out.None.png",
+      "gitBlobSha": "3cec37c15272650866427a1f0beddc8f35d4ef94"
+    },
+    {
+      "id": "sword_lightblue",
+      "sourceKind": "icon",
+      "sourcePath": "Icon/Sword_LightBlue.None.png",
+      "gitBlobSha": "deb5fa43cd98f877f6d0703357b2c1d3be961056"
+    }
+  ]
+}

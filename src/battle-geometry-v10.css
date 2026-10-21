@@ -30,3 +30,14 @@
   font-size: 11px;
   line-height: 1.4;
 }
+
+/* Each actor occupies its own depth plane; interface labels always stay in front. */
+.classic-field .classic-rival.battle-placed-actor {
+  z-index: 2;
+}
+.classic-field .classic-player.battle-placed-actor {
+  z-index: 4;
+}
+.classic-field .classic-health {
+  z-index: 8;
+}

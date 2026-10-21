@@ -1,4 +1,4 @@
-# Poképad frontend · interface v11
+# Poképad frontend · interface v12
 
 A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
 
@@ -13,13 +13,17 @@ For development, use Node.js 24:
 
 The preview starts with sample coins, Pokémon, eggs, and packs. No wallet is connected. Trading, wagering, redemption, and walking use labelled preview flows.
 
-## What changed in interface v11
+## What changed in interface v12
 
 Battles now use a viewport-constrained, Gen III-inspired battlefield: the rival faces forward at the upper right, while the player's Pokémon uses its actual back sprite at the lower left. Opposing HP panels and a fixed command area keep the action together. The root menu offers only Fight and Pokémon; moves and party choices replace that command area. Team selection is paginated. The layout is intended to avoid document scrolling, with responsive rules for short and narrow screens; browser visual verification remains outstanding.
 
 Battle characters now use full-body PMDCollab Mystery Dungeon animation frames for all 151 Kanto species, including authentic normal and shiny palettes. The player uses the up-right rear direction and the rival uses the down-left front direction. Real Idle, Attack, Shoot, Strike, Kick and other available source action families replace the transformed static FRLG battle art. Each of the 48 playable moves explicitly selects an appropriate available character action; these are reusable source action families, not 151 newly drawn animations for each named move. Some original source clips hold a pose while moving it through their authored frames. Persian and Arcanine have one-frame source idles, so their idle presentation includes a short fidget using actual Walk frames.
 
-The existing eight VFX atlases provide 288 distinct effect frames. Character actions and effects share the cue clock, with emission and impact anchors derived from the selected source frame. Full action bounds and ground markers determine a stable scale and platform position. Normal and shiny artwork is bundled locally, with per-species animation metadata loaded and cached for the selected parties before a match starts. Failed loads can be retried. Reduced motion simplifies playback. This covers the current 48-move frontend catalogue, not all 165 original Gen 1 moves or cartridge-perfect battle mechanics.
+All 48 playable moves now use native Mystery Dungeon effect artwork from PMDCollab/RawAsset, replacing the generated high-resolution attack sheets in the active renderer. Effects follow the fighters' native pixel scale, with separate rear, middle and foreground layers around the two characters. Directional effects use authored directions or native-resolution rasterization before enlargement, preserving square pixels. Beams connect their source and destination rather than stretching repeated large stamps across the stage. Effect choreography and playback timing are authored for this frontend; these are not cartridge-exact move sequences.
+
+Character actions and effects share the cue clock, with emission and impact anchors derived from the selected source frame. Full action bounds and ground markers determine a stable scale and platform position. Normal and shiny artwork is bundled locally, with per-species animation metadata loaded and cached for the selected parties before a match starts. Failed loads can be retried. Reduced motion simplifies playback. This covers the current 48-move frontend catalogue, not all 165 original Gen 1 moves or cartridge-perfect battle mechanics.
+
+Switching now retains the outgoing Pokémon during recall, returns it to a Poké Ball, then throws and opens the incoming Pokémon's ball before revealing its silhouette and colour. A replacement after fainting skips recall. Both sides use the same sequence and clock; cancelling or leaving a battle clears the presentation.
 
 The battle soundtrack is the classic Kanto trainer battle recording from HeartGold/SoulSilver. It begins after a battle-button interaction, loops, and has a persistent mute control. Move sounds are synthesized by effect family with move-specific variations. Audio pauses when the page is hidden and stops when leaving the battle. Reduced-motion settings simplify the visual playback.
 

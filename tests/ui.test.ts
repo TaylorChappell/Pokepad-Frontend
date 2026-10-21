@@ -49,6 +49,26 @@ async function mountApp(path = '/discover', prepare?: (state: AppSnapshot) => vo
   // JSDOM does not decode raster assets. Exercise battle loading and UI transitions
   // with an explicit decoder; atlas content and failed-load retries have their own tests.
   dom.window.HTMLImageElement.prototype.decode = async () => {};
+  // Canvas pixels are checked by the native renderer tests and scene renders.
+  // This DOM-only harness exercises controls and playback without JSDOM's
+  // unimplemented-canvas warnings obscuring actual interaction failures.
+  dom.window.HTMLCanvasElement.prototype.getContext = (() => ({
+    imageSmoothingEnabled: false,
+    globalAlpha: 1,
+    fillStyle: '',
+    clearRect() {},
+    drawImage() {},
+    fillRect() {},
+    save() {},
+    restore() {},
+    translate() {},
+    rotate() {},
+    scale() {},
+    putImageData() {},
+    getImageData(_x: number, _y: number, width: number, height: number) {
+      return { width, height, data: new Uint8ClampedArray(width * height * 4) };
+    },
+  })) as typeof dom.window.HTMLCanvasElement.prototype.getContext;
   // Battle manifests are same-origin static assets in production. Read those
   // exact files here, so the interaction tests also exercise the real loader.
   globalThis.fetch = async (input, init) => {

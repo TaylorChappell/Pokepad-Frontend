@@ -1,0 +1,16 @@
+{
+  "source": "PMDCollab/RawAsset",
+  "commit": "03c80dad937911572f8fb19903771a47956fc696",
+  "assets": 88,
+  "frameCells": 1359,
+  "svgBytes": 586826,
+  "metadataBytes": 218883,
+  "largestAtlas": {
+    "id": "rock_slide_back",
+    "size": [
+      445,
+      510
+    ],
+    "rgbaBytes": 907800
+  }
+}

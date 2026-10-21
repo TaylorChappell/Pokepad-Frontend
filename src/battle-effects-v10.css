@@ -1,55 +1,24 @@
-/* Decoded raster strips; fixed crop rectangles preserve pixel edges and row pivots. */
+/* Three sibling planes straddle the rival (2) and player (4), below battle HUD. */
 .classic-field > .pixel-battle-effects {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  overflow: hidden;
-  contain: layout paint;
-  isolation: isolate;
-}
-.pixel-vfx-particle {
-  position: absolute;
-  display: block;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 0;
-  opacity: 0;
-  will-change: transform, opacity;
-}
-.pixel-vfx-orientation {
-  display: block;
-  position: absolute;
-  width: 0;
-  height: 0;
-  transform-origin: 0 0;
-}
-.pixel-vfx-canvas,
-.pixel-vfx-cell {
-  display: block;
-  position: absolute;
-}
-.pixel-vfx-cell {
-  background-repeat: no-repeat;
-  image-rendering: crisp-edges;
   image-rendering: pixelated;
 }
-.pixel-vfx-reduced-cue {
-  display: block;
+.classic-field > .pixel-depth-rear {
+  z-index: 1;
+}
+.classic-field > .pixel-depth-middle {
+  z-index: 3;
+}
+.classic-field > .pixel-depth-front {
+  z-index: 5;
+}
+.native-effect-sprite {
   position: absolute;
-  width: 0;
-  height: 0;
-  opacity: 0.72;
-}
-/* React also renders a single static source/target cue for either reduced-motion setting. */
-@media (prefers-reduced-motion: reduce) {
-  .pixel-vfx-particle {
-    animation: none;
-    display: none;
-  }
-}
-[data-motion='reduced'] .pixel-vfx-particle {
-  animation: none;
-  display: none;
+  display: block;
+  pointer-events: none;
+  image-rendering: pixelated;
 }

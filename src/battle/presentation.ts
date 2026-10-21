@@ -1,4 +1,5 @@
 import { battleMove, type BattleEvent, type BattleState, type Side } from './engine';
+import { pokemonById } from '../data/pokemon';
 
 export type EffectFamily =
   | 'projectile'
@@ -123,6 +124,7 @@ export interface BattleCue extends MovePresentation {
   targetSide: Side;
   moveName?: string;
   outcome: 'hit' | 'miss' | 'immune' | 'charge';
+  switchPhase?: 'recall' | 'sendout';
 }
 const opposite = (side: Side): Side => (side === 'player' ? 'rival' : 'player');
 export function getBattleCue(
@@ -176,17 +178,27 @@ export interface BattlePlaybackFrame {
   cue: BattleCue | null;
   displayState: BattleState;
   durationMs: number;
+  switch?: {
+    phase: 'recall' | 'sendout';
+    outgoingId: string;
+    incomingId: string;
+    forced: boolean;
+  };
 }
+export const SWITCH_RECALL_MS = 600;
+export const SWITCH_SENDOUT_MS = 1100;
 /**
  * Replays the engine's ordered result without running combat a second time.
- * HP and active sprites change at the damage/switch messages; next remains authoritative.
+ * Switch snapshots retain the outgoing actor until recall ends. The incoming actor is
+ * selected for the throw but is revealed only when the ball opens by the switch renderer.
  */
 export function createBattlePlayback(
   previous: BattleState,
   next: BattleState,
 ): BattlePlaybackFrame[] {
   let display = structuredClone(previous);
-  return next.events.map((event, index) => {
+  return next.events.flatMap((event, index): BattlePlaybackFrame[] => {
+    const outgoing = event.kind === 'switch' ? structuredClone(display) : null;
     const cue = getBattleCue(event, index, next.events);
     if (event.frame) display = { ...display, ...structuredClone(event.frame) };
     display.events = [event];
@@ -194,12 +206,55 @@ export function createBattlePlayback(
       ...previous.history,
       ...next.events.slice(0, index + 1).map(({ frame: _frame, ...entry }) => entry),
     ].slice(-80);
-    return {
+    const frame: BattlePlaybackFrame = {
       event,
       cue,
       displayState: structuredClone(display),
       durationMs:
         cue?.durationMs || (event.kind === 'damage' ? 420 : event.kind === 'result' ? 700 : 540),
     };
+    if (outgoing && cue) {
+      const side = cue.side;
+      const oldFighter = outgoing[side][outgoing.active[side]];
+      const newFighter = display[side][display.active[side]];
+      const forced = oldFighter.hp <= 0;
+      const identity = { outgoingId: oldFighter.id, incomingId: newFighter.id, forced };
+      const sendout: BattlePlaybackFrame = {
+        ...frame,
+        cue: {
+          ...cue,
+          id: cue.id + '-sendout',
+          durationMs: SWITCH_SENDOUT_MS,
+          switchPhase: 'sendout',
+        },
+        durationMs: SWITCH_SENDOUT_MS,
+        switch: { ...identity, phase: 'sendout' },
+      };
+      if (forced) return [sendout];
+      const recallEvent = {
+        ...event,
+        text:
+          side === 'player'
+            ? `${pokemonById(oldFighter.speciesId).name}, come back!`
+            : `The opposing ${pokemonById(oldFighter.speciesId).name} was recalled.`,
+      };
+      outgoing.events = [recallEvent];
+      return [
+        {
+          event: recallEvent,
+          cue: {
+            ...cue,
+            id: cue.id + '-recall',
+            durationMs: SWITCH_RECALL_MS,
+            switchPhase: 'recall',
+          },
+          displayState: outgoing,
+          durationMs: SWITCH_RECALL_MS,
+          switch: { ...identity, phase: 'recall' },
+        },
+        sendout,
+      ];
+    }
+    return [frame];
   });
 }

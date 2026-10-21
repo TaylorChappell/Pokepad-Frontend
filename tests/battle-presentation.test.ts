@@ -139,7 +139,10 @@ test('playback uses immutable engine snapshots so HP changes on damage and sprit
   const switched = resolveTurn(initial, { kind: 'switch', index: 1 }, calm);
   const switchingFrames = createBattlePlayback(initial, switched);
   const switchFrame = switchingFrames.find((frame) => frame.event.kind === 'switch')!;
-  assert.equal(switchFrame.displayState.active.player, 1);
+  assert.equal(switchFrame.displayState.active.player, 0);
+  assert.equal(switchFrame.switch?.phase, 'recall');
+  const releaseFrame = switchingFrames.find((frame) => frame.switch?.phase === 'sendout')!;
+  assert.equal(releaseFrame.displayState.active.player, 1);
   assert.equal(switchFrame.cue?.variant, 'switch');
   assert.equal(initial.active.player, 0);
 });

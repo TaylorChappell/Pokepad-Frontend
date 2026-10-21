@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   BODY_MOVE_ACTIONS,
   bodyFrameIndexAt,
@@ -16,7 +17,40 @@ import {
   type BodyFacing,
 } from '../src/battle/body-animation';
 import { createBodyAssetStore } from '../src/battle/body-registry';
+import {
+  getBodyTransitionStyle,
+  sampleBodyTransition,
+  type BodyTransition,
+} from '../src/battle/body-transition';
 import { PRESENTED_MOVES, getBattleCue, type BattleCue } from '../src/battle/presentation';
+
+test('recall and sendout hide the correct sprite without resampling its native pixels', () => {
+  const recall: BodyTransition = { phase: 'recall', startedAt: 5000, durationMs: 600 };
+  const sendout: BodyTransition = { phase: 'sendout', startedAt: 5600, durationMs: 1100 };
+  assert.deepEqual(sampleBodyTransition(recall, 0), {
+    visible: true,
+    density: 16,
+    silhouette: false,
+  });
+  assert.equal(sampleBodyTransition(recall, 100).silhouette, true);
+  assert.equal(sampleBodyTransition(recall, 600).visible, false);
+  assert.equal(sampleBodyTransition(sendout, 440).visible, false);
+  const emerging = sampleBodyTransition(sendout, 660);
+  assert.ok(emerging.density > 0 && emerging.density < 16);
+  assert.equal(emerging.silhouette, true);
+  assert.deepEqual(sampleBodyTransition(sendout, 1100), {
+    visible: true,
+    density: 16,
+    silhouette: false,
+  });
+  const style = getBodyTransitionStyle(sendout, emerging, 5);
+  assert.equal(style.maskSize, '20px');
+  assert.equal(style.transform, undefined);
+  assert.equal(sampleBodyTransition(sendout, 494, true).visible, false);
+  assert.equal(sampleBodyTransition(sendout, 496, true).visible, true);
+  assert.equal(sampleBodyTransition(sendout, 660, true).silhouette, false);
+  assert.equal(sampleBodyTransition(recall, 301, true).visible, false);
+});
 
 function fixture() {
   const frame = (index: number, row: number): PmdFrame => ({
@@ -218,6 +252,45 @@ test('shooting frames hold through beam emission and reduced motion uses a meani
     water.frame.anchors.mouth,
     'Most species emit water from the mouth',
   );
+});
+
+test('Charizard flames use the authored open mouth and Weedle fires from its horn', () => {
+  const load = (id: number) =>
+    normalizeBodyManifest(
+      JSON.parse(
+        readFileSync(
+          new URL(
+            `../public/assets/battle/pmd/${String(id).padStart(3, '0')}.json`,
+            import.meta.url,
+          ),
+          'utf8',
+        ),
+      ) as PmdManifest,
+    );
+  const charizard = load(6);
+  for (const shiny of [false, true]) {
+    for (const side of ['player', 'rival'] as const) {
+      const move = cue('Flamethrower', side);
+      const frame = getBodyFrameAt(charizard, {
+        side,
+        shiny,
+        cue: move,
+        elapsedMs: move.durationMs * 0.5,
+      }).frame;
+      assert.deepEqual(frame.anchors.mouth, side === 'player' ? [56, 36] : [35, 46]);
+    }
+  }
+  const weedle = load(13);
+  for (const side of ['player', 'rival'] as const) {
+    const move = cue('Poison Sting', side);
+    const selected = getBodyFrameAt(weedle, {
+      side,
+      cue: move,
+      elapsedMs: move.durationMs * 0.5,
+    });
+    assert.equal(selected.clip.action, 'Shoot');
+    assert.deepEqual(selected.frame.anchors.crown, side === 'player' ? [39, 29] : [38, 27]);
+  }
 });
 
 test('invalid identity or source crops cannot enter the loaded animation cache', () => {

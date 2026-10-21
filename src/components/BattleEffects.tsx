@@ -1,16 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import type { BattleCue } from '../battle/presentation';
 import { createBattleScene, sampleBattleSceneAt, type BattleScene } from '../battle/geometry';
 import {
   bindSpriteTimeline,
   buildSpriteTimeline,
   effectCueElapsed,
-  effectSheetPath,
+  preloadEffectSprites,
   resolveEffectAnchors,
-  sampleSpriteLayer,
+  type EffectDepth,
 } from '../battle/effect-sprites';
-import { effectFrameAt, effectFrameGeometry } from '../battle/effect-atlases';
-import { asset } from '../utils';
+import { compileNativeEffects, paintNativeEffectPlane } from '../battle/native-effect-scene';
+import {
+  getNativeEffectAsset,
+  getNativeEffectImage,
+  preloadNativeEffectImages,
+  rasterizeNativeEffect,
+} from '../battle/native-effect-renderer';
 
 const fallbackScene = () =>
   createBattleScene({
@@ -37,7 +42,7 @@ function useSystemReducedMotion() {
   return reduced;
 }
 
-/** One clock advances every particle's six-frame strip; no interpolated source crops. */
+/** All native variable-length clips and body frames share a single clock. */
 function useEffectClock(duration: number, paused: boolean, cueStartedAt?: number) {
   const [mountedAt] = useState(() => performance.now());
   const epoch = cueStartedAt ?? mountedAt;
@@ -66,26 +71,62 @@ function useEffectClock(duration: number, paused: boolean, cueStartedAt?: number
   return elapsed;
 }
 
-function RasterFrame({
-  sheet,
-  row,
-  frame,
-  size,
+/** Standalone native clip anchored by its original pivot, used by recall/sendout. */
+export function NativeEffectSprite({
+  assetId,
+  frameIndex,
+  direction = 0,
+  pixelScale = 1,
 }: {
-  sheet: number;
-  row: number;
-  frame: number;
-  size: number;
+  assetId: string;
+  frameIndex: number;
+  direction?: number;
+  pixelScale?: number;
 }) {
-  const geometry = effectFrameGeometry(sheet, row, frame, size);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(() => !!getNativeEffectImage(assetId));
+  useEffect(() => {
+    let live = true;
+    void preloadNativeEffectImages([assetId]).then(
+      () => {
+        if (live) setReady(true);
+      },
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [assetId]);
+  useEffect(() => {
+    const image = getNativeEffectImage(assetId),
+      target = canvas.current;
+    if (!image || !target || !ready) return;
+    const ctx = target.getContext('2d');
+    if (!ctx) return;
+    const raster = rasterizeNativeEffect(
+      image,
+      getNativeEffectAsset(assetId),
+      frameIndex,
+      direction,
+    );
+    const scale = Math.max(1, Math.round(pixelScale));
+    target.width = raster.canvas.width;
+    target.height = raster.canvas.height;
+    target.style.width = `${target.width * scale}px`;
+    target.style.height = `${target.height * scale}px`;
+    target.style.left = `${-raster.pivot.x * scale}px`;
+    target.style.top = `${-raster.pivot.y * scale}px`;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, target.width, target.height);
+    ctx.drawImage(raster.canvas, 0, 0);
+  }, [assetId, frameIndex, direction, pixelScale, ready]);
   return (
-    <span className="pixel-vfx-canvas" style={geometry.canvas}>
-      <span
-        className="pixel-vfx-cell"
-        data-sprite-frame={frame}
-        style={{ ...geometry.crop, backgroundImage: `url("${asset(effectSheetPath(sheet))}")` }}
-      />
-    </span>
+    <canvas
+      ref={canvas}
+      className="native-effect-sprite"
+      data-native-asset={assetId}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -118,17 +159,47 @@ function BattleEffectSequence({
   const elapsed = useEffectClock(cue.durationMs, reducedMotion, cueStartedAt);
   const currentScene = sceneAt(elapsed);
   const currentAnchors = resolveEffectAnchors(cue, currentScene, timeline.script);
-  const point =
-    cue.target === 'self' || cue.outcome === 'charge'
-      ? currentAnchors.source
-      : currentAnchors.target;
-  const staticSize = Math.max(
-    40,
-    Math.round(timeline.script.size * Math.min(scene.width / 1000, scene.height / 600)),
+  const compiled = useMemo(
+    () => compileNativeEffects(timeline, cue, scene, currentScene, elapsed, reducedMotion),
+    [timeline, cue, scene, currentScene, elapsed, reducedMotion],
   );
-  return (
-    <div
-      className={'pixel-battle-effects' + (reducedMotion ? ' is-reduced' : '')}
+  const rear = useRef<HTMLCanvasElement>(null),
+    middle = useRef<HTMLCanvasElement>(null),
+    front = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void preloadEffectSprites(cue.moveName ? [cue.moveName] : undefined).then(
+      () => {
+        if (live) setReady(true);
+      },
+      () => {},
+    );
+    return () => {
+      live = false;
+    };
+  }, [cue.moveName]);
+  useEffect(() => {
+    for (const [depth, ref] of [
+      ['rear', rear],
+      ['middle', middle],
+      ['front', front],
+    ] as const) {
+      const ctx = ref.current?.getContext('2d');
+      if (!ctx) continue;
+      ctx.clearRect(0, 0, scene.width, scene.height);
+      paintNativeEffectPlane(ctx, compiled, depth);
+    }
+  }, [compiled, scene.width, scene.height, ready]);
+  const plane = (depth: EffectDepth, ref: typeof rear) => (
+    <canvas
+      key={depth}
+      ref={ref}
+      width={Math.round(scene.width)}
+      height={Math.round(scene.height)}
+      style={{ width: Math.round(scene.width), height: Math.round(scene.height) }}
+      className={'pixel-battle-effects pixel-depth-' + depth + (reducedMotion ? ' is-reduced' : '')}
+      data-depth={depth}
       data-effect={cue.variant}
       data-move={cue.moveName || cue.kind}
       data-outcome={cue.outcome}
@@ -140,50 +211,16 @@ function BattleEffectSequence({
       data-target-x={currentAnchors.target.x}
       data-target-y={currentAnchors.target.y}
       data-cue-started-at={cueStartedAt}
+      data-native-sprites={compiled.sprites.filter((s) => s.depth === depth).length}
       aria-hidden="true"
-    >
-      {reducedMotion ? (
-        <span className="pixel-vfx-reduced-cue" style={{ left: point.x, top: point.y }}>
-          <RasterFrame
-            sheet={timeline.script.sheet}
-            row={timeline.script.row}
-            frame={cue.outcome === 'hit' ? 3 : 1}
-            size={staticSize}
-          />
-        </span>
-      ) : (
-        timeline.layers.map((layer) => {
-          const sampled = sampleSpriteLayer(layer, timeline, cue, scene, currentScene, elapsed);
-          return (
-            <span
-              key={layer.key}
-              className={'pixel-vfx-particle pixel-role-' + layer.role}
-              data-layer-role={layer.role}
-              data-frame-set={layer.frames}
-              data-space={layer.space}
-              style={{
-                transform: `translate3d(${sampled.position.x}px, ${sampled.position.y}px, 0)`,
-                opacity: sampled.opacity,
-              }}
-            >
-              <span
-                className="pixel-vfx-orientation"
-                style={{
-                  transform: `rotate(${sampled.rotation}deg) scaleX(${layer.flip ? -1 : 1})`,
-                }}
-              >
-                <RasterFrame
-                  sheet={timeline.script.sheet}
-                  row={timeline.script.row}
-                  frame={effectFrameAt(layer.frames, elapsed, layer.delay, layer.duration)}
-                  size={layer.size}
-                />
-              </span>
-            </span>
-          );
-        })
-      )}
-    </div>
+    />
+  );
+  return (
+    <>
+      {plane('rear', rear)}
+      {plane('middle', middle)}
+      {plane('front', front)}
+    </>
   );
 }
 
