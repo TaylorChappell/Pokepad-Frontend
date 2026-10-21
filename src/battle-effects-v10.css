@@ -1,0 +1,76 @@
+/* Decoded raster strips; fixed crop rectangles preserve pixel edges and row pivots. */
+.classic-field > .pixel-battle-effects {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+  contain: layout paint;
+  isolation: isolate;
+}
+.pixel-vfx-particle {
+  position: absolute;
+  display: block;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  animation: pixel-vfx-flight var(--sprite-time) steps(18, end) var(--sprite-delay) both;
+  will-change: transform, opacity;
+}
+.pixel-vfx-orientation {
+  display: block;
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+.pixel-vfx-canvas,
+.pixel-vfx-cell {
+  display: block;
+  position: absolute;
+}
+.pixel-vfx-cell {
+  background-repeat: no-repeat;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+.pixel-vfx-reduced-cue {
+  display: block;
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0.72;
+}
+@keyframes pixel-vfx-flight {
+  0% {
+    opacity: 0;
+    transform: translate3d(var(--start-x), var(--start-y), 0);
+  }
+  9% {
+    opacity: var(--sprite-opacity);
+  }
+  50% {
+    opacity: var(--sprite-opacity);
+    transform: translate3d(var(--middle-x), var(--middle-y), 0);
+  }
+  82% {
+    opacity: var(--sprite-opacity);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--end-x), var(--end-y), 0);
+  }
+}
+/* React also renders a single static source/target cue for either reduced-motion setting. */
+@media (prefers-reduced-motion: reduce) {
+  .pixel-vfx-particle {
+    animation: none;
+    display: none;
+  }
+}
+[data-motion='reduced'] .pixel-vfx-particle {
+  animation: none;
+  display: none;
+}

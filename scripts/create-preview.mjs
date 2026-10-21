@@ -103,12 +103,12 @@ for (const url of stylesheetUrls) {
 // Font files are already embedded in CSS and are not duplicated in this map.
 const map = {};
 await collectImages(publicAssets, map);
-const favicon = await dataUrl(path.join(root, 'public/pokepad.svg'));
+const favicon = await dataUrl(path.join(publicAssets, 'brand/pokepad-emblem.png'));
 const output =
   '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1">' +
   '<meta name="theme-color" content="#f6f4ee">' +
-  '<title>Poképad · Frontend preview</title><link rel="icon" type="image/svg+xml" href="' +
+  '<title>Poképad · Frontend preview</title><link rel="icon" type="image/png" href="' +
   favicon +
   '"><style>' +
   styles.join('\n') +

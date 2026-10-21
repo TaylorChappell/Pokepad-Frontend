@@ -1,4 +1,4 @@
-# Poképad frontend · interface v8
+# Poképad frontend · interface v10
 
 A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
 
@@ -13,15 +13,15 @@ For development, use Node.js 24:
 
 The preview starts with sample coins, Pokémon, eggs, and packs. No wallet is connected. Trading, wagering, redemption, and walking use labelled preview flows.
 
-## What changed in interface v8
+## What changed in interface v10
 
 Battles now use a viewport-constrained, Gen III-inspired battlefield: the rival faces forward at the upper right, while the player's Pokémon uses its actual back sprite at the lower left. Opposing HP panels and a fixed command area keep the action together. The root menu offers only Fight and Pokémon; moves and party choices replace that command area. Team selection is paginated. The layout is intended to avoid document scrolling, with responsive rules for short and narrow screens; browser visual verification remains outstanding.
 
-Every move in the current 48-move practice catalogue has an authored visual presentation, including beams, projectiles, claws, electricity, powders, recovery and status effects. Battle events play in sequence with corresponding dialogue and intermediate HP/status updates. This covers the playable frontend catalogue, not all 165 original Gen 1 moves or cartridge-perfect battle mechanics. Native FireRed/LeafGreen front and back sprites for all 151 species, in normal and shiny palettes, are bundled in four local SVG atlases.
+Every move in the current 48-move practice catalogue has its own six-frame pixel-art effect strip and an authored release/impact sequence. Eight local transparent atlases supply 288 frames for beams, projectiles, claws, electricity, powders, recovery and status effects. Effects use the same measured, species-specific mouth, hand, cannon, body and ground coordinates as the battlefield sprites. Sprite bounds determine platform placement and prevent the available artwork from being cut off. Grounded and floating idle motion pauses during attacks and respects reduced motion. Battle events play in sequence with corresponding dialogue and intermediate HP/status updates. This covers the playable frontend catalogue, not all 165 original Gen 1 moves or cartridge-perfect battle mechanics. Native FireRed/LeafGreen front and back sprites for all 151 species, in normal and shiny palettes, are bundled in four local SVG atlases.
 
 The battle soundtrack is the classic Kanto trainer battle recording from HeartGold/SoulSilver. It begins after a battle-button interaction, loops, and has a persistent mute control. Move sounds are synthesized by effect family with move-specific variations. Audio pauses when the page is hidden and stops when leaving the battle. Reduced-motion settings simplify the visual playback.
 
-The header uses a generated magnifying-glass icon with a visible handle, and the Pokepad wordmark is a generated graphic based on the supplied yellow-and-blue reference. The trainer portrait remains separate from the equipped Pokémon. Navigation retains Discover, Create Coin, Portfolio, Rewards and Analytics as its first destinations.
+The header uses the approved coral, cream and navy Poké Ball-on-a-pad symbol and rounded Poképad lettering as one combined lockup. Its matching standalone emblem appears in the favicon and main-token artwork. The generated magnifying-glass search icon remains. The trainer portrait remains separate from the equipped Pokémon. Navigation retains Discover, Create Coin, Portfolio, Rewards and Analytics as its first destinations.
 
 My PC defaults to Ready first: Pokémon with actionable evolution or move-learning opportunities appear before the rest, with coloured outlines and readiness ribbons. Newest, value and level sorts remain available. Summary pages retain the Stats/Moves/Evolution/Details menu, while future evolutions appear as grey silhouettes and question marks until revealed. The extra funding explanation is removed from the evolution interface; affordability and eligibility checks still apply. Eevee retains three equally likely outcomes.
 
@@ -126,4 +126,4 @@ Demo reward and Eevee randomness run locally and are not secure against a client
 
 Displayed stats use actual species base stats with a consistent demo assumption of neutral nature, 31 IVs, and 0 EVs. HP derives from species and level; missing legacy HP defaults to full health. These are modern six-stat displays, not exact original Red/Blue stat rules. Practice battles remain simplified and do not provide a persistent healing or competitive rules system.
 
-Build and interaction checks should be complemented by desktop and mobile visual review after deployment. Browser QA was attempted for interface v8, but the available browser environment could not open the preview because of its URL policy; exact layout and audio playback still need real-browser review.
+Build and interaction checks should be complemented by desktop and mobile visual review after deployment. Browser QA was attempted for interface v10, but the available browser environment could not open the preview because of its URL policy; exact layout and audio playback still need real-browser review.

@@ -1,0 +1,331 @@
+{
+  "sheet": "sheet-03.png",
+  "imageWidth": 1254,
+  "imageHeight": 1254,
+  "frameWidth": 190,
+  "frameHeight": 190,
+  "rows": [
+    {
+      "move": "Thunder Wave",
+      "frames": [
+        {
+          "x": 69,
+          "y": 142,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 246,
+          "y": 142,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 437,
+          "y": 142,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 629,
+          "y": 142,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 820,
+          "y": 142,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 1002,
+          "y": 142,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        }
+      ]
+    },
+    {
+      "move": "Psychic",
+      "frames": [
+        {
+          "x": 69,
+          "y": 314,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 246,
+          "y": 314,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 437,
+          "y": 314,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 629,
+          "y": 314,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 820,
+          "y": 314,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 1002,
+          "y": 314,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        }
+      ]
+    },
+    {
+      "move": "Confusion",
+      "frames": [
+        {
+          "x": 69,
+          "y": 491,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 246,
+          "y": 491,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 437,
+          "y": 491,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 629,
+          "y": 491,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 820,
+          "y": 491,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 1002,
+          "y": 491,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        }
+      ]
+    },
+    {
+      "move": "Hypnosis",
+      "frames": [
+        {
+          "x": 69,
+          "y": 664,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 246,
+          "y": 664,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 437,
+          "y": 664,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 629,
+          "y": 664,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 820,
+          "y": 664,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        },
+        {
+          "x": 1002,
+          "y": 664,
+          "width": 190,
+          "height": 166,
+          "offsetX": 0,
+          "offsetY": 12
+        }
+      ]
+    },
+    {
+      "move": "Night Shade",
+      "frames": [
+        {
+          "x": 69,
+          "y": 822,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 246,
+          "y": 822,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 437,
+          "y": 822,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 629,
+          "y": 822,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 820,
+          "y": 822,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1002,
+          "y": 822,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Dream Eater",
+      "frames": [
+        {
+          "x": 69,
+          "y": 1004,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 246,
+          "y": 1004,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 437,
+          "y": 1004,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 629,
+          "y": 1004,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 820,
+          "y": 1004,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1002,
+          "y": 1004,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    }
+  ],
+  "source": "Built-in image generation; original PNG copied unchanged",
+  "generatedSource": "exec-927c5e9b-3ee1-42c5-8d89-60fc50552191.png",
+  "sha256": "b07619628b59e0b3c91cdac9f94b187c1dc7c3fdbcf952cb5e94aae4ea510141",
+  "notes": "Inset atlas. Use explicit frame rectangles; full-canvas equal-grid slicing clips. offsetY centers166px crops in190px logical frame. No raster processing performed."
+}

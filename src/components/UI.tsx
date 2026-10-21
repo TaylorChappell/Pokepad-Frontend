@@ -125,7 +125,7 @@ export function Icon({
 export function PokepadLogo({ size = 38 }: { size?: number }) {
   return (
     <img
-      src={asset('brand/pokepad.svg')}
+      src={asset('brand/pokepad-emblem.png')}
       className="pokepad-logo"
       alt=""
       width={size}
@@ -136,11 +136,11 @@ export function PokepadLogo({ size = 38 }: { size?: number }) {
 export function Wordmark() {
   return (
     <img
-      className="pokemon-wordmark generated-wordmark"
-      src={asset('brand/pokepad-wordmark.png')}
+      className="pokemon-wordmark generated-wordmark brand-lockup"
+      src={asset('brand/pokepad-lockup.png')}
       alt="Poképad"
-      width={2048}
-      height={768}
+      width={2172}
+      height={724}
       decoding="async"
     />
   );

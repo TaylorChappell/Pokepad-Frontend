@@ -21,9 +21,11 @@ export function decorateDemoCoins(coins: Coin[], now = Date.now()): Coin[] {
     volumeUsd: coin.volumeUsd ?? coin.volume * DEMO_SOL_USD,
     launchedAt: coin.launchedAt ?? (ages[coin.id] ? now - ages[coin.id] * 86400000 : undefined),
     image:
-      coin.image ||
+      (coin.id === 'poke' && coin.image?.endsWith('/brand/pokepad.svg')
+        ? asset('brand/pokepad-emblem.png')
+        : coin.image) ||
       (ages[coin.id]
-        ? asset(coin.id === 'poke' ? 'brand/pokepad.svg' : `coins/${coin.id}.svg`)
+        ? asset(coin.id === 'poke' ? 'brand/pokepad-emblem.png' : `coins/${coin.id}.svg`)
         : undefined),
   }));
 }

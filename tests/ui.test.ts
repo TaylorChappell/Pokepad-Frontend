@@ -43,6 +43,9 @@ async function mountApp(path = '/discover', prepare?: (state: AppSnapshot) => vo
     cancelAnimationFrame: dom.window.cancelAnimationFrame.bind(dom.window),
   });
   dom.window.scrollTo = () => {};
+  // JSDOM does not decode raster assets. Exercise battle loading and UI transitions
+  // with an explicit decoder; atlas content and failed-load retries have their own tests.
+  dom.window.HTMLImageElement.prototype.decode = async () => {};
   const initial = createInitialState();
   initial.profile.reducedMotion = true;
   prepare?.(initial);
@@ -114,6 +117,12 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
     assert.equal(document.querySelector('.gym-spotlight-ribbon'), null);
     assert.equal(app.saved().profile.artStyle, 'pixel');
     assert.equal(document.querySelector('.equipped-mini'), null);
+    assert.match(
+      document.querySelector('.brand-lockup img')?.getAttribute('src') ||
+        document.querySelector('img.brand-lockup')?.getAttribute('src') ||
+        '',
+      /brand\/pokepad-lockup\.png$/,
+    );
     assert.deepEqual(
       [...document.querySelectorAll('.sidebar .nav-link')]
         .slice(0, 5)

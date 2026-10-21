@@ -1,0 +1,331 @@
+{
+  "sheet": "sheet-04.png",
+  "imageWidth": 1254,
+  "imageHeight": 1254,
+  "frameWidth": 190,
+  "frameHeight": 190,
+  "rows": [
+    {
+      "move": "Vine Whip",
+      "frames": [
+        {
+          "x": 27,
+          "y": 71,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 219,
+          "y": 71,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 431,
+          "y": 71,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 635,
+          "y": 71,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 845,
+          "y": 71,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 71,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Razor Leaf",
+      "frames": [
+        {
+          "x": 27,
+          "y": 284,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 219,
+          "y": 284,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 431,
+          "y": 284,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 635,
+          "y": 284,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 845,
+          "y": 284,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 284,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Solar Beam",
+      "frames": [
+        {
+          "x": 27,
+          "y": 495,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 219,
+          "y": 495,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 431,
+          "y": 495,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 635,
+          "y": 495,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 845,
+          "y": 495,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 495,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Sleep Powder",
+      "frames": [
+        {
+          "x": 27,
+          "y": 687,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 219,
+          "y": 687,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 431,
+          "y": 687,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 635,
+          "y": 687,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 845,
+          "y": 687,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 687,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Poison Powder",
+      "frames": [
+        {
+          "x": 27,
+          "y": 872,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 219,
+          "y": 872,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 431,
+          "y": 872,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 635,
+          "y": 872,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 845,
+          "y": 872,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 872,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Poison Sting",
+      "frames": [
+        {
+          "x": 27,
+          "y": 1055,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 219,
+          "y": 1055,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 431,
+          "y": 1055,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 635,
+          "y": 1055,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 845,
+          "y": 1055,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 1055,
+          "width": 190,
+          "height": 190,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    }
+  ],
+  "source": "Built-in image generation; original PNG copied unchanged",
+  "generatedSource": "exec-c91fe19e-e568-43ea-a0ad-eceadfdf6c4d.png",
+  "sha256": "eeea8390655a4b6e73333df4faa0ce714eb59cee0e2ab81e301242c53fb42e36",
+  "notes": "Inset atlas. Use explicit frame rectangles; full-canvas equal-grid slicing clips. offsetY centers166px crops in190px logical frame. No raster processing performed."
+}

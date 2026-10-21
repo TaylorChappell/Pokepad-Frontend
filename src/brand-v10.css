@@ -1,0 +1,35 @@
+.brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+  width: 210px;
+  height: 70px;
+  display: block;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.boot-brand .generated-wordmark.pokemon-wordmark.brand-lockup {
+  width: 290px;
+  height: auto;
+  max-width: min(290px, 80vw);
+  margin: 0 auto;
+}
+.pokepad-logo {
+  object-fit: contain;
+  image-rendering: auto;
+}
+@media (max-width: 760px) {
+  .brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+    width: 164px;
+    height: 55px;
+  }
+}
+@media (max-width: 420px) {
+  .brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+    width: 142px;
+    height: 48px;
+  }
+}
+@media (max-width: 350px) {
+  .brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+    width: 124px;
+    height: 42px;
+  }
+}

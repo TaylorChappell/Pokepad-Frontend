@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '../state/AppContext';
 import { profileName } from '../state/model';
-import { Icon, Pokeball, PokepadLogo, Wordmark, Avatar, PokemonArt, type IconName } from './UI';
+import { Icon, Pokeball, Wordmark, Avatar, PokemonArt, type IconName } from './UI';
 import { asset, navigate, relativeTime } from '../utils';
 import { SidebarBuddy } from './SidebarBuddy';
 import { SearchDialog } from './SearchDialog';
@@ -79,7 +79,6 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             <Icon name="Menu" />
           </button>
           <a href="#/discover" className="brand" aria-label="Poképad home">
-            <PokepadLogo size={34} />
             <Wordmark />
           </a>
         </div>

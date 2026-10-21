@@ -1,0 +1,326 @@
+{
+  "imageWidth": 1254,
+  "imageHeight": 1254,
+  "frameWidth": 209,
+  "frameHeight": 209,
+  "rows": [
+    {
+      "move": "Recover",
+      "frames": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 209,
+          "y": 0,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 418,
+          "y": 0,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 627,
+          "y": 0,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 836,
+          "y": 0,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 0,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Rest",
+      "frames": [
+        {
+          "x": 0,
+          "y": 209,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 209,
+          "y": 209,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 418,
+          "y": 209,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 627,
+          "y": 209,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 836,
+          "y": 209,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 209,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Agility",
+      "frames": [
+        {
+          "x": 0,
+          "y": 418,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 209,
+          "y": 418,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 418,
+          "y": 418,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 627,
+          "y": 418,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 836,
+          "y": 418,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 418,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Harden",
+      "frames": [
+        {
+          "x": 0,
+          "y": 627,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 209,
+          "y": 627,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 418,
+          "y": 627,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 627,
+          "y": 627,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 836,
+          "y": 627,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 627,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Swords Dance",
+      "frames": [
+        {
+          "x": 0,
+          "y": 836,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 209,
+          "y": 836,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 418,
+          "y": 836,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 627,
+          "y": 836,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 836,
+          "y": 836,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 836,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    },
+    {
+      "move": "Leech Life",
+      "frames": [
+        {
+          "x": 0,
+          "y": 1045,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 209,
+          "y": 1045,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 418,
+          "y": 1045,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 627,
+          "y": 1045,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 836,
+          "y": 1045,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        },
+        {
+          "x": 1045,
+          "y": 1045,
+          "width": 209,
+          "height": 209,
+          "offsetX": 0,
+          "offsetY": 0
+        }
+      ]
+    }
+  ]
+}

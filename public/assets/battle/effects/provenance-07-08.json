@@ -1,0 +1,31 @@
+{
+  "generator": "Built-in image_gen, transparent PNG, original output preserved without raster modification",
+  "sheets": [
+    {
+      "path": "sheet-07.png",
+      "source": "/workspace/scratch/7f0673f53fab/generated_images/exec-be8597d4-4343-44c7-9de0-b66d35cb346b.png",
+      "rows": [
+        "Growl",
+        "Swift",
+        "Sand Attack",
+        "Earthquake",
+        "Rock Slide",
+        "String Shot"
+      ],
+      "prompt": "Production asset: a SQUARE transparent PNG with EXACTLY 6 columns and 6 rows, exactly 36 SEPARATE TINY PIXEL-ART EFFECTS. Each of the SIX rows has precisely SIX chronological frames of one animation. STRICT SPACING is the main priority: each cell is the same size, and ALL artwork in each cell fits inside the central HALF of that cell, leaving a wide EMPTY TRANSPARENT moat around every sprite on ALL FOUR sides. The effect may occupy at most HALF the cell width and HALF the cell height, even at its peak. Nothing may touch or cross an invisible cell boundary. Uniform row centers at 1/12,3/12,5/12,7/12,9/12,11/12 of canvas height; column centers identical fractions of canvas width. No labels or lines. Real LOW RESOLUTION sprite art: small simple readable 32×32 logical-pixel objects, square pixel edges, ONLY 4-6 fully opaque flat colors per sprite, 1990s handheld RPG battle effects. No bloom, aura, semitransparency, glow, haze, soft edges, gradients, realistic rendering, texture or noise. Use a tiny dark pixel outline where helpful. Entire surrounding background alpha zero. Frames1→6: small start, growth, action, peak, breakup, small ending. Keep all sprites SMALL within their identical cells. ROW1: amber curved soundwave arcs. ROW2: 2-3 small golden four-point stars forming a trail. ROW3: tan sand spray. ROW4: small brown cracked-earth mark and dust ring. ROW5: 2-3 angular grey-brown falling rocks and debris. ROW6: ivory web-thread coil with pointed filament. All six rows visually distinguishable. There must be SIX frames in EVERY row, NEVER fewer. Keep all shapes compact, no long trails, no multiple-cell continuous effects. The full sheet should look mostly empty transparent space with36 small crisp centered effect sprites. Square1152×1152 output."
+    },
+    {
+      "path": "sheet-08.png",
+      "source": "/workspace/scratch/7f0673f53fab/generated_images/exec-c93bfcae-3388-43af-a292-505fbcdd1c33.png",
+      "rows": [
+        "Recover",
+        "Rest",
+        "Agility",
+        "Harden",
+        "Swords Dance",
+        "Leech Life"
+      ],
+      "prompt": "Production asset: a SQUARE transparent PNG with EXACTLY 6 columns and 6 rows, exactly 36 SEPARATE TINY PIXEL-ART EFFECTS. Each of the SIX rows has precisely SIX chronological frames of one animation. STRICT SPACING is the main priority: each cell is the same size, and ALL artwork in each cell fits inside the central HALF of that cell, leaving a wide EMPTY TRANSPARENT moat around every sprite on ALL FOUR sides. The effect may occupy at most HALF the cell width and HALF the cell height, even at its peak. Nothing may touch or cross an invisible cell boundary. Uniform row centers at 1/12,3/12,5/12,7/12,9/12,11/12 of canvas height; column centers identical fractions of canvas width. No labels or lines. Real LOW RESOLUTION sprite art: small simple readable 32×32 logical-pixel objects, square pixel edges, ONLY 4-6 fully opaque flat colors per sprite, 1990s handheld RPG battle effects. No bloom, aura, semitransparency, glow, haze, soft edges, gradients, realistic rendering, texture or noise. Use a tiny dark pixel outline where helpful. Entire surrounding background alpha zero. Frames1→6: small start, growth, action, peak, breakup, small ending. Keep all sprites SMALL within their identical cells. ROW1: green healing orbs with tiny plus signs. ROW2: blue sleep bubble with a crescent and tiny pixelZ. ROW3: small cyan speed streaks curling into a ring. ROW4: silver-blue faceted crystal armor flash. ROW5: two small silver swords rotating around a golden ring. ROW6: lime energy seeds curving in a short arc. All six rows visually distinguishable. There must be SIX frames in EVERY row, NEVER fewer. Keep all shapes compact, no long trails, no multiple-cell continuous effects. The full sheet should look mostly empty transparent space with36 small crisp centered effect sprites. Square1152×1152 output."
+    }
+  ]
+}

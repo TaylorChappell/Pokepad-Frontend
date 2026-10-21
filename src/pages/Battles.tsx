@@ -1,10 +1,18 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { Avatar, Button, Icon, PokemonArt, Pokeball, TypeChip } from '../components/UI';
 import { profileName } from '../state/model';
 import { TYPE_COLORS } from '../utils';
 import { BattleSprite } from '../battle/BattleSprite';
+import {
+  createBattleScene,
+  getBattleMotionVector,
+  type BattleActorGeometry,
+  type BattlePoseOptions,
+  type BattleScene,
+} from '../battle/geometry';
+import { getMoveSpriteScript, preloadEffectSprites } from '../battle/effect-sprites';
 import { useBattleAudio } from '../battle/audio';
 import { BattleEffects } from '../components/BattleEffects';
 import { createBattlePlayback, type BattleCue } from '../battle/presentation';
@@ -129,11 +137,11 @@ function DifficultyPicker({
   );
 }
 
-function FieldGround() {
+function FieldGround({ scene }: { scene: BattleScene }) {
   return (
     <svg
       className="classic-ground"
-      viewBox="0 0 512 320"
+      viewBox={`0 0 ${scene.width} ${scene.height}`}
       preserveAspectRatio="none"
       aria-hidden="true"
     >
@@ -151,48 +159,69 @@ function FieldGround() {
           />
         </pattern>
       </defs>
-      <g className="classic-ground-rival">
-        <ellipse cx="375" cy="132" rx="112" ry="31" fill="#a3ad56" />
-        <ellipse
-          cx="375"
-          cy="127"
-          rx="112"
-          ry="29"
-          fill="url(#battle-grass)"
-          stroke="#668d4e"
-          strokeWidth="2"
-        />
-        <ellipse
-          cx="375"
-          cy="125"
-          rx="103"
-          ry="23"
-          fill="url(#battle-grass-blades)"
-          opacity=".65"
-        />
-      </g>
-      <g className="classic-ground-player">
-        <ellipse cx="121" cy="305" rx="157" ry="49" fill="#a3ad56" />
-        <ellipse
-          cx="121"
-          cy="299"
-          rx="157"
-          ry="46"
-          fill="url(#battle-grass)"
-          stroke="#668d4e"
-          strokeWidth="2"
-        />
-        <ellipse
-          cx="121"
-          cy="293"
-          rx="148"
-          ry="35"
-          fill="url(#battle-grass-blades)"
-          opacity=".65"
-        />
-      </g>
+      {(['rival', 'player'] as const).map((side) => {
+        const { x, y, rx, ry } = scene.actors[side].ground;
+        return (
+          <g className={'classic-ground-' + side} key={side}>
+            <ellipse cx={x} cy={y + ry * 0.14} rx={rx} ry={ry} fill="#a3ad56" />
+            <ellipse
+              cx={x}
+              cy={y}
+              rx={rx}
+              ry={ry}
+              fill="url(#battle-grass)"
+              stroke="#668d4e"
+              strokeWidth="2"
+            />
+            <ellipse
+              cx={x}
+              cy={y - ry * 0.08}
+              rx={rx * 0.94}
+              ry={ry * 0.78}
+              fill="url(#battle-grass-blades)"
+              opacity=".65"
+            />
+          </g>
+        );
+      })}
     </svg>
   );
+}
+
+function actorStyle(actor: BattleActorGeometry): CSSProperties {
+  return {
+    left: actor.rect.x,
+    top: actor.rect.y,
+    width: actor.rect.size,
+    height: actor.rect.size,
+    right: 'auto',
+    bottom: 'auto',
+  };
+}
+
+function actorPose(
+  scene: BattleScene,
+  side: 'player' | 'rival',
+  cue: BattleCue | null,
+): BattlePoseOptions | undefined {
+  if (!cue) return;
+  const script = getMoveSpriteScript(cue.moveName);
+  let motion: BattlePoseOptions['motion'];
+  if (cue.side === side) {
+    if (cue.kind === 'switch') motion = 'arrive';
+    else if (cue.kind === 'faint') motion = 'faint';
+    else if (cue.kind === 'move') motion = cue.outcome === 'charge' ? 'charge' : script.motion;
+  } else if (cue.targetSide === side && cue.kind === 'move' && cue.outcome === 'hit') {
+    motion = 'hit';
+  }
+  return motion
+    ? {
+        motion,
+        vector: getBattleMotionVector(scene, side, motion),
+        durationMs: cue.durationMs,
+        impactAt: script.impactAt,
+      }
+    : undefined;
 }
 
 export function BattlesPage() {
@@ -205,12 +234,36 @@ export function BattlesPage() {
   const [battle, setBattle] = useState<BattleState | null>(null);
   const [displayBattle, setDisplayBattle] = useState<BattleState | null>(null);
   const [busy, setBusy] = useState(false);
+  const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const launchAttempt = useRef(0);
   const [command, setCommand] = useState<'root' | 'fight' | 'pokemon' | 'log'>('root');
   const [streak, setStreak] = useState(0);
   const [cue, setCue] = useState<BattleCue | null>(null);
   const [dialogue, setDialogue] = useState('');
   const [page, setPage] = useState(0);
   const [compactHeight, setCompactHeight] = useState(() => window.innerHeight <= 560);
+  const field = useRef<HTMLDivElement>(null);
+  const [fieldSize, setFieldSize] = useState({ width: 1000, height: 600 });
+  useLayoutEffect(() => {
+    const element = field.current;
+    if (!element) return;
+    const measure = () => {
+      const { width, height } = element.getBoundingClientRect();
+      if (width > 0 && height > 0)
+        setFieldSize((previous) =>
+          previous.width === width && previous.height === height ? previous : { width, height },
+        );
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(element);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [phase, mode]);
   useEffect(() => {
     const resize = () => setCompactHeight(window.innerHeight <= 560);
     window.addEventListener('resize', resize);
@@ -223,6 +276,18 @@ export function BattlesPage() {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const audio = useBattleAudio(phase === 'battle');
   useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => {
+    launchAttempt.current += 1;
+    setLaunching(false);
+    setLaunchError(null);
+    if (phase === 'team') void preloadEffectSprites().catch(() => {});
+  }, [phase, mode, selectedIds, difficulty]);
+  useEffect(
+    () => () => {
+      launchAttempt.current += 1;
+    },
+    [],
+  );
   const available = state.pokemon.filter((pokemon) => !pokemon.listed && !pokemon.locked);
   const chosen = useMemo(
     () =>
@@ -241,6 +306,24 @@ export function BattlesPage() {
     () => generateRivalTeam(lobbyParty, difficulty, createSeededRandom(matchSeed)),
     [chosen, state.pokemon, difficulty, matchSeed],
   );
+  const visibleBattle = phase === 'battle' ? displayBattle || battle : null;
+  const visiblePlayer = visibleBattle?.player[visibleBattle.active.player] || lobbyParty[0];
+  const visibleRival = visibleBattle?.rival[visibleBattle.active.rival] || lobbyRivals[0];
+  const scene = useMemo(
+    () =>
+      createBattleScene({
+        ...fieldSize,
+        player: { speciesId: visiblePlayer?.speciesId || 4, shiny: visiblePlayer?.shiny },
+        rival: { speciesId: visibleRival?.speciesId || 7, shiny: visibleRival?.shiny },
+      }),
+    [
+      fieldSize,
+      visiblePlayer?.speciesId,
+      visiblePlayer?.shiny,
+      visibleRival?.speciesId,
+      visibleRival?.shiny,
+    ],
+  );
   const relativeStrength = ownPreview.length
     ? Math.round((teamStrength(rivals) / teamStrength(ownPreview)) * 100)
     : Math.round(DIFFICULTIES[difficulty].ratio * 100);
@@ -250,10 +333,23 @@ export function BattlesPage() {
   const pageSize = compactHeight ? 3 : 6;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount - 1);
-  const start = (fresh = false) => {
-    if (!chosen.length) return;
+  const start = async (fresh = false) => {
+    if (!chosen.length || launching) return;
+    const attempt = ++launchAttempt.current;
+    setLaunching(true);
+    setLaunchError(null);
     clearTimeout(timer.current);
     audio.unlock();
+    try {
+      await preloadEffectSprites();
+    } catch {
+      if (launchAttempt.current === attempt) {
+        setLaunching(false);
+        setLaunchError('Battle effects could not load. Check your connection and try again.');
+      }
+      return;
+    }
+    if (launchAttempt.current !== attempt) return;
     const next = createBattle(
       chosen,
       fresh ? generateRivalTeam(chosen, difficulty) : rivals,
@@ -266,6 +362,7 @@ export function BattlesPage() {
     setCue(null);
     setCommand('root');
     setDialogue('');
+    setLaunching(false);
   };
   const play = (action: BattleAction) => {
     if (!battle || busy || battle.winner) return;
@@ -388,6 +485,8 @@ export function BattlesPage() {
       opponent = view.rival[view.active.rival];
     const exhausted = current.pp.every((value) => value <= 0),
       lockedMove = current.charging;
+    const playerPose = actorPose(scene, 'player', cue);
+    const rivalPose = actorPose(scene, 'rival', cue);
     const prompt = busy
       ? dialogue
       : battle.winner
@@ -410,21 +509,47 @@ export function BattlesPage() {
           aria-busy={busy}
           data-state={busy ? 'playing' : battle.winner ? 'result' : command}
         >
-          <div className="battle-field classic-field" data-effect={cue?.family || ''}>
-            <FieldGround />
+          <div ref={field} className="battle-field classic-field" data-effect={cue?.family || ''}>
+            <FieldGround scene={scene} />
             <Health fighter={opponent} side="rival" team={view.rival} />
             <Health fighter={current} side="player" team={view.player} />
             <div
-              className={'classic-fighter classic-rival' + (opponent.hp <= 0 ? ' is-fainted' : '')}
+              className={
+                'classic-fighter classic-rival battle-placed-actor' +
+                (opponent.hp <= 0 ? ' is-fainted' : '')
+              }
+              style={actorStyle(scene.actors.rival)}
             >
-              <BattleSprite speciesId={opponent.speciesId} shiny={opponent.shiny} side="rival" />
+              <BattleSprite
+                speciesId={opponent.speciesId}
+                shiny={opponent.shiny}
+                side="rival"
+                actor={scene.actors.rival}
+                pose={rivalPose}
+                poseKey={cue?.id}
+                paused={opponent.hp <= 0 || (busy && !rivalPose)}
+                reducedMotion={state.profile.reducedMotion}
+              />
             </div>
             <div
-              className={'classic-fighter classic-player' + (current.hp <= 0 ? ' is-fainted' : '')}
+              className={
+                'classic-fighter classic-player battle-placed-actor' +
+                (current.hp <= 0 ? ' is-fainted' : '')
+              }
+              style={actorStyle(scene.actors.player)}
             >
-              <BattleSprite speciesId={current.speciesId} shiny={current.shiny} side="player" />
+              <BattleSprite
+                speciesId={current.speciesId}
+                shiny={current.shiny}
+                side="player"
+                actor={scene.actors.player}
+                pose={playerPose}
+                poseKey={cue?.id}
+                paused={current.hp <= 0 || (busy && !playerPose)}
+                reducedMotion={state.profile.reducedMotion}
+              />
             </div>
-            <BattleEffects cue={cue} reducedMotion={state.profile.reducedMotion} />
+            <BattleEffects cue={cue} scene={scene} reducedMotion={state.profile.reducedMotion} />
           </div>
           <div className={'classic-console command-' + command}>
             {battle.winner && !busy ? (
@@ -454,10 +579,15 @@ export function BattlesPage() {
                   >
                     Change party
                   </Button>
-                  <Button onClick={() => start(true)}>
-                    Play again
+                  <Button disabled={launching} onClick={() => start(true)}>
+                    {launching ? 'Preparing battle…' : launchError ? 'Retry battle' : 'Play again'}
                     <Icon name="RefreshCw" size={15} />
                   </Button>
+                  {launchError && (
+                    <p className="battle-load-error" role="alert">
+                      {launchError}
+                    </p>
+                  )}
                 </div>
               </div>
             ) : busy || command === 'root' ? (
@@ -780,10 +910,15 @@ export function BattlesPage() {
                 <Icon name="RefreshCw" size={16} />
               </button>
             </div>
-            <Button disabled={!chosen.length} onClick={() => start()}>
-              Start battle
+            <Button disabled={!chosen.length || launching} onClick={() => start()}>
+              {launching ? 'Preparing battle…' : launchError ? 'Retry battle' : 'Start battle'}
               <Icon name="Swords" size={17} />
             </Button>
+            {launchError && (
+              <p className="battle-load-error" role="alert">
+                {launchError}
+              </p>
+            )}
             <small className="classic-practice-note">Full battle HP · no stakes</small>
           </aside>
         </div>
@@ -796,22 +931,35 @@ export function BattlesPage() {
       {mode === 'offline' ? (
         <div className="classic-lobby-grid">
           <section className="arena-hero classic-lobby-board">
-            <div className="classic-preview-field">
-              <FieldGround />
+            <div ref={field} className="classic-preview-field">
+              <FieldGround scene={scene} />
               <div className="classic-preview-caption">
                 <span>OFFLINE BATTLE</span>
                 <h2>Your next challenger.</h2>
                 <p>Pick a rival. Build your party. Make your move.</p>
               </div>
-              <div className="classic-preview-player">
+              <div
+                className="classic-preview-player battle-placed-actor"
+                style={actorStyle(scene.actors.player)}
+              >
                 <BattleSprite
                   speciesId={lobbyParty[0]?.speciesId || 4}
                   shiny={lobbyParty[0]?.shiny}
                   side="player"
+                  actor={scene.actors.player}
+                  reducedMotion={state.profile.reducedMotion}
                 />
               </div>
-              <div className="classic-preview-rival">
-                <BattleSprite speciesId={lobbyRivals[0]?.speciesId || 7} side="rival" />
+              <div
+                className="classic-preview-rival battle-placed-actor"
+                style={actorStyle(scene.actors.rival)}
+              >
+                <BattleSprite
+                  speciesId={lobbyRivals[0]?.speciesId || 7}
+                  side="rival"
+                  actor={scene.actors.rival}
+                  reducedMotion={state.profile.reducedMotion}
+                />
               </div>
               <span className="classic-preview-versus">VS</span>
             </div>
