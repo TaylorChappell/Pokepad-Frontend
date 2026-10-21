@@ -3,14 +3,17 @@ import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { BattleEffects } from '../src/components/BattleEffects';
-import { createBattleScene } from '../src/battle/geometry';
+import { createBattleScene, type BattleScene } from '../src/battle/geometry';
 import { getBattleCue, PRESENTED_MOVES, type BattleCue } from '../src/battle/presentation';
 import {
   MOVE_SPRITE_SCRIPTS,
   buildSpriteTimeline,
+  bindSpriteTimeline,
+  effectCueElapsed,
   getMoveSpriteScript,
   preloadEffectSprites,
   resolveEffectAnchors,
+  sampleSpriteLayer,
 } from '../src/battle/effect-sprites';
 import { EFFECT_ATLASES, effectFrameAt, effectFrameGeometry } from '../src/battle/effect-atlases';
 
@@ -187,8 +190,8 @@ test('charge and self-moves stay with their caster; Fly release dives toward the
     assert.ok(self.layers.every((layer) => layer.role === 'self'));
   }
   const fly = buildSpriteTimeline(cueFor('Fly'), scene);
-  const dive = fly.layers.find((layer) => layer.role === 'travel')!;
-  assert.ok(dive.from.y < fly.source.y);
+  const dive = fly.layers.filter((layer) => layer.role === 'travel')[1];
+  assert.deepEqual(dive.from, fly.source, 'The actual airborne body frame supplies Fly’s height');
   assert.deepEqual(dive.to, fly.target);
   assert.equal(fly.script.motion, 'leap');
 });
@@ -246,5 +249,119 @@ test('effect preloading decodes each sheet once and retries a failed load', asyn
   } finally {
     if (original) Object.defineProperty(globalThis, 'Image', original);
     else Reflect.deleteProperty(globalThis, 'Image');
+  }
+});
+
+// Deliberately distinct, changing head/hand/body offsets expose incorrect source bindings.
+const movingSceneAt = (elapsedMs: number): BattleScene => {
+  const result = structuredClone(scene);
+  for (const side of ['player', 'rival'] as const) {
+    const phase = Math.floor(elapsedMs / 75);
+    const direction = side === 'player' ? 1 : -1;
+    for (const [index, anchor] of ['mouth', 'hand', 'cannon', 'body', 'feet', 'crown'].entries()) {
+      const p = result.actors[side].anchors[anchor as keyof typeof result.actors.player.anchors];
+      p.x += direction * phase * (index + 1);
+      p.y -= phase * (index + 2);
+    }
+  }
+  return result;
+};
+
+test('projectiles retain exact emission and arrival frame anchors after the body moves again', () => {
+  for (const side of ['player', 'rival'] as const) {
+    const cue = cueFor('Ember', side);
+    const raw = buildSpriteTimeline(cue, scene);
+    const bound = bindSpriteTimeline(raw, cue, scene, movingSceneAt);
+    const original = raw.layers.find((layer) => layer.role === 'travel')!;
+    const shot = bound.layers.find((layer) => layer.key === original.key)!;
+    assert.ok(shot.delay >= Math.floor(cue.durationMs * raw.script.releaseAt));
+    assert.deepEqual(shot.from, resolveEffectAnchors(cue, movingSceneAt(shot.delay)).source);
+    const arrival = resolveEffectAnchors(cue, movingSceneAt(shot.delay + shot.duration)).target;
+    assert.deepEqual(shot.to, {
+      x: original.to.x + arrival.x - raw.target.x,
+      y: original.to.y + arrival.y - raw.target.y,
+    });
+    const midpoint = shot.delay + shot.duration * 0.4;
+    const first = sampleSpriteLayer(shot, bound, cue, scene, movingSceneAt(midpoint), midpoint);
+    const laterBody = sampleSpriteLayer(
+      shot,
+      bound,
+      cue,
+      scene,
+      movingSceneAt(cue.durationMs),
+      midpoint,
+    );
+    assert.deepEqual(first, laterBody, 'A fired particle is not pulled around by a later pose');
+  }
+});
+
+test('beam and vine endpoints track current pose anchors throughout emission', () => {
+  for (const name of ['Flamethrower', 'Hydro Pump', 'Lick', 'Vine Whip', 'String Shot']) {
+    for (const side of ['player', 'rival'] as const) {
+      const cue = cueFor(name, side);
+      const timeline = bindSpriteTimeline(
+        buildSpriteTimeline(cue, scene),
+        cue,
+        scene,
+        movingSceneAt,
+      );
+      const chain = timeline.layers.filter((layer) => layer.space === 'tether');
+      const first = chain[0],
+        last = chain.at(-1)!;
+      assert.ok(
+        first.delay + first.duration >= last.delay + last.duration - 1,
+        `${name}: source remains during the beam`,
+      );
+      const now = cue.durationMs * 0.78;
+      const current = movingSceneAt(now);
+      const anchors = resolveEffectAnchors(cue, current);
+      const start = sampleSpriteLayer(first, timeline, cue, scene, current, now);
+      const end = sampleSpriteLayer(last, timeline, cue, scene, current, now);
+      assert.deepEqual(start.position, anchors.source, `${name}: live source`);
+      assert.deepEqual(end.position, anchors.target, `${name}: live target`);
+      assert.ok(start.opacity > 0 && end.opacity > 0, `${name}: no detached tail`);
+    }
+  }
+});
+
+test('life return uses the receiver body landmark and ground attacks remain on the field', () => {
+  const cue = cueFor('Dream Eater');
+  const raw = buildSpriteTimeline(cue, scene);
+  const bound = bindSpriteTimeline(raw, cue, scene, movingSceneAt);
+  const returning = bound.layers.find((layer) => layer.role === 'return')!;
+  assert.deepEqual(
+    returning.to,
+    rounded(movingSceneAt(returning.delay + returning.duration).actors.player.anchors.body),
+  );
+  const quakeCue = cueFor('Earthquake');
+  const quake = bindSpriteTimeline(
+    buildSpriteTimeline(quakeCue, scene),
+    quakeCue,
+    scene,
+    movingSceneAt,
+  );
+  for (const layer of quake.layers) {
+    const now = layer.delay + layer.duration / 2;
+    assert.equal(layer.space, 'ground');
+    assert.deepEqual(
+      sampleSpriteLayer(layer, quake, quakeCue, scene, scene, now),
+      sampleSpriteLayer(layer, quake, quakeCue, scene, movingSceneAt(now), now),
+      'Ground cracks cannot float upward with a raised foot',
+    );
+  }
+});
+
+test('the shared cue epoch catches up delayed mounts and all 48 move launches follow body release', () => {
+  assert.equal(effectCueElapsed(400, 150, 1000), 250);
+  assert.equal(effectCueElapsed(140, 150, 1000), 0);
+  assert.equal(effectCueElapsed(1500, 150, 1000), 1000);
+  for (const name of PRESENTED_MOVES) {
+    const cue = cueFor(name);
+    const timeline = buildSpriteTimeline(cue, scene);
+    assert.equal(timeline.script.releaseAt, 0.13);
+    if (cue.target === 'self') continue;
+    for (const layer of timeline.layers.filter((entry) => entry.role === 'travel')) {
+      assert.ok(layer.delay >= Math.floor(cue.durationMs * timeline.script.releaseAt), name);
+    }
   }
 });

@@ -27,6 +27,7 @@ import './battle-screen-v8.css';
 import './brand-v10.css';
 import './battle-geometry-v10.css';
 import './battle-effects-v10.css';
+import './battle-body-v11.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')!).render(<App />);

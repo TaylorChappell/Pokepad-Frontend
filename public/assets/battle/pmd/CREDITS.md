@@ -1,0 +1,171 @@
+# PMDCollab battle character sprites
+
+Imported from [PMDCollab/SpriteCollab](https://github.com/PMDCollab/SpriteCollab) at commit `0250bd6e62029bb896276a7f6bcb2385ed1a02f0`.
+
+These are existing Pokémon Mystery Dungeon character animations, not newly drawn artwork or one unique character sheet for every move. Each move uses an available authored action family together with the move effects.
+
+## Import and rendering
+
+- All 151 Kanto species have separate normal and shiny palettes.
+- Original PNG bytes are embedded unchanged in one SVG atlas per species. SVG viewports select the exact opaque frame rectangles from down-left (row 7) and up-right (row 3), with original logical positions retained. Pixels are never repainted, resampled or mirrored.
+- Alpha bounds, body/head/hand anchors, moving shadow ground positions and 60 Hz XML timings are measured directly. One logical canvas spans all included actions and palettes, preserving authored displacement.
+- Optional animations with fewer than eight directions are explicitly excluded. No missing rear view is synthesized.
+- Persian and Arcanine have one-frame source Idle sequences; their authored Walk frames supply an idle fidget.
+- Source ZIP/XML/PNG checksums appear in `source-manifest.json`; full per-action credit history is in `credits.json`.
+- Rebuild using `python scripts/import-pmd-battle-sprites.py` (Pillow required). The importer checks the source revision and uses four bounded workers with a temporary ZIP cache.
+
+## Credits
+
+Official CHUNSOFT artwork and contributed/recolored artwork retain their separate attribution and recorded license information. See `credits.json` for full source history and `SOURCE-README.md` / `LICENSE.md` for preserved source policy.
+
+- **001 Bulbasaur** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: ShyStarryRain
+- **002 Ivysaur** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **003 Venusaur** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **004 Charmander** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: ShyStarryRain
+- **005 Charmeleon** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [bwappi](https://bsky.app/profile/bwappi.bsky.social), [Grimlin](https://twitter.com/Griimlin), 199989579682414592; shiny: ShyStarryRain, [Emmuffin](https://twitter.com/Ernmuffin)
+- **006 Charizard** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger; shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563), Emboarger, [Emmuffin](https://twitter.com/Ernmuffin)
+- **007 Squirtle** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563), ShyStarryRain
+- **008 Wartortle** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **009 Blastoise** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **010 Caterpie** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **011 Metapod** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **012 Butterfree** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **013 Weedle** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: ShyStarryRain
+- **014 Kakuna** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **015 Beedrill** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **016 Pidgey** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), JFain; shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **017 Pidgeotto** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Moo](https://twitter.com/MoonMoonMemes), [bwappi](https://bsky.app/profile/bwappi.bsky.social)
+- **018 Pidgeot** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **019 Rattata** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: ShyStarryRain
+- **020 Raticate** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563), 3Monika4
+- **021 Spearow** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **022 Fearow** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **023 Ekans** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **024 Arbok** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Moo](https://twitter.com/MoonMoonMemes), [Morei](https://bsky.app/profile/murpia57.bsky.social)
+- **025 Pikachu** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563)
+- **026 Raichu** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Grimlin](https://twitter.com/Griimlin), Top_Kec; shiny: [G〜](https://bsky.app/profile/justtr4sh.pmd.social)
+- **027 Sandshrew** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger, 3P1C; shiny: ShyStarryRain
+- **028 Sandslash** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin); shiny: [SilverDeoxys563](https://www.reddit.com/user/SilverDeoxys563), XModxGodX, [Emmuffin](https://twitter.com/Ernmuffin)
+- **029 Nidoran_F** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [lokatts](https://twitter.com/lokatts)
+- **030 Nidorina** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Audino](https://github.com/audinowho), baronessfaron
+- **031 Nidoqueen** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **032 Nidoran_M** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **033 Nidorino** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Anonymous
+- **034 Nidoking** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **035 Clefairy** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **036 Clefable** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **037 Vulpix** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Lovi
+- **038 Ninetales** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), baronessfaron; shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **039 Jigglypuff** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), JFain; shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **040 Wigglytuff** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Lovi, [Morei](https://bsky.app/profile/murpia57.bsky.social)
+- **041 Zubat** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **042 Golbat** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **043 Oddish** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **044 Gloom** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **045 Vileplume** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **046 Paras** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **047 Parasect** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: ShyStarryRain
+- **048 Venonat** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [anomalocaris](https://twitter.com/radiodonta_lord); shiny: Tacocoa, [Emmuffin](https://twitter.com/Ernmuffin)
+- **049 Venomoth** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Anonymous
+- **050 Diglett** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **051 Dugtrio** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **052 Meowth** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **053 Persian** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **054 Psyduck** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: 195280695009083392, ShyStarryRain
+- **055 Golduck** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **056 Mankey** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **057 Primeape** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [G〜](https://bsky.app/profile/justtr4sh.pmd.social)
+- **058 Growlithe** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin), JustAGunk; shiny: [Audino](https://github.com/audinowho), [Emmuffin](https://twitter.com/Ernmuffin)
+- **059 Arcanine** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa, baronessfaron
+- **060 Poliwag** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **061 Poliwhirl** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse, 3Monika4
+- **062 Poliwrath** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **063 Abra** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin); shiny: Tacocoa, 3Monika4, [Emmuffin](https://twitter.com/Ernmuffin)
+- **064 Kadabra** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **065 Alakazam** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Morei](https://bsky.app/profile/murpia57.bsky.social), [Emmuffin](https://twitter.com/Ernmuffin)
+- **066 Machop** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger; shiny: [Morei](https://bsky.app/profile/murpia57.bsky.social)
+- **067 Machoke** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **068 Machamp** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **069 Bellsprout** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Audino](https://github.com/audinowho)
+- **070 Weepinbell** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Anonymous
+- **071 Victreebel** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **072 Tentacool** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **073 Tentacruel** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **074 Geodude** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **075 Graveler** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **076 Golem** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin); shiny: [Emmuffin](https://twitter.com/Ernmuffin), El_Pangoro_Parse
+- **077 Ponyta** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), JFain; shiny: Tacocoa, [Emmuffin](https://twitter.com/Ernmuffin)
+- **078 Rapidash** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse, [Noo](https://artfight.net/~NooNoo_Skidoo)
+- **079 Slowpoke** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: ShyStarryRain
+- **080 Slowbro** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **081 Magnemite** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **082 Magneton** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **083 Farfetch_d** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Lovi
+- **084 Doduo** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Anonymous
+- **085 Dodrio** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Anonymous
+- **086 Seel** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **087 Dewgong** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **088 Grimer** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **089 Muk** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [G〜](https://bsky.app/profile/justtr4sh.pmd.social)
+- **090 Shellder** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **091 Cloyster** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse, [Emmuffin](https://twitter.com/Ernmuffin)
+- **092 Gastly** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse, ShyStarryRain
+- **093 Haunter** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **094 Gengar** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger; shiny: Tacocoa, Emboarger
+- **095 Onix** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **096 Drowzee** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **097 Hypno** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Lovi
+- **098 Krabby** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa, [G〜](https://bsky.app/profile/justtr4sh.pmd.social)
+- **099 Kingler** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **100 Voltorb** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), Emboarger; shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **101 Electrode** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa, [Noo](https://artfight.net/~NooNoo_Skidoo)
+- **102 Exeggcute** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Prismatic, [Noo](https://artfight.net/~NooNoo_Skidoo)
+- **103 Exeggutor** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Audino](https://github.com/audinowho), [Noo](https://artfight.net/~NooNoo_Skidoo)
+- **104 Cubone** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [Emmuffin](https://twitter.com/Ernmuffin), Sceptile; shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **105 Marowak** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **106 Hitmonlee** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **107 Hitmonchan** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **108 Lickitung** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Audino](https://github.com/audinowho)
+- **109 Koffing** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **110 Weezing** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **111 Rhyhorn** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **112 Rhydon** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **113 Chansey** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **114 Tangela** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Anonymous
+- **115 Kangaskhan** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **116 Horsea** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Reppamon
+- **117 Seadra** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **118 Goldeen** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **119 Seaking** — normal: ; shiny:
+- **120 Staryu** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Adrian
+- **121 Starmie** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Anonymous, [Noo](https://artfight.net/~NooNoo_Skidoo)
+- **122 Mr_Mime** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Lovi
+- **123 Scyther** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **124 Jynx** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Audino](https://github.com/audinowho), ShyStarryRain
+- **125 Electabuzz** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Scizivire
+- **126 Magmar** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Lovi
+- **127 Pinsir** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **128 Tauros** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **129 Magikarp** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Scizivire, [Noo](https://artfight.net/~NooNoo_Skidoo)
+- **130 Gyarados** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Noo](https://artfight.net/~NooNoo_Skidoo), [Emmuffin](https://twitter.com/Ernmuffin)
+- **131 Lapras** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [RaoKurai](https://twitter.com/RaoKurai)
+- **132 Ditto** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: ShyStarryRain
+- **133 Eevee** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: baronessfaron
+- **134 Vaporeon** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **135 Jolteon** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), dmDash; shiny: Lovi, [Morei](https://bsky.app/profile/murpia57.bsky.social)
+- **136 Flareon** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), Ginnie, JFain; shiny: Tacocoa, ShyStarryRain, [FlowerSnek](https://twitter.com/EthanLac13)
+- **137 Porygon** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **138 Omanyte** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **139 Omastar** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **140 Kabuto** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [anomalocaris](https://twitter.com/radiodonta_lord); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **141 Kabutops** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Tacocoa
+- **142 Aerodactyl** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **143 Snorlax** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse
+- **144 Articuno** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: El_Pangoro_Parse, [Emmuffin](https://twitter.com/Ernmuffin)
+- **145 Zapdos** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **146 Moltres** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: [Emmuffin](https://twitter.com/Ernmuffin)
+- **147 Dratini** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), JFain; shiny: [Pencil](https://twitter.com/Sea_of_Pencils)
+- **148 Dragonair** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/); shiny: Lovi
+- **149 Dragonite** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), [SethY](https://linktr.ee/sethyuikora), [Deeshura](https://bsky.app/profile/deeshura.bsky.social); shiny: [Deeshura](https://bsky.app/profile/deeshura.bsky.social)
+- **150 Mewtwo** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), JFain; shiny: El_Pangoro_Parse, JFain
+- **151 Mew** — normal: [CHUNSOFT](https://www.spike-chunsoft.com/), JFain; shiny: Anonymous, Emboarger

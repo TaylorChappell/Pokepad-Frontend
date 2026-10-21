@@ -5,7 +5,7 @@
   display: block;
   margin: 0;
   padding: 0;
-  aspect-ratio: 1;
+  aspect-ratio: auto;
   overflow: visible;
   transform: none;
   animation: none;
@@ -24,19 +24,9 @@
   transform-origin: center bottom;
 }
 
-.battle-placed-actor .battle-sprite-pose {
-  will-change: transform;
-}
-
 .battle-load-error {
   margin: 6px 0 0;
   color: #a9403b;
   font-size: 11px;
   line-height: 1.4;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .battle-placed-actor .battle-sprite-pose {
-    will-change: auto;
-  }
 }

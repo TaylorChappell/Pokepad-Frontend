@@ -1,10 +1,10 @@
-# Poképad frontend · interface v10
+# Poképad frontend · interface v11
 
 A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
 
 ## Try the preview
 
-Build a single-file preview with `npm run preview:file`, then open `artifacts/Pokepad-Preview.html` in a modern browser. It embeds the app, fonts, trainers, normal artwork, and pixel sprites for all 151 Gen 1 Pokémon, including their shiny palettes. Battle front/back sprites for every normal and shiny species and the battle soundtrack are local project assets. Drawn shiny artwork still loads from PokeAPI’s public sprite repository and needs a network connection. Demo changes persist in that browser when local storage is available.
+Build a single-file preview with `npm run preview:file`, then open `artifacts/Pokepad-Preview.html` in a modern browser. It embeds the app, fonts, trainers, normal artwork, and pixel sprites for all 151 Gen 1 Pokémon, including their shiny palettes. Battle front/back animation frames, their metadata for every normal and shiny species, and the battle soundtrack are local project assets. Drawn shiny artwork still loads from PokeAPI’s public sprite repository and needs a network connection. Demo changes persist in that browser when local storage is available.
 
 For development, use Node.js 24:
 
@@ -13,11 +13,13 @@ For development, use Node.js 24:
 
 The preview starts with sample coins, Pokémon, eggs, and packs. No wallet is connected. Trading, wagering, redemption, and walking use labelled preview flows.
 
-## What changed in interface v10
+## What changed in interface v11
 
 Battles now use a viewport-constrained, Gen III-inspired battlefield: the rival faces forward at the upper right, while the player's Pokémon uses its actual back sprite at the lower left. Opposing HP panels and a fixed command area keep the action together. The root menu offers only Fight and Pokémon; moves and party choices replace that command area. Team selection is paginated. The layout is intended to avoid document scrolling, with responsive rules for short and narrow screens; browser visual verification remains outstanding.
 
-Every move in the current 48-move practice catalogue has its own six-frame pixel-art effect strip and an authored release/impact sequence. Eight local transparent atlases supply 288 frames for beams, projectiles, claws, electricity, powders, recovery and status effects. Effects use the same measured, species-specific mouth, hand, cannon, body and ground coordinates as the battlefield sprites. Sprite bounds determine platform placement and prevent the available artwork from being cut off. Grounded and floating idle motion pauses during attacks and respects reduced motion. Battle events play in sequence with corresponding dialogue and intermediate HP/status updates. This covers the playable frontend catalogue, not all 165 original Gen 1 moves or cartridge-perfect battle mechanics. Native FireRed/LeafGreen front and back sprites for all 151 species, in normal and shiny palettes, are bundled in four local SVG atlases.
+Battle characters now use full-body PMDCollab Mystery Dungeon animation frames for all 151 Kanto species, including authentic normal and shiny palettes. The player uses the up-right rear direction and the rival uses the down-left front direction. Real Idle, Attack, Shoot, Strike, Kick and other available source action families replace the transformed static FRLG battle art. Each of the 48 playable moves explicitly selects an appropriate available character action; these are reusable source action families, not 151 newly drawn animations for each named move. Some original source clips hold a pose while moving it through their authored frames. Persian and Arcanine have one-frame source idles, so their idle presentation includes a short fidget using actual Walk frames.
+
+The existing eight VFX atlases provide 288 distinct effect frames. Character actions and effects share the cue clock, with emission and impact anchors derived from the selected source frame. Full action bounds and ground markers determine a stable scale and platform position. Normal and shiny artwork is bundled locally, with per-species animation metadata loaded and cached for the selected parties before a match starts. Failed loads can be retried. Reduced motion simplifies playback. This covers the current 48-move frontend catalogue, not all 165 original Gen 1 moves or cartridge-perfect battle mechanics.
 
 The battle soundtrack is the classic Kanto trainer battle recording from HeartGold/SoulSilver. It begins after a battle-button interaction, loops, and has a persistent mute control. Move sounds are synthesized by effect family with move-specific variations. Audio pauses when the page is hidden and stops when leaving the battle. Reduced-motion settings simplify the visual playback.
 
@@ -120,10 +122,10 @@ Model tests cover funded random outcomes, shiny values, legendary availability, 
 
 All 151 Gen 1 species are in the Pokédex. Animated sprites depict those species using the Black/White game art; they are not original Red/Blue animation frames. Trainers and eggs use FireRed/LeafGreen assets. Provenance is in public/assets/ASSET-SOURCES.md.
 
-Practice battles use 48 playable moves with authored effects and simplified damage, not all 165 original Gen 1 moves or a complete original-generation battle simulator. The battle view is Gen III-inspired, with FireRed/LeafGreen sprites and a HeartGold/SoulSilver Kanto soundtrack; it is not a ROM-perfect recreation. The future backend must implement complete rules and learnsets, level progression, movement verification, holding/indexer policy, Rare Candy accrual, funded reward issuance, wallet authentication, escrow, and settlement. No such backend is included.
+Practice battles use 48 playable moves with authored effects and simplified damage, not all 165 original Gen 1 moves or a complete original-generation battle simulator. The battle view is Gen III-inspired, with full-body PMDCollab Mystery Dungeon sprites and a HeartGold/SoulSilver Kanto soundtrack; it is not a ROM-perfect recreation. The future backend must implement complete rules and learnsets, level progression, movement verification, holding/indexer policy, Rare Candy accrual, funded reward issuance, wallet authentication, escrow, and settlement. No such backend is included.
 
 Demo reward and Eevee randomness run locally and are not secure against a client owner. Reward odds are conditional on the currently affordable pool and may change before opening; live issuance needs immutable funded batches and authoritative server results. Save migration preserves existing owned values, defaults missing variants to normal, and does not invent evolution funds or move opportunities.
 
 Displayed stats use actual species base stats with a consistent demo assumption of neutral nature, 31 IVs, and 0 EVs. HP derives from species and level; missing legacy HP defaults to full health. These are modern six-stat displays, not exact original Red/Blue stat rules. Practice battles remain simplified and do not provide a persistent healing or competitive rules system.
 
-Build and interaction checks should be complemented by desktop and mobile visual review after deployment. Browser QA was attempted for interface v10, but the available browser environment could not open the preview because of its URL policy; exact layout and audio playback still need real-browser review.
+Build and interaction checks should be complemented by desktop and mobile visual review after deployment. The available browser environment previously could not open this preview because of its URL policy. Exact layout and audio playback still need real-browser review; source-frame bounds and DOM checks do not replace that review.

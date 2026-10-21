@@ -8,6 +8,9 @@ import { pokemonById } from '../src/data/pokemon';
 import { getPokemonHealth } from '../src/data/stats';
 import { DEMO_TRAINERS } from '../src/services/trainers';
 import type { AppSnapshot } from '../src/types';
+import { readFile } from 'node:fs/promises';
+
+const nativeFetch = globalThis.fetch;
 
 async function mountApp(path = '/discover', prepare?: (state: AppSnapshot) => void) {
   const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
@@ -46,6 +49,20 @@ async function mountApp(path = '/discover', prepare?: (state: AppSnapshot) => vo
   // JSDOM does not decode raster assets. Exercise battle loading and UI transitions
   // with an explicit decoder; atlas content and failed-load retries have their own tests.
   dom.window.HTMLImageElement.prototype.decode = async () => {};
+  // Battle manifests are same-origin static assets in production. Read those
+  // exact files here, so the interaction tests also exercise the real loader.
+  globalThis.fetch = async (input, init) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const match = url.match(/(?:^|\/)assets\/battle\/pmd\/(\d+\.json)(?:[?#].*)?$/);
+    if (match) {
+      const json = await readFile(
+        new URL('../public/assets/battle/pmd/' + match[1], import.meta.url),
+        'utf8',
+      );
+      return new Response(json, { headers: { 'Content-Type': 'application/json' } });
+    }
+    return nativeFetch(input, init);
+  };
   const initial = createInitialState();
   initial.profile.reducedMotion = true;
   prepare?.(initial);

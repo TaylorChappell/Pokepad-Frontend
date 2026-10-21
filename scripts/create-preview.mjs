@@ -19,10 +19,14 @@ const mimeTypes = {
   '.woff2': 'font/woff2',
   '.eot': 'application/vnd.ms-fontobject',
   '.mp3': 'audio/mpeg',
+  '.json': 'application/json',
 };
 const imageExtensions = new Set(
   Object.entries(mimeTypes)
-    .filter(([, mime]) => mime.startsWith('image/') || mime.startsWith('audio/'))
+    .filter(
+      ([, mime]) =>
+        mime.startsWith('image/') || mime.startsWith('audio/') || mime === 'application/json',
+    )
     .map(([extension]) => extension),
 );
 const dataCache = new Map();
@@ -99,7 +103,8 @@ for (const url of stylesheetUrls) {
 }
 
 // All rendered image families share the same runtime asset() lookup:
-// drawings, pixel sprites, animated sheets, trainer variants, items and branding.
+// drawings, pixel sprites, animated sheets, trainer variants, items, branding
+// and the lazily loaded battle frame manifests.
 // Font files are already embedded in CSS and are not duplicated in this map.
 const map = {};
 await collectImages(publicAssets, map);

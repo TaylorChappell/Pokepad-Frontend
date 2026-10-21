@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { BattleCue } from '../battle/presentation';
-import { createBattleScene, type BattleScene } from '../battle/geometry';
-import { buildSpriteTimeline, effectSheetPath } from '../battle/effect-sprites';
+import { createBattleScene, sampleBattleSceneAt, type BattleScene } from '../battle/geometry';
+import {
+  bindSpriteTimeline,
+  buildSpriteTimeline,
+  effectCueElapsed,
+  effectSheetPath,
+  resolveEffectAnchors,
+  sampleSpriteLayer,
+} from '../battle/effect-sprites';
 import { effectFrameAt, effectFrameGeometry } from '../battle/effect-atlases';
 import { asset } from '../utils';
 
@@ -31,26 +38,31 @@ function useSystemReducedMotion() {
 }
 
 /** One clock advances every particle's six-frame strip; no interpolated source crops. */
-function useEffectClock(duration: number, paused: boolean) {
-  const [elapsed, setElapsed] = useState(0);
+function useEffectClock(duration: number, paused: boolean, cueStartedAt?: number) {
+  const [mountedAt] = useState(() => performance.now());
+  const epoch = cueStartedAt ?? mountedAt;
+  const [elapsed, setElapsed] = useState(() =>
+    paused ? 0 : effectCueElapsed(performance.now(), epoch, duration),
+  );
   useEffect(() => {
-    if (paused) return;
+    if (paused) {
+      setElapsed(0);
+      return;
+    }
     let raf = 0;
-    let start: number | undefined;
     let lastFrame = -1;
     const tick = (now: number) => {
-      if (start === undefined) start = now;
-      const time = Math.min(duration, now - start);
-      const frame = Math.floor(time / (1000 / 30));
+      const time = effectCueElapsed(now, epoch, duration);
+      const frame = Math.floor(time / (1000 / 60));
       if (frame !== lastFrame || time === duration) {
         lastFrame = frame;
         setElapsed(time);
       }
       if (time < duration) raf = window.requestAnimationFrame(tick);
     };
-    raf = window.requestAnimationFrame(tick);
+    tick(performance.now());
     return () => window.cancelAnimationFrame(raf);
-  }, [duration, paused]);
+  }, [duration, paused, epoch]);
   return elapsed;
 }
 
@@ -81,15 +93,35 @@ function BattleEffectSequence({
   cue,
   scene,
   reducedMotion,
+  cueStartedAt,
 }: {
   cue: BattleCue;
   scene: BattleScene;
   reducedMotion: boolean;
+  cueStartedAt?: number;
 }) {
-  const timeline = useMemo(() => buildSpriteTimeline(cue, scene), [cue, scene]);
-  const elapsed = useEffectClock(cue.durationMs, reducedMotion);
+  const baseTimeline = useMemo(() => buildSpriteTimeline(cue, scene), [cue, scene]);
+  const sceneAt = useMemo(() => {
+    const cache = new Map<number, BattleScene>();
+    return (time: number) => {
+      const cached = cache.get(time);
+      if (cached) return cached;
+      const sampled = sampleBattleSceneAt(scene, cue, time, reducedMotion);
+      cache.set(time, sampled);
+      return sampled;
+    };
+  }, [cue, scene, reducedMotion]);
+  const timeline = useMemo(
+    () => bindSpriteTimeline(baseTimeline, cue, scene, sceneAt),
+    [baseTimeline, cue, scene, sceneAt],
+  );
+  const elapsed = useEffectClock(cue.durationMs, reducedMotion, cueStartedAt);
+  const currentScene = sceneAt(elapsed);
+  const currentAnchors = resolveEffectAnchors(cue, currentScene, timeline.script);
   const point =
-    cue.target === 'self' || cue.outcome === 'charge' ? timeline.source : timeline.target;
+    cue.target === 'self' || cue.outcome === 'charge'
+      ? currentAnchors.source
+      : currentAnchors.target;
   const staticSize = Math.max(
     40,
     Math.round(timeline.script.size * Math.min(scene.width / 1000, scene.height / 600)),
@@ -103,10 +135,11 @@ function BattleEffectSequence({
       data-source-side={cue.side}
       data-target-side={cue.targetSide}
       data-origin={timeline.origin}
-      data-source-x={timeline.source.x}
-      data-source-y={timeline.source.y}
-      data-target-x={timeline.target.x}
-      data-target-y={timeline.target.y}
+      data-source-x={currentAnchors.source.x}
+      data-source-y={currentAnchors.source.y}
+      data-target-x={currentAnchors.target.x}
+      data-target-y={currentAnchors.target.y}
+      data-cue-started-at={cueStartedAt}
       aria-hidden="true"
     >
       {reducedMotion ? (
@@ -119,39 +152,36 @@ function BattleEffectSequence({
           />
         </span>
       ) : (
-        timeline.layers.map((layer) => (
-          <span
-            key={layer.key}
-            className={'pixel-vfx-particle pixel-role-' + layer.role}
-            data-layer-role={layer.role}
-            data-frame-set={layer.frames}
-            style={
-              {
-                '--start-x': layer.from.x + 'px',
-                '--start-y': layer.from.y + 'px',
-                '--middle-x': layer.via.x + 'px',
-                '--middle-y': layer.via.y + 'px',
-                '--end-x': layer.to.x + 'px',
-                '--end-y': layer.to.y + 'px',
-                '--sprite-delay': layer.delay + 'ms',
-                '--sprite-time': layer.duration + 'ms',
-                '--sprite-opacity': layer.opacity,
-              } as CSSProperties
-            }
-          >
+        timeline.layers.map((layer) => {
+          const sampled = sampleSpriteLayer(layer, timeline, cue, scene, currentScene, elapsed);
+          return (
             <span
-              className="pixel-vfx-orientation"
-              style={{ transform: `rotate(${layer.rotation}deg) scaleX(${layer.flip ? -1 : 1})` }}
+              key={layer.key}
+              className={'pixel-vfx-particle pixel-role-' + layer.role}
+              data-layer-role={layer.role}
+              data-frame-set={layer.frames}
+              data-space={layer.space}
+              style={{
+                transform: `translate3d(${sampled.position.x}px, ${sampled.position.y}px, 0)`,
+                opacity: sampled.opacity,
+              }}
             >
-              <RasterFrame
-                sheet={timeline.script.sheet}
-                row={timeline.script.row}
-                frame={effectFrameAt(layer.frames, elapsed, layer.delay, layer.duration)}
-                size={layer.size}
-              />
+              <span
+                className="pixel-vfx-orientation"
+                style={{
+                  transform: `rotate(${sampled.rotation}deg) scaleX(${layer.flip ? -1 : 1})`,
+                }}
+              >
+                <RasterFrame
+                  sheet={timeline.script.sheet}
+                  row={timeline.script.row}
+                  frame={effectFrameAt(layer.frames, elapsed, layer.delay, layer.duration)}
+                  size={layer.size}
+                />
+              </span>
             </span>
-          </span>
-        ))
+          );
+        })
       )}
     </div>
   );
@@ -162,20 +192,23 @@ export function BattleEffects({
   cue,
   scene,
   reducedMotion = false,
+  cueStartedAt,
 }: {
   cue: BattleCue | null;
   scene?: BattleScene;
   reducedMotion?: boolean;
+  cueStartedAt?: number;
 }) {
   const systemReduced = useSystemReducedMotion();
   const measured = useMemo(() => scene || fallbackScene(), [scene]);
   if (!cue) return null;
   return (
     <BattleEffectSequence
-      key={cue.id}
+      key={`${cue.id}:${cueStartedAt ?? ''}`}
       cue={cue}
       scene={measured}
       reducedMotion={reducedMotion || systemReduced}
+      cueStartedAt={cueStartedAt}
     />
   );
 }

@@ -1,18 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { BattleSprite } from '../src/battle/BattleSprite';
+import { readFileSync } from 'node:fs';
 import {
   createBattleScene,
-  getBattleIdleFrames,
-  getBattleMotionVector,
-  getBattlePoseFrames,
-  type BattleActorGeometry,
+  getBattleActorGeometry,
+  bodyPointOnField,
+  sampleBattleSceneAt,
 } from '../src/battle/geometry';
-import { BATTLE_PIXEL_BOUNDS } from '../src/battle/sprite-geometry';
-import { getMoveSpriteScript } from '../src/battle/effect-sprites';
-import { PRESENTED_MOVES } from '../src/battle/presentation';
+import {
+  getBodyPreviewManifest,
+  getBodyView,
+  getBodyFrameAt,
+  normalizeBodyManifest,
+  type BodyRect,
+  type BodyManifest,
+} from '../src/battle/body-animation';
+import { getBattleCue, PRESENTED_MOVES } from '../src/battle/presentation';
 
 const fields = [
   [1000, 600],
@@ -24,93 +27,118 @@ const fields = [
 ];
 const sides = ['player', 'rival'] as const;
 const tolerance = 0.00001;
-const translation = (frame: Keyframe) => {
-  const values = String(frame.transform)
-    .match(/-?[\d.]+/g)
-    ?.map(Number);
-  assert.equal(values?.length, 2, 'A pose only translates; it cannot stretch the native pixels');
-  assert.ok(values!.every(Number.isFinite));
-  return values!;
-};
-const withinField = (actor: BattleActorGeometry, width: number, height: number, x = 0, y = 0) => {
-  const b = actor.bounds;
-  assert.ok(b.x + x >= -tolerance, `${actor.speciesId}/${actor.side} left edge`);
-  assert.ok(b.y + y >= -tolerance, `${actor.speciesId}/${actor.side} upper edge`);
-  assert.ok(b.x + b.width + x <= width + tolerance, `${actor.speciesId}/${actor.side} right edge`);
-  assert.ok(
-    b.y + b.height + y <= height + tolerance,
-    `${actor.speciesId}/${actor.side} lower edge`,
-  );
-};
-
-test('all 151 native front/back and shiny sprites fit the field and stand on their shared platform', () => {
-  for (const view of Object.values(BATTLE_PIXEL_BOUNDS)) assert.equal(view.length, 151);
-  for (const [width, height] of fields) {
-    for (let speciesId = 1; speciesId <= 151; speciesId++) {
-      for (const shiny of [false, true]) {
-        const scene = createBattleScene({
-          width,
-          height,
-          player: { speciesId, shiny },
-          rival: { speciesId, shiny },
-        });
-        for (const side of sides) {
-          const actor = scene.actors[side];
-          withinField(actor, width, height);
-          assert.ok(Math.abs(actor.anchors.feet.x - actor.ground.x) < tolerance);
-          const lift = actor.idle === 'hover' ? height * 0.022 : 0;
-          assert.ok(Math.abs(actor.anchors.feet.y + lift - actor.ground.y) < tolerance);
-          for (const anchor of Object.values(actor.anchors)) {
-            assert.ok(Number.isFinite(anchor.x) && Number.isFinite(anchor.y));
-            assert.ok(anchor.x >= actor.bounds.x - tolerance);
-            assert.ok(anchor.y >= actor.bounds.y - tolerance);
-            assert.ok(anchor.x <= actor.bounds.x + actor.bounds.width + tolerance);
-            assert.ok(anchor.y <= actor.bounds.y + actor.bounds.height + tolerance);
-          }
-          for (const frame of getBattleIdleFrames(actor)) {
-            const [x, y] = translation(frame);
-            withinField(actor, width, height, x, y);
-          }
-        }
-      }
-    }
+const manifests = new Map<number, BodyManifest>();
+function body(speciesId: number) {
+  if (!manifests.has(speciesId)) {
+    const raw = JSON.parse(
+      readFileSync(
+        new URL(
+          `../public/assets/battle/pmd/${String(speciesId).padStart(3, '0')}.json`,
+          import.meta.url,
+        ),
+        'utf8',
+      ),
+    );
+    manifests.set(speciesId, normalizeBodyManifest(raw));
   }
-});
+  return manifests.get(speciesId)!;
+}
+function assertRectFits(rect: BodyRect, width: number, height: number, label: string) {
+  assert.ok(rect.every(Number.isFinite), label);
+  assert.ok(rect[0] >= -tolerance && rect[1] >= -tolerance, label + ' top/left');
+  assert.ok(rect[0] + rect[2] <= width + tolerance, label + ' right');
+  assert.ok(rect[1] + rect[3] <= height + tolerance, label + ' bottom');
+}
 
-test('every move pose keeps every species fully visible across desktop, phone and landscape fields', () => {
-  assert.equal(PRESENTED_MOVES.length, 48);
-  for (const [width, height] of fields) {
-    for (let speciesId = 1; speciesId <= 151; speciesId++) {
-      const scene = createBattleScene({
-        width,
-        height,
-        player: { speciesId },
-        rival: { speciesId: 152 - speciesId },
-      });
+test('all151 PMD bodies retain every real animation pixel at one scale in six field shapes', () => {
+  for (let speciesId = 1; speciesId <= 151; speciesId++) {
+    const manifest = body(speciesId);
+    for (const [width, height] of fields) {
       for (const side of sides) {
-        const actor = scene.actors[side];
-        for (const name of PRESENTED_MOVES) {
-          const script = getMoveSpriteScript(name);
-          const frames = getBattlePoseFrames(actor, {
-            motion: script.motion,
-            impactAt: script.impactAt,
-            vector: getBattleMotionVector(scene, side, script.motion),
-          });
-          assert.deepEqual(translation(frames[0]), [0, 0]);
-          assert.deepEqual(translation(frames.at(-1)!), [0, 0]);
-          let offset = -1;
-          for (const frame of frames) {
-            assert.ok(Number.isFinite(frame.offset));
-            assert.ok(frame.offset! >= offset && frame.offset! <= 1);
-            offset = frame.offset!;
-            const [x, y] = translation(frame);
-            withinField(actor, width, height, x, y);
-            if (script.motion === 'beam')
-              assert.deepEqual(
-                [x, y],
-                [0, 0],
-                'Beams remain attached during their complete emission',
+        let normalScale = 0;
+        for (const shiny of [false, true]) {
+          const actor = getBattleActorGeometry(speciesId, side, width, height, shiny, manifest);
+          const view = getBodyView(manifest, side, shiny);
+          const label = `${speciesId}/${side}/${shiny}/${width}x${height}`;
+          assert.ok(actor.pixelScale > 0 && Number.isFinite(actor.pixelScale));
+          if (shiny) assert.equal(actor.pixelScale, normalScale, label + ' palette scale');
+          else normalScale = actor.pixelScale;
+          assertRectFits(
+            [actor.bounds.x, actor.bounds.y, actor.bounds.width, actor.bounds.height],
+            width,
+            height,
+            label,
+          );
+          const pivot = bodyPointOnField(actor, view.contact);
+          assert.ok(Math.abs(pivot.x - actor.ground.x) < tolerance, label + ' platform x');
+          assert.ok(Math.abs(pivot.y - actor.ground.y) < tolerance, label + ' platform y');
+          for (const clip of Object.values(view.clips)) {
+            for (const frame of clip.frames) {
+              const [x, y, w, h] = frame.bounds;
+              const point = bodyPointOnField(actor, [x, y]);
+              assertRectFits(
+                [point.x, point.y, w * actor.pixelScale, h * actor.pixelScale],
+                width,
+                height,
+                label + '/' + clip.action,
               );
+            }
+          }
+          const preview = getBattleActorGeometry(
+            speciesId,
+            side,
+            width,
+            height,
+            shiny,
+            getBodyPreviewManifest(speciesId),
+          );
+          assert.deepEqual(preview.rect, actor.rect, label + ' no jump after metadata loads');
+        }
+      }
+    }
+  }
+});
+
+test('all48 moves use current real body-frame anchors while ground and body scale remain fixed', () => {
+  for (let speciesId = 1; speciesId <= 151; speciesId++) {
+    const manifest = body(speciesId);
+    const scene = createBattleScene({
+      player: { speciesId, manifest },
+      rival: { speciesId, manifest, shiny: true },
+    });
+    for (const name of PRESENTED_MOVES) {
+      for (const side of sides) {
+        const cue = getBattleCue({
+          kind: 'move',
+          side,
+          moveName: name,
+          movePhase: 'release',
+          text: '',
+        })!;
+        for (const elapsed of [
+          0,
+          cue.durationMs * 0.13,
+          cue.durationMs * 0.5,
+          cue.durationMs * 0.8,
+          cue.durationMs,
+        ]) {
+          const sampled = sampleBattleSceneAt(scene, cue, elapsed);
+          for (const actorSide of sides) {
+            const actor = sampled.actors[actorSide];
+            const frame = getBodyFrameAt(manifest, {
+              side: actorSide,
+              shiny: actorSide === 'rival',
+              cue,
+              elapsedMs: elapsed,
+            }).frame;
+            assert.deepEqual(actor.rect, scene.actors[actorSide].rect);
+            assert.deepEqual(actor.ground, scene.actors[actorSide].ground);
+            for (const anchor of Object.keys(actor.anchors) as Array<keyof typeof actor.anchors>) {
+              assert.deepEqual(
+                actor.anchors[anchor],
+                bodyPointOnField(actor, frame.anchors[anchor]),
+              );
+            }
           }
         }
       }
@@ -118,30 +146,29 @@ test('every move pose keeps every species fully visible across desktop, phone an
   }
 });
 
-test('native crop, anatomy origins and idle profiles differ with the species, not with shiny color', () => {
-  const scene = createBattleScene({ player: { speciesId: 9 }, rival: { speciesId: 1 } });
-  assert.notDeepEqual(scene.actors.player.anchors.cannon, scene.actors.player.anchors.mouth);
-  assert.notDeepEqual(scene.actors.rival.anchors.crown, scene.actors.rival.anchors.mouth);
+test('reduced motion samples the same static pose for both body and effect anchors', () => {
+  const manifest = body(9);
+  const scene = createBattleScene({
+    player: { speciesId: 9, manifest },
+    rival: { speciesId: 9, manifest },
+  });
+  const cue = getBattleCue({
+    kind: 'move',
+    side: 'player',
+    moveName: 'Hydro Pump',
+    movePhase: 'release',
+    text: '',
+  })!;
+  const frozen = sampleBattleSceneAt(scene, cue, 500, true);
+  const frame = getBodyFrameAt(manifest, {
+    side: 'player',
+    cue,
+    elapsedMs: 500,
+    reducedMotion: true,
+  }).frame;
   assert.deepEqual(
-    scene.actors.player,
-    createBattleScene({ player: { speciesId: 9, shiny: true }, rival: { speciesId: 1 } }).actors
-      .player,
+    frozen.actors.player.anchors.cannon,
+    bodyPointOnField(scene.actors.player, frame.anchors.cannon),
   );
-  const flying = createBattleScene({ player: { speciesId: 144 }, rival: { speciesId: 95 } });
-  assert.equal(flying.actors.player.idle, 'hover');
-  assert.equal(flying.actors.rival.idle, 'serpent');
-  assert.notDeepEqual(scene.actors.player.rect, flying.actors.player.rect);
-  const markup = renderToStaticMarkup(
-    createElement(BattleSprite, {
-      speciesId: 9,
-      side: 'player',
-      shiny: true,
-      actor: scene.actors.player,
-    }),
-  );
-  assert.ok(markup.includes('back-shiny.svg'));
-  assert.ok(markup.includes('data-facing="back"'));
-  assert.ok(markup.includes('battle-sprite-pose'));
-  assert.ok(markup.includes('battle-sprite-pixels'));
-  assert.ok(!markup.includes('scale('), 'Native sprite is never distorted to fake an attack');
+  assert.deepEqual(frozen.actors.player.ground, scene.actors.player.ground);
 });

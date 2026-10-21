@@ -54,6 +54,7 @@ export interface MoveSpriteScript {
   count: number;
   spread: number;
   arc: number;
+  releaseAt: number;
   impactAt: number;
 }
 const move = (
@@ -79,6 +80,7 @@ const move = (
   count,
   spread,
   arc,
+  releaseAt: 0.13,
   impactAt,
 });
 
@@ -201,6 +203,11 @@ export interface EffectSpriteLayer {
   frames: 'full' | 'charge' | 'impact';
   role: 'release' | 'travel' | 'impact' | 'self' | 'return' | 'transition';
   flip: boolean;
+  /** Flights keep their emission points; attachments follow the current body frame. */
+  space: 'flight' | 'source' | 'target' | 'tether' | 'ground';
+  sourceAnchor?: AttackOrigin;
+  fromBinding?: 'source' | 'target' | 'path';
+  toBinding?: 'source' | 'target' | 'path';
 }
 export interface SpriteTimeline {
   script: MoveSpriteScript;
@@ -277,6 +284,15 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
     options: Partial<Omit<EffectSpriteLayer, 'key' | 'from' | 'to' | 'delay' | 'duration'>> = {},
   ) => {
     const via = options.via || lerp(from, to, 0.5);
+    const role = options.role || 'travel';
+    const launch = role === 'travel' && !self ? Math.max(script.releaseAt, delay) : delay;
+    const space =
+      options.space ||
+      (role === 'impact'
+        ? 'target'
+        : ['release', 'self', 'transition'].includes(role)
+          ? 'source'
+          : 'flight');
     layers.push({
       key: `${script.name}-${layers.length}`,
       from: point(from),
@@ -284,12 +300,13 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
       to: point(to),
       size,
       rotation: 0,
-      delay: Math.round(delay * duration),
-      duration: Math.max(90, Math.round(length * duration)),
+      delay: Math.round(launch * duration),
+      duration: Math.max(45, Math.round((delay + length - launch) * duration)),
       opacity: 1,
       frames: 'full',
       role: 'travel',
       flip: dir < 0,
+      space,
       ...options,
     });
   };
@@ -389,16 +406,21 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
         still(
           start,
           0.13 + t * 0.38,
-          script.recipe === 'stream' ? 0.35 : 0.39,
+          (script.recipe === 'stream' ? 0.86 : 0.9) - (0.13 + t * 0.38),
           script.recipe === 'vine' ? 0.8 : 1,
           {
             rotation: pathRotation + (script.recipe === 'vine' ? Math.cos(t * Math.PI) * 16 : 0),
             role: 'travel',
+            space: 'tether',
             opacity: cue.outcome === 'immune' && t > 0.88 ? 0.35 : 1,
           },
         );
         if (script.recipe === 'stream' && i % 3 === 0)
-          at(source, p, 0.09 + t * 0.17, 0.28, { size: size * 0.6, rotation: pathRotation });
+          at(source, p, 0.09 + t * 0.17, 0.28, {
+            size: size * 0.6,
+            rotation: pathRotation,
+            toBinding: 'path',
+          });
       }
       if (script.recipe === 'silk' && impact)
         still(target, 0.6, 0.35, 1.55, { role: 'impact', frames: 'impact' });
@@ -447,6 +469,7 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
           {
             size: size * (0.8 + i * 0.12),
             via: offset(lerp(start, target, 0.5), 0, -i * 12 * unit),
+            space: 'ground',
           },
         );
       hit(1.05);
@@ -461,7 +484,7 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
           0.12 + i * 0.045,
           0.32,
           0.8 + (i % 2) * 0.18,
-          { rotation: pathRotation, role: 'travel' },
+          { rotation: pathRotation, role: 'travel', space: 'tether' },
         );
       }
       if (impact) {
@@ -509,9 +532,14 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
               via: offset(lerp(target, caster.anchors.body, 0.5), 0, (script.arc - i * 8) * unit),
               size: size * (0.46 + (i % 2) * 0.12),
               role: 'return',
+              sourceAnchor: 'body',
             },
           );
-        still(caster.anchors.body, 0.8, 0.18, 1, { role: 'self', frames: 'impact' });
+        still(caster.anchors.body, 0.8, 0.18, 1, {
+          role: 'self',
+          frames: 'impact',
+          sourceAnchor: 'body',
+        });
       }
       break;
     case 'powder':
@@ -571,7 +599,11 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
       hit(1.25);
       break;
     case 'melee':
-      still(caster.anchors.feet, 0.05, 0.3, 0.68, { role: 'release', frames: 'charge' });
+      still(caster.anchors.feet, 0.05, 0.3, 0.68, {
+        role: 'release',
+        frames: 'charge',
+        sourceAnchor: 'feet',
+      });
       for (let i = 0; i < script.count; i++)
         at(source, target, 0.12 + i * 0.06, 0.25, {
           size: size * 0.45,
@@ -589,12 +621,16 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
           size: size * (0.65 + i * 0.1),
           rotation: pathRotation,
           opacity: 0.6 + i * 0.08,
+          fromBinding: 'path',
+          toBinding: 'path',
         });
       }
       hit(1.1);
       break;
     case 'dive': {
-      const peak = offset(source, 0, -Math.min(120 * unit, source.y - 10));
+      // PMD's Hop/attack frame already contains the airborne displacement.
+      // Applying another synthetic height would detach the wind from the body.
+      const peak = source;
       for (let i = 0; i < 3; i++)
         at(offset(peak, (i - 1) * 18 * unit, 0), target, 0.13 + i * 0.065, 0.43, {
           via: offset(lerp(peak, target, 0.5), 0, -30 * unit),
@@ -614,7 +650,7 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
           0.04 + i * 0.095,
           0.42,
           0.8 + (i % 2) * 0.3,
-          { role: i === script.count - 1 && impact ? 'impact' : 'travel' },
+          { role: i === script.count - 1 && impact ? 'impact' : 'travel', space: 'ground' },
         );
       }
       break;
@@ -628,10 +664,14 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
           end,
           0.12 + i * 0.09,
           0.35,
-          { size: size * (0.68 + (i % 3) * 0.17), rotation: n * 9 },
+          { size: size * (0.68 + (i % 3) * 0.17), rotation: n * 9, space: 'ground' },
         );
         if (impact)
-          still(end, script.impactAt + i * 0.09, 0.16, 0.9, { role: 'impact', frames: 'impact' });
+          still(end, script.impactAt + i * 0.09, 0.16, 0.9, {
+            role: 'impact',
+            frames: 'impact',
+            space: 'ground',
+          });
       }
       break;
     case 'heal':
@@ -711,4 +751,148 @@ export function buildSpriteTimeline(cue: BattleCue, scene: BattleScene): SpriteT
       break;
   }
   return { script, source, target, origin, layers };
+}
+
+export type EffectSceneSampler = (elapsedMs: number) => BattleScene;
+
+const subtract = (a: EffectPoint, b: EffectPoint): EffectPoint => ({ x: a.x - b.x, y: a.y - b.y });
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const pathAngle = (from: EffectPoint, to: EffectPoint) =>
+  (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
+
+function frameOffsets(
+  layer: EffectSpriteLayer,
+  timeline: SpriteTimeline,
+  cue: BattleCue,
+  baseScene: BattleScene,
+  currentScene: BattleScene,
+) {
+  const current = resolveEffectAnchors(cue, currentScene, timeline.script);
+  const source = layer.sourceAnchor
+    ? baseScene.actors[cue.side].anchors[layer.sourceAnchor]
+    : timeline.source;
+  const liveSource = layer.sourceAnchor
+    ? currentScene.actors[cue.side].anchors[layer.sourceAnchor]
+    : current.source;
+  return {
+    source,
+    sourceDelta: subtract(liveSource, source),
+    targetDelta: subtract(current.target, timeline.target),
+    angleDelta: pathAngle(liveSource, current.target) - pathAngle(source, timeline.target),
+  };
+}
+
+function moveWithAnchors(
+  original: EffectPoint,
+  source: EffectPoint,
+  target: EffectPoint,
+  sourceDelta: EffectPoint,
+  targetDelta: EffectPoint,
+) {
+  const dx = target.x - source.x,
+    dy = target.y - source.y;
+  const distanceSquared = dx * dx + dy * dy;
+  const fraction =
+    distanceSquared > 0
+      ? clamp01(((original.x - source.x) * dx + (original.y - source.y) * dy) / distanceSquared)
+      : 0;
+  const shift = lerp(sourceDelta, targetDelta, fraction);
+  return point(offset(original, shift.x, shift.y));
+}
+
+/** Freeze emitted particles using the real pose at launch and the real victim pose at arrival.
+ * The same sampled path is used for the whole flight, so a turning head cannot drag a fired shot.
+ */
+export function bindSpriteTimeline(
+  timeline: SpriteTimeline,
+  cue: BattleCue,
+  baseScene: BattleScene,
+  sceneAt: EffectSceneSampler,
+): SpriteTimeline {
+  return {
+    ...timeline,
+    layers: timeline.layers.map((layer) => {
+      if (layer.space !== 'flight') return layer;
+      const adjust = (p: EffectPoint, elapsed: number, binding: 'source' | 'target' | 'path') => {
+        const delta = frameOffsets(layer, timeline, cue, baseScene, sceneAt(elapsed));
+        if (binding === 'source') return point(offset(p, delta.sourceDelta.x, delta.sourceDelta.y));
+        if (binding === 'target') return point(offset(p, delta.targetDelta.x, delta.targetDelta.y));
+        return moveWithAnchors(
+          p,
+          delta.source,
+          timeline.target,
+          delta.sourceDelta,
+          delta.targetDelta,
+        );
+      };
+      return {
+        ...layer,
+        from: adjust(
+          layer.from,
+          layer.delay,
+          layer.fromBinding || (layer.role === 'return' ? 'target' : 'source'),
+        ),
+        via: adjust(layer.via, layer.delay + layer.duration / 2, 'path'),
+        to: adjust(
+          layer.to,
+          layer.delay + layer.duration,
+          layer.toBinding || (layer.role === 'return' ? 'source' : 'target'),
+        ),
+      };
+    }),
+  };
+}
+
+export interface EffectSpriteSample {
+  position: EffectPoint;
+  opacity: number;
+  rotation: number;
+}
+
+/** Position, opacity and crop frame all share the cue clock, including delayed particles. */
+export function sampleSpriteLayer(
+  layer: EffectSpriteLayer,
+  timeline: SpriteTimeline,
+  cue: BattleCue,
+  baseScene: BattleScene,
+  currentScene: BattleScene,
+  elapsedMs: number,
+): EffectSpriteSample {
+  const progress = (elapsedMs - layer.delay) / layer.duration;
+  const active = progress >= 0 && progress < 1;
+  const t = Math.floor(clamp01(progress) * 18) / 18;
+  const basePoint =
+    t < 0.5 ? lerp(layer.from, layer.via, t * 2) : lerp(layer.via, layer.to, (t - 0.5) * 2);
+  let position = basePoint;
+  let rotation = layer.rotation;
+  if (layer.space !== 'flight' && layer.space !== 'ground') {
+    const delta = frameOffsets(layer, timeline, cue, baseScene, currentScene);
+    if (layer.space === 'source')
+      position = offset(basePoint, delta.sourceDelta.x, delta.sourceDelta.y);
+    else if (layer.space === 'target')
+      position = offset(basePoint, delta.targetDelta.x, delta.targetDelta.y);
+    else {
+      position = moveWithAnchors(
+        basePoint,
+        delta.source,
+        timeline.target,
+        delta.sourceDelta,
+        delta.targetDelta,
+      );
+      rotation += delta.angleDelta;
+    }
+  }
+  const fade = !active
+    ? 0
+    : progress < 0.09
+      ? progress / 0.09
+      : progress > 0.82
+        ? (1 - progress) / 0.18
+        : 1;
+  return { position: point(position), opacity: fade * layer.opacity, rotation };
+}
+
+/** A late-mounted frame catches up to the existing cue instead of restarting its animation. */
+export function effectCueElapsed(now: number, cueStartedAt: number, durationMs: number): number {
+  return Math.max(0, Math.min(durationMs, now - cueStartedAt));
 }

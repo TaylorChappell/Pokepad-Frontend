@@ -1,0 +1,20 @@
+{
+  "species": 151,
+  "variants": 302,
+  "uniqueActionStrips": 2858,
+  "authoredBattleFrameCells": 45968,
+  "sourcePngFiles": 8574,
+  "sourceXmlFiles": 302,
+  "svgBytes": 69874223,
+  "jsonBytes": 10105817,
+  "jsonGzipBytes": 1055879,
+  "catalogueBytes": 200930,
+  "largestAtlas": {
+    "id": 146,
+    "dimensions": [
+      1022,
+      1072
+    ],
+    "rgbaBytes": 4382336
+  }
+}

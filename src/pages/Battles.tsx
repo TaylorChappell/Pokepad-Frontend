@@ -1,18 +1,27 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from 'react';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { Avatar, Button, Icon, PokemonArt, Pokeball, TypeChip } from '../components/UI';
 import { profileName } from '../state/model';
 import { TYPE_COLORS } from '../utils';
 import { BattleSprite } from '../battle/BattleSprite';
+import { createBattleScene, type BattleActorGeometry, type BattleScene } from '../battle/geometry';
+import { preloadEffectSprites } from '../battle/effect-sprites';
+import { getBodyPreviewManifest } from '../battle/body-animation';
 import {
-  createBattleScene,
-  getBattleMotionVector,
-  type BattleActorGeometry,
-  type BattlePoseOptions,
-  type BattleScene,
-} from '../battle/geometry';
-import { getMoveSpriteScript, preloadEffectSprites } from '../battle/effect-sprites';
+  getBodyAssetState,
+  loadBodyManifest,
+  preloadBattleBodies,
+  subscribeBodyAsset,
+} from '../battle/body-registry';
 import { useBattleAudio } from '../battle/audio';
 import { BattleEffects } from '../components/BattleEffects';
 import { createBattlePlayback, type BattleCue } from '../battle/presentation';
@@ -192,36 +201,23 @@ function actorStyle(actor: BattleActorGeometry): CSSProperties {
   return {
     left: actor.rect.x,
     top: actor.rect.y,
-    width: actor.rect.size,
-    height: actor.rect.size,
+    width: actor.rect.width,
+    height: actor.rect.height,
     right: 'auto',
     bottom: 'auto',
   };
 }
 
-function actorPose(
-  scene: BattleScene,
-  side: 'player' | 'rival',
-  cue: BattleCue | null,
-): BattlePoseOptions | undefined {
-  if (!cue) return;
-  const script = getMoveSpriteScript(cue.moveName);
-  let motion: BattlePoseOptions['motion'];
-  if (cue.side === side) {
-    if (cue.kind === 'switch') motion = 'arrive';
-    else if (cue.kind === 'faint') motion = 'faint';
-    else if (cue.kind === 'move') motion = cue.outcome === 'charge' ? 'charge' : script.motion;
-  } else if (cue.targetSide === side && cue.kind === 'move' && cue.outcome === 'hit') {
-    motion = 'hit';
-  }
-  return motion
-    ? {
-        motion,
-        vector: getBattleMotionVector(scene, side, motion),
-        durationMs: cue.durationMs,
-        impactAt: script.impactAt,
-      }
-    : undefined;
+function useBattleBody(speciesId: number) {
+  const state = useSyncExternalStore(
+    (listener) => subscribeBodyAsset(speciesId, listener),
+    () => getBodyAssetState(speciesId),
+    () => getBodyAssetState(speciesId),
+  );
+  useEffect(() => {
+    void loadBodyManifest(speciesId).catch(() => {});
+  }, [speciesId]);
+  return state.manifest || getBodyPreviewManifest(speciesId);
 }
 
 export function BattlesPage() {
@@ -240,6 +236,8 @@ export function BattlesPage() {
   const [command, setCommand] = useState<'root' | 'fight' | 'pokemon' | 'log'>('root');
   const [streak, setStreak] = useState(0);
   const [cue, setCue] = useState<BattleCue | null>(null);
+  const [cueStartedAt, setCueStartedAt] = useState(0);
+  const [visualFaintedIds, setVisualFaintedIds] = useState<Set<string>>(() => new Set());
   const [dialogue, setDialogue] = useState('');
   const [page, setPage] = useState(0);
   const [compactHeight, setCompactHeight] = useState(() => window.innerHeight <= 560);
@@ -281,7 +279,7 @@ export function BattlesPage() {
     setLaunching(false);
     setLaunchError(null);
     if (phase === 'team') void preloadEffectSprites().catch(() => {});
-  }, [phase, mode, selectedIds, difficulty]);
+  }, [phase, mode, selectedIds, difficulty, matchSeed]);
   useEffect(
     () => () => {
       launchAttempt.current += 1;
@@ -309,15 +307,30 @@ export function BattlesPage() {
   const visibleBattle = phase === 'battle' ? displayBattle || battle : null;
   const visiblePlayer = visibleBattle?.player[visibleBattle.active.player] || lobbyParty[0];
   const visibleRival = visibleBattle?.rival[visibleBattle.active.rival] || lobbyRivals[0];
+  const playerBody = useBattleBody(visiblePlayer?.speciesId || 4);
+  const rivalBody = useBattleBody(visibleRival?.speciesId || 7);
+  useEffect(() => {
+    if (phase === 'team') void preloadBattleBodies([...chosen, ...rivals]).catch(() => {});
+  }, [phase, chosen, rivals]);
   const scene = useMemo(
     () =>
       createBattleScene({
         ...fieldSize,
-        player: { speciesId: visiblePlayer?.speciesId || 4, shiny: visiblePlayer?.shiny },
-        rival: { speciesId: visibleRival?.speciesId || 7, shiny: visibleRival?.shiny },
+        player: {
+          speciesId: visiblePlayer?.speciesId || 4,
+          shiny: visiblePlayer?.shiny,
+          manifest: playerBody,
+        },
+        rival: {
+          speciesId: visibleRival?.speciesId || 7,
+          shiny: visibleRival?.shiny,
+          manifest: rivalBody,
+        },
       }),
     [
       fieldSize,
+      playerBody,
+      rivalBody,
       visiblePlayer?.speciesId,
       visiblePlayer?.shiny,
       visibleRival?.speciesId,
@@ -333,6 +346,11 @@ export function BattlesPage() {
   const pageSize = compactHeight ? 3 : 6;
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const currentPage = Math.min(page, pageCount - 1);
+  const cancelLaunch = () => {
+    launchAttempt.current += 1;
+    setLaunching(false);
+    setLaunchError(null);
+  };
   const start = async (fresh = false) => {
     if (!chosen.length || launching) return;
     const attempt = ++launchAttempt.current;
@@ -340,21 +358,25 @@ export function BattlesPage() {
     setLaunchError(null);
     clearTimeout(timer.current);
     audio.unlock();
-    try {
-      await preloadEffectSprites();
-    } catch {
-      if (launchAttempt.current === attempt) {
-        setLaunching(false);
-        setLaunchError('Battle effects could not load. Check your connection and try again.');
-      }
-      return;
-    }
-    if (launchAttempt.current !== attempt) return;
     const next = createBattle(
       chosen,
       fresh ? generateRivalTeam(chosen, difficulty) : rivals,
       difficulty,
     );
+    try {
+      await Promise.all([
+        preloadEffectSprites(),
+        preloadBattleBodies([...next.player, ...next.rival]),
+      ]);
+    } catch {
+      if (launchAttempt.current === attempt) {
+        setLaunching(false);
+        setLaunchError('Battle artwork could not load. Check your connection and try again.');
+      }
+      return;
+    }
+    if (launchAttempt.current !== attempt) return;
+    setVisualFaintedIds(new Set());
     setBattle(next);
     setDisplayBattle(next);
     setPhase('battle');
@@ -373,7 +395,13 @@ export function BattlesPage() {
     setBusy(true);
     const frames = createBattlePlayback(battle, next);
     let index = 0;
+    let completedFaint: string | undefined;
     const advance = () => {
+      if (completedFaint) {
+        const id = completedFaint;
+        setVisualFaintedIds((previous) => new Set([...previous, id]));
+        completedFaint = undefined;
+      }
       const frame = frames[index++];
       if (!frame) {
         setBattle(next);
@@ -389,7 +417,12 @@ export function BattlesPage() {
       }
       setDisplayBattle(frame.displayState);
       setDialogue(frame.event.text);
+      setCueStartedAt(performance.now());
       setCue(frame.cue);
+      if (frame.cue?.kind === 'faint') {
+        const side = frame.cue.side;
+        completedFaint = frame.displayState[side][frame.displayState.active[side]].id;
+      }
       if (frame.cue?.moveName) audio.playMove(frame.cue.moveName);
       else if (frame.event.kind === 'switch') audio.playCue('switch');
       else if (frame.event.kind === 'faint') audio.playCue('faint');
@@ -401,11 +434,13 @@ export function BattlesPage() {
     advance();
   };
   const leave = () => {
+    cancelLaunch();
     clearTimeout(timer.current);
     setBusy(false);
     setBattle(null);
     setDisplayBattle(null);
     setCue(null);
+    setVisualFaintedIds(new Set());
     setPhase('lobby');
   };
   const heading = (
@@ -458,6 +493,7 @@ export function BattlesPage() {
             className={mode === 'offline' ? 'active' : ''}
             aria-pressed={mode === 'offline'}
             onClick={() => {
+              cancelLaunch();
               setMode('offline');
               setPhase('lobby');
             }}
@@ -468,6 +504,7 @@ export function BattlesPage() {
             className={mode === 'online' ? 'active' : ''}
             aria-pressed={mode === 'online'}
             onClick={() => {
+              cancelLaunch();
               setMode('online');
               setPhase('lobby');
             }}
@@ -485,8 +522,8 @@ export function BattlesPage() {
       opponent = view.rival[view.active.rival];
     const exhausted = current.pp.every((value) => value <= 0),
       lockedMove = current.charging;
-    const playerPose = actorPose(scene, 'player', cue);
-    const rivalPose = actorPose(scene, 'rival', cue);
+    const playerFainted = visualFaintedIds.has(current.id);
+    const rivalFainted = visualFaintedIds.has(opponent.id);
     const prompt = busy
       ? dialogue
       : battle.winner
@@ -516,7 +553,7 @@ export function BattlesPage() {
             <div
               className={
                 'classic-fighter classic-rival battle-placed-actor' +
-                (opponent.hp <= 0 ? ' is-fainted' : '')
+                (rivalFainted ? ' is-fainted' : '')
               }
               style={actorStyle(scene.actors.rival)}
             >
@@ -525,16 +562,17 @@ export function BattlesPage() {
                 shiny={opponent.shiny}
                 side="rival"
                 actor={scene.actors.rival}
-                pose={rivalPose}
-                poseKey={cue?.id}
-                paused={opponent.hp <= 0 || (busy && !rivalPose)}
+                manifest={rivalBody}
+                cue={cue}
+                cueStartedAt={cueStartedAt}
+                paused={rivalFainted || (busy && !cue)}
                 reducedMotion={state.profile.reducedMotion}
               />
             </div>
             <div
               className={
                 'classic-fighter classic-player battle-placed-actor' +
-                (current.hp <= 0 ? ' is-fainted' : '')
+                (playerFainted ? ' is-fainted' : '')
               }
               style={actorStyle(scene.actors.player)}
             >
@@ -543,13 +581,19 @@ export function BattlesPage() {
                 shiny={current.shiny}
                 side="player"
                 actor={scene.actors.player}
-                pose={playerPose}
-                poseKey={cue?.id}
-                paused={current.hp <= 0 || (busy && !playerPose)}
+                manifest={playerBody}
+                cue={cue}
+                cueStartedAt={cueStartedAt}
+                paused={playerFainted || (busy && !cue)}
                 reducedMotion={state.profile.reducedMotion}
               />
             </div>
-            <BattleEffects cue={cue} scene={scene} reducedMotion={state.profile.reducedMotion} />
+            <BattleEffects
+              cue={cue}
+              scene={scene}
+              cueStartedAt={cueStartedAt}
+              reducedMotion={state.profile.reducedMotion}
+            />
           </div>
           <div className={'classic-console command-' + command}>
             {battle.winner && !busy ? (
@@ -571,6 +615,7 @@ export function BattlesPage() {
                   <Button
                     variant="secondary"
                     onClick={() => {
+                      cancelLaunch();
                       setBattle(null);
                       setDisplayBattle(null);
                       setPhase('team');
@@ -750,7 +795,13 @@ export function BattlesPage() {
         <div className="classic-team-desk">
           <section className="classic-team-pick">
             <div className="classic-team-top">
-              <button className="text-link" onClick={() => setPhase('lobby')}>
+              <button
+                className="text-link"
+                onClick={() => {
+                  cancelLaunch();
+                  setPhase('lobby');
+                }}
+              >
                 <Icon name="ArrowLeft" size={15} />
                 Arena
               </button>
@@ -773,9 +824,10 @@ export function BattlesPage() {
                       </span>
                       <button
                         aria-label={'Remove ' + pokemonById(chosen[index].speciesId).name}
-                        onClick={() =>
-                          setSelectedIds((ids) => ids.filter((id) => id !== chosen[index].id))
-                        }
+                        onClick={() => {
+                          cancelLaunch();
+                          setSelectedIds((ids) => ids.filter((id) => id !== chosen[index].id));
+                        }}
                       >
                         <Icon name="X" size={13} />
                       </button>
@@ -813,13 +865,14 @@ export function BattlesPage() {
                     key={pokemon.id}
                     disabled={!selectedIds.includes(pokemon.id) && chosen.length >= 3}
                     aria-pressed={selectedIds.includes(pokemon.id)}
-                    onClick={() =>
+                    onClick={() => {
+                      cancelLaunch();
                       setSelectedIds((ids) =>
                         ids.includes(pokemon.id)
                           ? ids.filter((id) => id !== pokemon.id)
                           : [...ids, pokemon.id],
-                      )
-                    }
+                      );
+                    }}
                   >
                     <span className="classic-select-level">Lv.{pokemon.level}</span>
                     <PokemonArt id={pokemon.speciesId} shiny={pokemon.shiny} animated={false} />
@@ -886,7 +939,13 @@ export function BattlesPage() {
                 <h2>{DIFFICULTIES[difficulty].trainer}</h2>
               </div>
             </div>
-            <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+            <DifficultyPicker
+              value={difficulty}
+              onChange={(value) => {
+                cancelLaunch();
+                setDifficulty(value);
+              }}
+            />
             <div className="classic-rival-party">
               {rivals.length ? (
                 rivals.map((fighter) => (
@@ -906,7 +965,13 @@ export function BattlesPage() {
                   ? `Rival strength: ${relativeStrength}% of yours`
                   : 'Your opponent scales to your party'}
               </span>
-              <button aria-label="New matchup" onClick={() => setMatchSeed((seed) => seed + 1)}>
+              <button
+                aria-label="New matchup"
+                onClick={() => {
+                  cancelLaunch();
+                  setMatchSeed((seed) => seed + 1);
+                }}
+              >
                 <Icon name="RefreshCw" size={16} />
               </button>
             </div>
@@ -947,6 +1012,7 @@ export function BattlesPage() {
                   shiny={lobbyParty[0]?.shiny}
                   side="player"
                   actor={scene.actors.player}
+                  manifest={playerBody}
                   reducedMotion={state.profile.reducedMotion}
                 />
               </div>
@@ -958,6 +1024,7 @@ export function BattlesPage() {
                   speciesId={lobbyRivals[0]?.speciesId || 7}
                   side="rival"
                   actor={scene.actors.rival}
+                  manifest={rivalBody}
                   reducedMotion={state.profile.reducedMotion}
                 />
               </div>
@@ -1004,7 +1071,13 @@ export function BattlesPage() {
           <aside className="classic-rival-desk">
             <h2>Choose a rival</h2>
             <p>How tough should the match be?</p>
-            <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+            <DifficultyPicker
+              value={difficulty}
+              onChange={(value) => {
+                cancelLaunch();
+                setDifficulty(value);
+              }}
+            />
             <div className="classic-difficulty-note">
               <strong>{difficulty} challenge</strong>
               <p>{DIFFICULTIES[difficulty].detail}</p>
