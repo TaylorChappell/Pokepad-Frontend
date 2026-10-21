@@ -1014,6 +1014,50 @@
 .battle-escrow-timer {
   color: #a49374 !important;
 }
+.battle-token-receipt {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid #d7e7dd;
+  border-radius: 10px;
+  background: #f4fbf6;
+}
+.battle-token-receipt > strong {
+  color: #477b5d;
+  font-size: 11px;
+}
+.battle-token-receipt-address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.battle-token-receipt-address > a {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: monospace;
+  line-height: 1.5;
+  user-select: all;
+}
+.battle-token-receipt-address > .button {
+  flex: 0 0 auto;
+  gap: 5px;
+  min-height: 32px;
+  padding: 6px 9px;
+}
+.battle-token-receipt > small,
+.battle-token-copy-status {
+  color: #607d6b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.battle-token-receipt > small a {
+  display: inline;
+}
+.battle-token-copy-status:empty {
+  display: none;
+}
 .online-room-panel > .online-error {
   padding: 0 24px 15px;
 }

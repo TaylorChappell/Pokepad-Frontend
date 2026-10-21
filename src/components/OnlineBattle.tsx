@@ -223,6 +223,62 @@ export function useOnlineBattle(enabled: boolean) {
   };
 }
 
+export function EscrowTokenReceipt({ room }: { room: Pick<BattleRoom, 'escrow' | 'yourSeat'> }) {
+  const account =
+    room.escrow?.asset === 'token'
+      ? room.escrow.recipientTokenAccounts?.[room.yourSeat === 0 ? 'host' : 'guest']
+      : undefined;
+  const [copyStatus, setCopyStatus] = useState('');
+  useEffect(() => setCopyStatus(''), [account]);
+  if (!account) return null;
+  return (
+    <div className="battle-token-receipt" aria-label="Your token payout receipt">
+      <strong>Your token payout account</strong>
+      <div className="battle-token-receipt-address">
+        <a
+          href={
+            'https://solscan.io/account/' +
+            encodeURIComponent(account) +
+            (room.escrow?.chain === 'solana:devnet' ? '?cluster=devnet' : '')
+          }
+          target="_blank"
+          rel="noreferrer"
+        >
+          {account}
+        </a>
+        <Button
+          variant="secondary"
+          aria-label="Copy your token payout account"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(account);
+              setCopyStatus('Token account copied.');
+            } catch {
+              setCopyStatus('Copy unavailable. Select and copy the account address above.');
+            }
+          }}
+        >
+          <Icon name={copyStatus === 'Token account copied.' ? 'Check' : 'Copy'} size={14} />
+          Copy
+        </Button>
+      </div>
+      <small>
+        A token account owned by your wallet.{' '}
+        <a
+          href="https://github.com/TaylorChappell/kanto-backend/blob/main/docs/battle-escrow.md"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Token recovery help
+        </a>
+      </small>
+      <span className="battle-token-copy-status" role="status">
+        {copyStatus}
+      </span>
+    </div>
+  );
+}
+
 export function EscrowFunding({
   room,
   online,
@@ -344,6 +400,7 @@ export function EscrowFunding({
       {escrow.status === 'refunded' && (
         <p className="online-success">The escrow refund is confirmed.</p>
       )}
+      <EscrowTokenReceipt room={room} />
       {escrow.settlementSignature && (
         <a
           href={

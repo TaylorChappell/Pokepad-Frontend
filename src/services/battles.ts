@@ -49,6 +49,7 @@ export interface BattleEscrow {
   depositDeadlineAt?: string | null;
   refundAvailableAt?: string | null;
   settlementSignature?: string | null;
+  recipientTokenAccounts?: { host?: string; guest?: string };
 }
 export interface BattleRoom extends BattleTerms {
   id: string;
