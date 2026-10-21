@@ -305,6 +305,10 @@ test('zero HP remains visible through real faint frames and stays hidden after t
   const nativeTimeout = globalThis.setTimeout;
   const nativeClearTimeout = globalThis.clearTimeout;
   const random = Math.random;
+  const dateNow = Date.now;
+  // The rival roster is seeded from the clock, independently of combat rolls.
+  // Fix both so this visibility test always reaches the same lethal hit.
+  Date.now = () => 1700000000000;
   Math.random = () => 0.01;
   replace('performance', { now: () => time });
   replace('setTimeout', ((
@@ -470,6 +474,7 @@ test('zero HP remains visible through real faint frames and stays hidden after t
   } finally {
     await act(async () => root.unmount());
     dom.window.close();
+    Date.now = dateNow;
     Math.random = random;
     for (const [key, descriptor] of descriptors) {
       if (descriptor) Object.defineProperty(globalThis, key, descriptor);
