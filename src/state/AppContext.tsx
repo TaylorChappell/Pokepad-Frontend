@@ -97,7 +97,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (
       <div className="app-loading">
         <div className="pokeball-mark loading-ball" />
-        <h1>Loading Poképad…</h1>
+        <h1>Loading Kanto…</h1>
       </div>
     );
   return (

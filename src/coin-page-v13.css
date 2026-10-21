@@ -1,0 +1,1223 @@
+/* Kanto coin terminal: scoped to the detail page, independent of Discover cards. */
+.kanto-market-page {
+  --market-ink: #273a50;
+  --market-muted: #71808d;
+  --market-border: #e2e8e7;
+  --market-green: #258369;
+  --market-coral: #e76558;
+  color: var(--market-ink);
+  max-width: 1420px;
+  margin: 0 auto;
+  padding-bottom: 28px;
+}
+.kanto-market-page button,
+.kanto-market-page input {
+  font-family: Nunito, sans-serif;
+}
+.kanto-market-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 23px;
+  gap: 16px;
+}
+.kanto-market-navigation > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--market-muted);
+  text-decoration: none;
+  transition:
+    color 0.18s,
+    transform 0.18s;
+}
+.kanto-market-navigation > a:hover {
+  color: var(--market-ink);
+  transform: translateX(-3px);
+}
+.kanto-market-watch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid var(--market-border);
+  border-radius: 12px;
+  background: #fff;
+  color: #6f7b8a;
+  font-size: 12px;
+  font-weight: 800;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.kanto-market-watch.is-watched {
+  color: #9c6c17;
+  border-color: #eddbac;
+  background: #fff7df;
+}
+.kanto-market-masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 17px 30px;
+  margin-bottom: 25px;
+}
+.kanto-market-coin-identity {
+  display: flex;
+  gap: 17px;
+  align-items: center;
+  min-width: 0;
+}
+.kanto-market-coin-identity > .coin-avatar {
+  border-radius: 20px;
+  border: 1px solid #dce3df;
+  box-shadow: 0 4px 0 #e5e9e3;
+  flex: 0 0 auto;
+}
+.kanto-market-coin-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px 13px;
+}
+.kanto-market-coin-title h1 {
+  font-family: Nunito, sans-serif;
+  font-size: clamp(23px, 2.5vw, 33px);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.9px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.kanto-market-coin-title > span {
+  color: #8895a1;
+  font-weight: 800;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.kanto-market-identity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 13px;
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--market-muted);
+  font-weight: 700;
+}
+.kanto-market-identity-meta .mode-badge {
+  font-size: 10px;
+}
+.kanto-market-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.kanto-market-status i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #96a0a5;
+}
+.kanto-market-status.is-active {
+  color: #4e8c74;
+}
+.kanto-market-status.is-active i {
+  background: #4e9f7e;
+  box-shadow: 0 0 0 3px #e5f3e8;
+}
+.kanto-market-creator {
+  align-self: center;
+  display: grid;
+  gap: 7px;
+  text-align: right;
+  font-size: 12px;
+}
+.kanto-market-creator > span {
+  color: var(--market-muted);
+}
+.kanto-market-creator a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: end;
+  gap: 8px;
+  font-weight: 900;
+  color: var(--market-ink);
+  text-decoration: none;
+  border-bottom: 1px solid #cbd6d9;
+  padding-bottom: 3px;
+}
+.kanto-market-creator a:hover {
+  color: var(--market-coral);
+}
+.kanto-market-description-row {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.kanto-market-description-row > p {
+  max-width: 650px;
+  color: #6b7a86;
+  line-height: 1.65;
+  font-size: 13px;
+  margin: 0;
+}
+.kanto-market-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.kanto-market-ca {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  border: 1px solid #e0e6e5;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #fff;
+  color: #72818b;
+  font-size: 10px;
+}
+.kanto-market-ca > span {
+  font-weight: 900;
+  color: #8997a0;
+}
+.kanto-market-links .market-coin-socials {
+  gap: 5px;
+}
+.kanto-market-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 23px;
+  align-items: start;
+}
+.kanto-market-main,
+.kanto-market-sidebar {
+  min-width: 0;
+}
+.kanto-market-terminal {
+  background: #fff;
+  border: 1px solid #d8e2df;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 5px 0 #e8ede6,
+    0 12px 35px #24423b05;
+}
+.kanto-market-terminal-top {
+  height: 33px;
+  padding: 0 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f1f4ee;
+  border-bottom: 1px solid #e1e8e0;
+  color: #87958b;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  font-weight: 900;
+}
+.kanto-market-terminal-top > span:first-child {
+  display: flex;
+  gap: 5px;
+}
+.kanto-market-terminal-top i {
+  width: 6px;
+  height: 6px;
+  border: 1px solid #d99875;
+  border-radius: 50%;
+  background: #f3a67c;
+}
+.kanto-market-terminal-top i:nth-child(2) {
+  background: #ead77a;
+  border-color: #cebc5a;
+}
+.kanto-market-terminal-top i:nth-child(3) {
+  background: #9bc89d;
+  border-color: #7ba67e;
+}
+.kanto-market-terminal-lines {
+  width: 31px;
+  height: 8px;
+  background: repeating-linear-gradient(90deg, #c6cec2 0 3px, transparent 3px 7px);
+}
+.kanto-market-chart {
+  padding: 26px 24px 12px;
+  color: var(--market-green);
+}
+.kanto-market-chart.is-falling {
+  color: #d16b66;
+}
+.kanto-market-chart-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 15px;
+  color: var(--market-ink);
+}
+.kanto-market-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--market-muted);
+  margin-bottom: 7px;
+}
+.kanto-market-price-row {
+  display: flex;
+  gap: 13px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.kanto-market-price {
+  font-family: Nunito, sans-serif;
+  font-weight: 900;
+  font-size: clamp(28px, 3vw, 39px);
+  letter-spacing: -1.5px;
+  line-height: 1.2;
+}
+.kanto-market-change {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 900;
+}
+.kanto-market-change small {
+  color: #94a099;
+  font-weight: 600;
+  font-size: 10px;
+}
+.kanto-market-change.positive {
+  color: var(--market-green);
+}
+.kanto-market-change.negative {
+  color: #cc695e;
+}
+.kanto-market-range {
+  display: flex;
+  padding: 4px;
+  gap: 3px;
+  background: #f2f5f3;
+  border-radius: 11px;
+}
+.kanto-market-range button {
+  background: transparent;
+  color: #77867e;
+  border: 0;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 7px 10px;
+  white-space: nowrap;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    box-shadow 0.2s;
+}
+.kanto-market-range button[aria-pressed='true'] {
+  color: var(--market-ink);
+  background: #fff;
+  box-shadow: 0 2px 5px #2f4c3610;
+}
+.kanto-market-range button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.kanto-market-chart-screen {
+  position: relative;
+  width: 100%;
+  border-radius: 8px;
+}
+.kanto-market-chart-screen:focus-visible {
+  outline: 2px solid #7facbe;
+  outline-offset: 4px;
+}
+.kanto-market-chart-screen > svg {
+  display: block;
+  width: calc(100% - 54px);
+  height: 270px;
+  overflow: visible;
+}
+.kanto-market-chart-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.kanto-market-gridline path {
+  stroke: #e7eee9;
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  vector-effect: non-scaling-stroke;
+}
+.kanto-market-value-axis {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 49px;
+  color: #8c9b92;
+  pointer-events: none;
+}
+.kanto-market-value-axis > span {
+  position: absolute;
+  left: 0;
+  transform: translateY(-50%);
+  font:
+    700 10px Nunito,
+    sans-serif;
+  white-space: nowrap;
+}
+.kanto-market-sample-axis {
+  position: absolute;
+  bottom: 2px;
+  left: 2%;
+  right: 68px;
+  display: flex;
+  justify-content: space-between;
+  color: #98a49c;
+  font:
+    700 10px Nunito,
+    sans-serif;
+  pointer-events: none;
+}
+.kanto-market-crosshair path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  opacity: 0.45;
+  vector-effect: non-scaling-stroke;
+}
+.kanto-market-crosshair circle {
+  fill: #fff;
+  stroke: currentColor;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+.kanto-market-chart-tooltip {
+  position: absolute;
+  top: 6px;
+  transform: translateX(-50%);
+  z-index: 1;
+  pointer-events: none;
+  display: grid;
+  gap: 3px;
+  padding: 9px 12px;
+  background: #273d47;
+  border: 1px solid #fff;
+  color: #fff;
+  border-radius: 9px;
+  box-shadow: 0 5px 14px #23422f18;
+  min-width: 120px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.kanto-market-chart-tooltip > span {
+  font-size: 10px;
+  color: #c2d0cb;
+}
+.kanto-market-chart-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8b9890;
+  font-size: 10px;
+  margin: 5px 0 0;
+}
+.kanto-market-chart-source > span:last-child {
+  margin-left: auto;
+  text-align: right;
+}
+.kanto-market-source-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #a6b7a8;
+}
+.kanto-market-chart-empty {
+  min-height: 285px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #7a8b82;
+  gap: 8px;
+}
+.kanto-market-chart-empty svg {
+  width: 180px;
+  height: 56px;
+  opacity: 0.4;
+  margin-bottom: 15px;
+}
+.kanto-market-chart-empty path {
+  stroke: #8cae9b;
+  fill: none;
+  stroke-width: 2;
+}
+.kanto-market-chart-empty p {
+  font-size: 12px;
+  margin: 0;
+  text-align: center;
+}
+.kanto-market-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 6px 0 0;
+  padding: 18px 24px 21px;
+  background: #fbfcfa;
+  border-top: 1px solid #eaf0e9;
+}
+.kanto-market-stat-strip > div {
+  padding-left: 22px;
+  border-left: 1px solid #e3eae2;
+}
+.kanto-market-stat-strip > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+.kanto-market-stat-strip dt {
+  font-size: 10px;
+  color: #839086;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.kanto-market-stat-strip dd {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+}
+.kanto-market-community {
+  margin-top: 27px;
+}
+.kanto-market-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  position: relative;
+  isolation: isolate;
+  padding: 5px;
+  background: #e9eeeb;
+  border: 1px solid #e2e7e2;
+  border-radius: 14px;
+  margin-bottom: 17px;
+}
+.kanto-market-tabs::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 5px auto 5px 5px;
+  width: calc((100% - 10px) / 4);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 5px #2d493110;
+  transform: translateX(calc(var(--selected-tab) * 100%));
+  transition: transform 0.27s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.kanto-market-tabs button {
+  border: 0;
+  padding: 11px 7px;
+  border-radius: 10px;
+  background: transparent;
+  color: #809087;
+  font-size: 12px;
+  font-weight: 800;
+  transition: color 0.2s;
+}
+.kanto-market-tabs button[aria-selected='true'] {
+  color: var(--market-ink);
+}
+.kanto-market-tab-content {
+  min-height: 220px;
+  background: #fff;
+  border: 1px solid var(--market-border);
+  border-radius: 18px;
+  overflow: hidden;
+  animation: kanto-market-tab-in 0.22s ease-out;
+}
+@keyframes kanto-market-tab-in {
+  from {
+    opacity: 0.2;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.kanto-market-section-caption {
+  display: flex;
+  justify-content: space-between;
+  padding: 18px 20px 10px;
+  font-weight: 800;
+  font-size: 12px;
+  gap: 12px;
+}
+.kanto-market-section-caption > span:last-child {
+  font-size: 10px;
+  color: #9ba59e;
+  font-weight: 600;
+}
+.kanto-market-table-scroll {
+  overflow-x: auto;
+}
+.kanto-market-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.kanto-market-table th {
+  text-transform: none;
+  font-size: 10px;
+  font-weight: 700;
+  color: #96a097;
+  padding: 10px 20px;
+  background: transparent;
+  border: 0;
+}
+.kanto-market-table td {
+  padding: 11px 20px;
+  font-weight: 700;
+  border: 0;
+  border-top: 1px solid #f0f3ee;
+}
+.kanto-market-table th:not(:first-child),
+.kanto-market-table td:not(:first-child) {
+  text-align: right;
+}
+.kanto-market-table td a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--market-ink);
+  text-decoration: none;
+}
+.kanto-market-table td a:hover {
+  color: var(--market-coral);
+}
+.kanto-market-table td small {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca69f;
+}
+.kanto-market-trade-tag {
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 900;
+}
+.kanto-market-trade-tag.is-buy {
+  color: #328367;
+  background: #eaf5ed;
+}
+.kanto-market-trade-tag.is-sell {
+  color: #c26b61;
+  background: #fbefeb;
+}
+.kanto-market-data-empty {
+  display: grid;
+  justify-items: center;
+  padding: 45px 24px;
+  text-align: center;
+  color: #99a69d;
+}
+.kanto-market-data-empty h3 {
+  color: #586e60;
+  font:
+    800 15px Nunito,
+    sans-serif;
+  margin: 13px 0 5px;
+}
+.kanto-market-data-empty p {
+  font-size: 12px;
+  margin: 0;
+  max-width: 350px;
+}
+.kanto-market-feature {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  min-height: 250px;
+  padding: 30px;
+}
+.kanto-market-feature > div:last-child {
+  max-width: 430px;
+}
+.kanto-market-feature h3 {
+  font-family: Nunito, sans-serif;
+  font-size: 21px;
+  line-height: 1.3;
+  letter-spacing: -0.5px;
+  margin: 10px 0;
+}
+.kanto-market-feature p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #7e8c82;
+  margin: 0 0 15px;
+}
+.kanto-market-reward-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 105px;
+  min-width: 105px;
+  height: 150px;
+}
+.kanto-market-reward-art .egg-art {
+  width: 100px;
+  height: 115px;
+}
+.kanto-market-reward-art .pack-art {
+  transform: scale(0.7);
+  transform-origin: center;
+  flex-shrink: 0;
+}
+.kanto-market-inline-action {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--market-ink);
+  text-decoration: none;
+}
+.kanto-market-inline-action:hover {
+  color: var(--market-green);
+}
+.kanto-market-gym-badge {
+  padding: 10px;
+  border: 1px solid #dfe8df;
+  background: #f4f7ef;
+  border-radius: 29px;
+  box-shadow: 0 5px 0 #e8eee2;
+  flex-shrink: 0;
+}
+.kanto-market-sidebar {
+  display: grid;
+  gap: 18px;
+}
+.kanto-market-trade-box {
+  background: #fff;
+  border: 1px solid #d8e1df;
+  border-radius: 22px;
+  padding: 23px 21px 0;
+  box-shadow: 0 5px 0 #e8ede6;
+  overflow: hidden;
+}
+.kanto-market-trade-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.kanto-market-trade-heading h2 {
+  font:
+    900 21px Nunito,
+    sans-serif;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+.kanto-market-trade-heading > span {
+  font-size: 10px;
+  color: #91a096;
+  font-weight: 800;
+}
+.kanto-market-trade-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #f0f4f0;
+  border-radius: 12px;
+  padding: 4px;
+  isolation: isolate;
+  margin-bottom: 23px;
+}
+.kanto-market-trade-tabs::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 4px auto 4px 4px;
+  width: calc((100% - 8px) / 2);
+  border-radius: 9px;
+  background: #e0f0e4;
+  box-shadow: 0 1px 3px #37614d15;
+  transition:
+    transform 0.25s,
+    background 0.25s;
+}
+.kanto-market-trade-tabs.is-sell::before {
+  transform: translateX(100%);
+  background: #f8e5df;
+}
+.kanto-market-trade-tabs button {
+  padding: 10px;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  color: #9aa59c;
+  font-size: 12px;
+  font-weight: 900;
+}
+.kanto-market-trade-tabs button[aria-pressed='true'] {
+  color: #388263;
+}
+.kanto-market-trade-tabs.is-sell button[aria-pressed='true'] {
+  color: #c16c5f;
+}
+.kanto-market-amount-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #8a978e;
+  margin-bottom: 9px;
+}
+.kanto-market-amount-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e0e7df;
+  border-radius: 11px;
+  padding: 13px;
+  background: #fafcf8;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.kanto-market-amount-input:focus-within {
+  border-color: #9cbaa5;
+  box-shadow: 0 0 0 3px #eaf2e7;
+}
+.kanto-market-amount-input input {
+  border: 0;
+  outline: 0;
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 23px;
+  font-weight: 900;
+  color: var(--market-ink);
+  box-shadow: none;
+}
+.kanto-market-amount-input input:focus {
+  box-shadow: none;
+  outline: none;
+  border: 0;
+}
+.kanto-market-amount-input input::placeholder {
+  color: #b3beb5;
+}
+.kanto-market-amount-input > span {
+  font-size: 11px;
+  font-weight: 900;
+  color: #8f9c91;
+  max-width: 90px;
+  overflow-wrap: anywhere;
+}
+.kanto-market-quick-amounts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 9px 0 22px;
+}
+.kanto-market-quick-amounts button {
+  font-size: 10px;
+  font-weight: 800;
+  color: #829082;
+  border: 1px solid #e8ede5;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px;
+  transition:
+    background 0.18s,
+    border-color 0.18s;
+}
+.kanto-market-quick-amounts button:hover {
+  background: #eff5ed;
+  border-color: #c9d7c7;
+}
+.kanto-market-quick-amounts button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.kanto-market-estimate {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 19px;
+}
+.kanto-market-estimate > span {
+  color: #95a095;
+  font-size: 10px;
+}
+.kanto-market-estimate > strong {
+  color: #526858;
+  font-size: 17px;
+  font-weight: 900;
+}
+.kanto-market-estimate small {
+  font-size: 11px;
+  color: #9da79d;
+  font-weight: 700;
+}
+.kanto-market-page .kanto-market-trade-action {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 13px;
+  background: #e76558;
+  border: 1px solid #ce584e;
+  border-bottom-width: 3px;
+  border-radius: 11px;
+  box-shadow: none;
+  padding: 13px 16px;
+  color: #fff;
+  font:
+    900 12px Nunito,
+    sans-serif;
+  transition:
+    background 0.2s,
+    transform 0.2s;
+}
+.kanto-market-page .kanto-market-trade-action:hover:not(:disabled) {
+  background: #ed7568;
+  transform: translateY(-1px);
+}
+.kanto-market-page .kanto-market-trade-action:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.kanto-market-trade-note {
+  margin: 11px 0 20px;
+  font-size: 10px;
+  text-align: center;
+  color: #a1aaa1;
+  line-height: 1.5;
+}
+.kanto-market-position {
+  padding: 17px 21px;
+  margin: 0 -21px;
+  background: #f8faf5;
+  border-top: 1px solid #e8eee4;
+}
+.kanto-market-position > div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 800;
+  color: #92a08f;
+}
+.kanto-market-position a {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #8b9b88;
+  text-decoration: none;
+}
+.kanto-market-position > strong {
+  display: block;
+  font-size: 17px;
+  margin: 7px 0 4px;
+}
+.kanto-market-position strong small {
+  font-size: 10px;
+  color: #98a48f;
+  font-weight: 700;
+}
+.kanto-market-position > span {
+  font-size: 10px;
+  color: #83967f;
+}
+.kanto-market-vault {
+  padding: 21px;
+  border: 1px solid #e6dfc6;
+  border-radius: 18px;
+  background: #fcf9ec;
+}
+.kanto-market-vault-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 17px;
+}
+.kanto-market-vault-icon {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border-radius: 9px;
+  background: #f2ebcf;
+  color: #a6945f;
+}
+.kanto-market-vault-heading h2 {
+  font:
+    900 14px Nunito,
+    sans-serif;
+  margin: 0;
+  color: #7c745b;
+}
+.kanto-market-vault > .sol-value {
+  font-size: 25px;
+  color: #544f3b;
+  font-weight: 900;
+}
+.kanto-market-vault > p {
+  font-size: 11px;
+  line-height: 1.65;
+  color: #a29a7b;
+  margin: 8px 0 18px;
+}
+.kanto-market-fee-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.kanto-market-fee-split span:first-child {
+  background: #e7bb76;
+}
+.kanto-market-fee-split span:last-child {
+  background: #a0ba8d;
+}
+.kanto-market-fee-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+  font-size: 10px;
+  color: #a29b82;
+}
+.kanto-market-fee-labels > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.kanto-market-fee-labels i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e7bb76;
+}
+.kanto-market-fee-labels > span:last-child i {
+  background: #a0ba8d;
+}
+@media (min-width: 1500px) {
+  .kanto-market-layout {
+    grid-template-columns: minmax(0, 1fr) 330px;
+  }
+  .kanto-market-chart-screen > svg {
+    height: 300px;
+  }
+}
+@media (max-width: 1150px) {
+  .kanto-market-layout {
+    grid-template-columns: minmax(0, 1fr) 270px;
+    gap: 17px;
+  }
+  .kanto-market-chart {
+    padding: 22px 16px 12px;
+  }
+  .kanto-market-chart-heading {
+    align-items: flex-start;
+  }
+  .kanto-market-price-row {
+    display: grid;
+    gap: 5px;
+  }
+  .kanto-market-range {
+    margin-top: 16px;
+  }
+  .kanto-market-range button {
+    padding: 6px 8px;
+  }
+  .kanto-market-chart-screen > svg {
+    height: 250px;
+  }
+  .kanto-market-description-row {
+    align-items: flex-start;
+  }
+  .kanto-market-links {
+    max-width: 220px;
+  }
+  .kanto-market-trade-box {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+  .kanto-market-position {
+    margin-left: -17px;
+    margin-right: -17px;
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+}
+@media (max-width: 960px) {
+  .kanto-market-layout {
+    grid-template-columns: 1fr;
+  }
+  .kanto-market-sidebar {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .kanto-market-chart-screen > svg {
+    height: 280px;
+  }
+  .kanto-market-price-row {
+    display: flex;
+  }
+  .kanto-market-range {
+    margin-top: 4px;
+  }
+}
+@media (max-width: 620px) {
+  .kanto-market-navigation {
+    margin-bottom: 20px;
+  }
+  .kanto-market-navigation > a,
+  .kanto-market-watch {
+    font-size: 10px;
+  }
+  .kanto-market-watch {
+    padding: 8px 9px;
+  }
+  .kanto-market-masthead {
+    gap: 18px;
+    grid-template-columns: 1fr;
+  }
+  .kanto-market-coin-identity {
+    gap: 12px;
+  }
+  .kanto-market-coin-identity > .coin-avatar {
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 16px;
+  }
+  .kanto-market-coin-title {
+    gap: 4px 10px;
+  }
+  .kanto-market-coin-title h1 {
+    font-size: 23px;
+  }
+  .kanto-market-coin-title > span {
+    font-size: 11px;
+  }
+  .kanto-market-identity-meta {
+    gap: 10px;
+    font-size: 10px;
+    margin-top: 9px;
+  }
+  .kanto-market-creator {
+    grid-row: 2;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+  }
+  .kanto-market-description-row {
+    display: grid;
+    gap: 13px;
+  }
+  .kanto-market-description-row > p {
+    font-size: 12px;
+  }
+  .kanto-market-links {
+    max-width: none;
+    justify-content: flex-start;
+  }
+  .kanto-market-chart {
+    padding: 20px 12px 12px;
+  }
+  .kanto-market-chart-heading {
+    gap: 10px;
+    padding: 0 4px;
+  }
+  .kanto-market-price {
+    font-size: 29px;
+  }
+  .kanto-market-price-row {
+    display: grid;
+    gap: 5px;
+  }
+  .kanto-market-range {
+    margin-top: 16px;
+  }
+  .kanto-market-range button {
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+  .kanto-market-chart-screen > svg {
+    height: 220px;
+  }
+  .kanto-market-chart-source {
+    font-size: 10px;
+    gap: 4px;
+  }
+  .kanto-market-stat-strip {
+    padding: 17px;
+  }
+  .kanto-market-stat-strip > div {
+    padding-left: 15px;
+  }
+  .kanto-market-stat-strip dd {
+    font-size: 15px;
+  }
+  .kanto-market-stat-strip dt {
+    font-size: 10px;
+  }
+  .kanto-market-tabs button {
+    font-size: 10px;
+    padding: 10px 4px;
+  }
+  .kanto-market-community {
+    margin-top: 23px;
+  }
+  .kanto-market-table th,
+  .kanto-market-table td {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .kanto-market-sidebar {
+    grid-template-columns: 1fr;
+  }
+  .kanto-market-feature {
+    padding: 22px 18px;
+    gap: 15px;
+  }
+  .kanto-market-feature h3 {
+    font-size: 18px;
+  }
+  .kanto-market-feature p {
+    font-size: 11px;
+  }
+  .kanto-market-reward-art {
+    width: 75px;
+    min-width: 75px;
+  }
+  .kanto-market-gym-badge {
+    padding: 7px;
+  }
+  .kanto-market-gym-badge .coin-avatar {
+    width: 60px !important;
+    height: 60px !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kanto-market-page *,
+  .kanto-market-page *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

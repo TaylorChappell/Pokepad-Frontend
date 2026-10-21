@@ -10,7 +10,6 @@ import {
   CoinAvatar,
   ModeBadge,
   PageHeading,
-  Badge,
   SolValue,
   Modal,
   EmptyState,
@@ -20,6 +19,8 @@ import {
 import type { Coin, RewardMode } from '../types';
 import { compact, navigate, relativeTime, sol } from '../utils';
 import { useCoinWatchlist } from '../state/watchlist';
+import { MarketCapChart } from '../components/MarketCapChart';
+import { DEMO_TRAINERS } from '../services/trainers';
 function WatchStar({ filled = false }: { filled?: boolean }) {
   return (
     <svg
@@ -548,55 +549,18 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
     </>
   );
 }
-function PriceChart({ seed = 6 }: { seed?: number }) {
-  return (
-    <svg
-      viewBox="0 0 780 260"
-      className="price-chart"
-      role="img"
-      aria-label="Illustrative coin price chart"
-    >
-      <defs>
-        <linearGradient id="chartfade" x1="0" y1="0" x2="0" y2="1">
-          <stop stopColor="#73bfa0" stopOpacity=".13" />
-          <stop offset="1" stopColor="#73bfa0" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {[25, 75, 125, 175, 225].map((y) => (
-        <g key={y}>
-          <path d={'M0 ' + y + 'H720'} stroke="#ecebe5" strokeDasharray="3 5" />
-          <text x="735" y={y + 4} fill="#9ba0a9" fontSize="10">
-            {(0.000055 - y * 0.00000008).toFixed(6)}
-          </text>
-        </g>
-      ))}
-      {Array.from({ length: 52 }, (_, i) => {
-        const y = 165 - i * 1.7 + Math.sin(i * 0.7 + seed) * 22,
-          up = Math.sin(i * 2.3) > -0.25,
-          h = 8 + Math.abs(Math.cos(i * 1.3)) * 24;
-        return (
-          <g key={i} stroke={up ? '#63b493' : '#ed8a8c'} fill={up ? '#63b493' : '#ed8a8c'}>
-            <path d={'M' + (12 + i * 13.5) + ' ' + (y - 8) + 'v' + (h + 16)} />
-            <rect x={8 + i * 13.5} y={y} width="8" height={h} rx="1" />
-          </g>
-        );
-      })}
-      {['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'].map((t, i) => (
-        <text key={t} x={20 + i * 132} y="256" fill="#9ba0a9" fontSize="11">
-          {t}
-        </text>
-      ))}
-    </svg>
-  );
-}
+const COIN_DETAIL_TABS = ['Transactions', 'Holders', 'Rewards', 'Gym'] as const;
+type CoinDetailTab = (typeof COIN_DETAIL_TABS)[number];
+
 export function CoinPage({ id }: { id: string }) {
-  const { state, toast, mode } = useApp(),
-    coin = state.coins.find((c) => c.id === id),
-    [tab, setTab] = useState('Transactions'),
-    [side, setSide] = useState('Buy'),
-    [amount, setAmount] = useState('0.1'),
-    [time, setTime] = useState('1H'),
-    [review, setReview] = useState(false);
+  const { state, toast, mode } = useApp();
+  const coin = state.coins.find((item) => item.id === id);
+  const [tab, setTab] = useState<CoinDetailTab>('Transactions');
+  const [side, setSide] = useState<'Buy' | 'Sell'>('Buy');
+  const [amount, setAmount] = useState('0.1');
+  const [review, setReview] = useState(false);
+  const tabsId = useId();
+  const watchlist = useCoinWatchlist(state.profile.wallet);
   if (!coin)
     return (
       <EmptyState title="This coin wandered off" description="Try searching for another ticker.">
@@ -605,284 +569,451 @@ export function CoinPage({ id }: { id: string }) {
         </a>
       </EmptyState>
     );
+  const isDemo = mode === 'demo';
+  const watched = watchlist.ids.includes(coin.id);
+  const creatorWallet = coin.creatorWallet;
+  const creatorName =
+    creatorWallet === state.profile.wallet
+      ? state.profile.displayName || coin.creatorName
+      : coin.creatorName;
+  const creatorLabel =
+    creatorName ||
+    (creatorWallet ? creatorWallet.slice(0, 4) + '…' + creatorWallet.slice(-4) : 'Not provided');
+  const tradeAmount = Number(amount);
+  const validTrade =
+    amount.trim() !== '' &&
+    Number.isFinite(tradeAmount) &&
+    tradeAmount > 0 &&
+    (side === 'Buy' || tradeAmount <= coin.holding) &&
+    Number.isFinite(coin.price) &&
+    coin.price > 0;
+  const estimate = validTrade
+    ? side === 'Buy'
+      ? tradeAmount / coin.price
+      : tradeAmount * coin.price
+    : null;
+  const validEstimate = estimate !== null && Number.isFinite(estimate);
+  const tabIndex = COIN_DETAIL_TABS.indexOf(tab);
+  const copyAddress = async () => {
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(coin.ca);
+      toast('Contract address copied');
+    } catch {
+      toast('Contract address: ' + coin.ca);
+    }
+  };
   return (
-    <>
-      <a href="#/discover" className="button secondary back-button">
-        <Icon name="ArrowLeft" size={16} />
-        Back to coins
-      </a>
-      <div className="coin-detail-grid">
-        <div>
-          <div className="coin-detail-header">
-            <CoinAvatar coin={coin} size={65} />
-            <div>
-              <h1>
-                {coin.name} <span>{'$' + coin.ticker}</span>
-              </h1>
-              <div className="row-gap">
-                <ModeBadge mode={coin.mode} />
-                <span className="small muted">{compact(coin.holders)} holders</span>
-                <button
-                  className="copy-ca"
-                  onClick={() => {
-                    navigator.clipboard
-                      ?.writeText(coin.ca)
-                      .then(() => toast('Contract address copied'))
-                      .catch(() => toast(coin.ca));
-                  }}
-                >
-                  {coin.ca.slice(0, 7)}…{coin.ca.slice(-4)}
-                  <Icon name="Copy" size={12} />
-                </button>
-              </div>
+    <div className="kanto-market-page">
+      <div className="kanto-market-navigation">
+        <a href="#/discover">
+          <Icon name="ArrowLeft" size={17} /> Discover coins
+        </a>
+        <button
+          type="button"
+          className={'kanto-market-watch ' + (watched ? 'is-watched' : '')}
+          aria-pressed={watched}
+          onClick={() => watchlist.toggle(coin.id)}
+        >
+          <WatchStar filled={watched} />
+          {watched ? 'Watching' : 'Watch coin'}
+        </button>
+      </div>
+      <header className="kanto-market-masthead">
+        <div className="kanto-market-coin-identity">
+          <CoinAvatar coin={coin} size={72} />
+          <div>
+            <div className="kanto-market-coin-title">
+              <h1>{coin.name}</h1>
+              <span>${coin.ticker}</span>
             </div>
-            {coin.launchKind === 'trainer' && coin.trainer ? (
-              <Avatar profile={coin.trainer} size={100} />
-            ) : (
-              <PokemonArt id={coin.pokemonId} shiny={coin.pokemonShiny} animated={false} />
-            )}
-          </div>
-          <p className="coin-description">{coin.description}</p>
-          <div className="coin-launch-credit">
-            {coin.launchKind === 'trainer' && coin.trainer ? (
-              <>
-                <Avatar profile={coin.trainer} size={38} />
-                <span>Launched by a trainer</span>
-              </>
-            ) : (
-              <>
-                <PokemonArt id={coin.pokemonId} shiny={coin.pokemonShiny} animated={false} />
-                <span>
-                  Launched with {POKEMON.find((p) => p.id === coin.pokemonId)?.name || 'a Pokémon'}
-                </span>
-              </>
-            )}
-          </div>
-          {coin.socials && (
-            <div className="coin-socials">
-              {Object.entries(coin.socials)
-                .filter(([, url]) => url && /^https?:\/\//i.test(url))
-                .map(([name, url]) => (
-                  <a key={name} href={url} target="_blank" rel="noopener noreferrer">
-                    {{ website: 'Website', x: 'X', telegram: 'Telegram', discord: 'Discord' }[
-                      name
-                    ] || name}
-                    <Icon name="ArrowUpRight" size={12} />
-                  </a>
-                ))}
-            </div>
-          )}
-          <div className="panel chart-panel">
-            <div className="chart-header">
-              <div>
-                <strong>
-                  {coin.price.toFixed(7)} <small>SOL</small>
-                </strong>
-                <span className={coin.change >= 0 ? 'positive' : 'negative'}>
-                  {coin.change >= 0 ? '+' : ''}
-                  {coin.change}% today
-                </span>
-              </div>
-              <div className="filter-pills">
-                {['5M', '15M', '1H', '4H', '1D'].map((t) => (
-                  <button onClick={() => setTime(t)} className={time === t ? 'active' : ''} key={t}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <PriceChart seed={coin.pokemonId + ['5M', '15M', '1H', '4H', '1D'].indexOf(time)} />
-            <div className="chart-metrics">
-              <span>
-                Market cap
-                <strong>
-                  <MarketValue coin={coin} field="marketCap" />
-                </strong>
+            <div className="kanto-market-identity-meta">
+              <ModeBadge mode={coin.mode} />
+              <span className={'kanto-market-status ' + (coin.active ? 'is-active' : '')}>
+                <i aria-hidden="true" />
+                {coin.active ? 'Active' : 'Inactive'}
               </span>
-              <span>
-                24h volume
-                <strong>
-                  <MarketValue coin={coin} field="volume" />
-                </strong>
-              </span>
-              <span>
-                Holders<strong>{coin.holders.toLocaleString()}</strong>
-              </span>
+              {coin.launchedAt && (
+                <time dateTime={new Date(coin.launchedAt).toISOString()}>
+                  Launched {relativeTime(coin.launchedAt).toLowerCase()}
+                </time>
+              )}
             </div>
-          </div>
-          <div className="panel coin-tabs-panel">
-            <div className="tab-bar">
-              {['Transactions', 'Holders', 'Rewards', 'Gym'].map((t) => (
-                <button onClick={() => setTab(t)} className={tab === t ? 'active' : ''} key={t}>
-                  {t}
-                </button>
-              ))}
-            </div>
-            {tab === 'Transactions' ? (
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Time</th>
-                      <th>Type</th>
-                      <th>Amount / SOL</th>
-                      <th>Token amount</th>
-                      <th>Trader</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Array.from({ length: 6 }, (_, i) => (
-                      <tr key={i}>
-                        <td>{i + 1}m ago</td>
-                        <td>
-                          <span className={'trade-tag ' + (i % 3 ? 'buy' : 'sell')}>
-                            {i % 3 ? 'Buy' : 'Sell'}
-                          </span>
-                        </td>
-                        <td>{(0.03 + i * 0.024).toFixed(3)}</td>
-                        <td>{compact(1200 + i * 2100)}</td>
-                        <td className="muted">7kP…{i}mQ</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : tab === 'Holders' ? (
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Trainer</th>
-                      <th>Holding time</th>
-                      <th>Share</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {['Leaf', 'Red', 'Misty', 'Brock'].map((n, i) => (
-                      <tr key={n}>
-                        <td>{n}</td>
-                        <td>{28 - i * 4} days</td>
-                        <td>{(2.8 - i * 0.4).toFixed(1)}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : tab === 'Rewards' ? (
-              <div className="coin-reward-info">
-                <EggArt tier="Rare" />
-                <div>
-                  <h3>Holder rewards</h3>
-                  <p>
-                    Eligible holders receive {coin.mode.toLowerCase()}. Every awarded Pokémon’s
-                    redemption value is reserved before its reward is issued.
-                  </p>
-                  <a href="#/rewards" className="button secondary">
-                    See your rewards
-                    <Icon name="ArrowRight" />
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <div className="coin-reward-info">
-                <Badge label={coin.ticker} size={90} />
-                <div>
-                  <h3>Team {coin.ticker}</h3>
-                  <p>Support your community with the Pokémon in your collection.</p>
-                  <a href={'#/gym/' + coin.id} className="button secondary">
-                    Visit the gym
-                    <Icon name="ArrowRight" />
-                  </a>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-        <aside className="coin-right">
-          <div className="panel trade-panel">
-            <div className="trade-tabs">
-              {['Buy', 'Sell'].map((t) => (
-                <button key={t} onClick={() => setSide(t)} className={side === t ? 'active' : ''}>
-                  {t}
+        <div className="kanto-market-creator">
+          <span>Created by</span>
+          {creatorWallet ? (
+            <a href={'#/trainer/' + encodeURIComponent(creatorWallet)} title={creatorWallet}>
+              {creatorLabel}
+              <Icon name="ArrowUpRight" size={14} />
+            </a>
+          ) : (
+            <strong>{creatorLabel}</strong>
+          )}
+        </div>
+        <div className="kanto-market-description-row">
+          <p>{coin.description}</p>
+          <div className="kanto-market-links">
+            <button
+              type="button"
+              className="kanto-market-ca"
+              onClick={copyAddress}
+              title={coin.ca}
+              aria-label={'Copy contract address for ' + coin.name}
+            >
+              <span>CA</span>
+              {coin.ca.slice(0, 5)}…{coin.ca.slice(-4)}
+              <Icon name="Copy" size={13} />
+            </button>
+            <CoinSocials coin={coin} />
+          </div>
+        </div>
+      </header>
+      <div className="kanto-market-layout">
+        <div className="kanto-market-main">
+          <div className="kanto-market-terminal">
+            <div className="kanto-market-terminal-top">
+              <span>
+                <i />
+                <i />
+                <i />
+              </span>
+              <span>{isDemo ? 'DEMO MARKET' : 'MARKET OVERVIEW'}</span>
+              <span className="kanto-market-terminal-lines" aria-hidden="true" />
+            </div>
+            <MarketCapChart coin={coin} demo={isDemo} />
+            <dl className="kanto-market-stat-strip">
+              <div>
+                <dt>24h volume</dt>
+                <dd>
+                  <MarketValue coin={coin} field="volume" />
+                </dd>
+              </div>
+              <div>
+                <dt>Holders</dt>
+                <dd>{compact(coin.holders)}</dd>
+              </div>
+              <div>
+                <dt>Total supply</dt>
+                <dd>{compact(coin.totalSupply)}</dd>
+              </div>
+            </dl>
+          </div>
+          <section className="kanto-market-community" aria-label="Coin information">
+            <div
+              className="kanto-market-tabs"
+              role="tablist"
+              aria-label="Coin information"
+              style={{ '--selected-tab': tabIndex } as CSSProperties}
+            >
+              {COIN_DETAIL_TABS.map((name, index) => (
+                <button
+                  key={name}
+                  role="tab"
+                  id={tabsId + '-tab-' + name}
+                  aria-controls={tabsId + '-panel-' + name}
+                  aria-selected={tab === name}
+                  tabIndex={tab === name ? 0 : -1}
+                  onClick={() => setTab(name)}
+                  onKeyDown={(event) => {
+                    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                    event.preventDefault();
+                    const next =
+                      event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? 3
+                          : (index + (event.key === 'ArrowRight' ? 1 : 3)) % 4;
+                    setTab(COIN_DETAIL_TABS[next]);
+                    const buttons =
+                      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                        '[role="tab"]',
+                      );
+                    buttons?.[next].focus();
+                  }}
+                >
+                  {name}
                 </button>
               ))}
             </div>
-            <label className="field-label">Amount in {side === 'Buy' ? 'SOL' : coin.ticker}</label>
-            <div className="amount-input">
+            <div
+              className="kanto-market-tab-content"
+              key={tab}
+              role="tabpanel"
+              id={tabsId + '-panel-' + tab}
+              aria-labelledby={tabsId + '-tab-' + tab}
+              tabIndex={0}
+            >
+              {tab === 'Transactions' ? (
+                isDemo ? (
+                  <>
+                    <div className="kanto-market-section-caption">
+                      <span>Recent trades</span>
+                      <span>Sample activity</span>
+                    </div>
+                    <div className="kanto-market-table-scroll">
+                      <table className="kanto-market-table">
+                        <thead>
+                          <tr>
+                            <th>Trainer</th>
+                            <th>Side</th>
+                            <th>SOL</th>
+                            <th>Tokens</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: 5 }, (_, index) => {
+                            const trainer = DEMO_TRAINERS[index % DEMO_TRAINERS.length];
+                            const buy = index % 3 !== 1;
+                            const value = 0.03 + index * 0.024;
+                            return (
+                              <tr key={index}>
+                                <td>
+                                  <a href={'#/trainer/' + trainer.wallet}>
+                                    {trainer.displayName}
+                                    <Icon name="ArrowUpRight" size={12} />
+                                  </a>
+                                  <small>{index + 1}m ago · demo</small>
+                                </td>
+                                <td>
+                                  <span
+                                    className={
+                                      'kanto-market-trade-tag ' + (buy ? 'is-buy' : 'is-sell')
+                                    }
+                                  >
+                                    {buy ? 'Buy' : 'Sell'}
+                                  </span>
+                                </td>
+                                <td>{value.toFixed(3)}</td>
+                                <td>{coin.price > 0 ? compact(value / coin.price) : '—'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="kanto-market-data-empty">
+                    <Icon name="Activity" size={28} />
+                    <h3>No trade activity yet</h3>
+                    <p>Confirmed trades will appear here when the market feed is connected.</p>
+                  </div>
+                )
+              ) : tab === 'Holders' ? (
+                isDemo ? (
+                  <>
+                    <div className="kanto-market-section-caption">
+                      <span>Community holders</span>
+                      <span>Sample holders</span>
+                    </div>
+                    <div className="kanto-market-table-scroll">
+                      <table className="kanto-market-table">
+                        <thead>
+                          <tr>
+                            <th>Trainer</th>
+                            <th>Holding time</th>
+                            <th>Supply share</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {DEMO_TRAINERS.map((trainer, index) => (
+                            <tr key={trainer.wallet}>
+                              <td>
+                                <a href={'#/trainer/' + trainer.wallet}>
+                                  {trainer.displayName}
+                                  <Icon name="ArrowUpRight" size={12} />
+                                </a>
+                                <small>
+                                  {trainer.wallet.slice(0, 4)}…{trainer.wallet.slice(-4)}
+                                </small>
+                              </td>
+                              <td>{28 - index * 7} days</td>
+                              <td>{(2.8 - index * 0.6).toFixed(1)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div className="kanto-market-data-empty">
+                    <Icon name="Users" size={28} />
+                    <h3>Holder directory coming soon</h3>
+                    <p>
+                      Verified holder accounts will appear here when the market feed is connected.
+                    </p>
+                  </div>
+                )
+              ) : tab === 'Rewards' ? (
+                <div className="kanto-market-feature">
+                  <div className="kanto-market-reward-art">
+                    {coin.mode === 'Packs' ? <PackArt tier="Rare" /> : <EggArt tier="Rare" />}
+                  </div>
+                  <div>
+                    <ModeBadge mode={coin.mode} />
+                    <h3>Your next Pokémon starts here.</h3>
+                    <p>
+                      {coin.mode === 'Packs'
+                        ? 'Open packs to discover a new partner.'
+                        : coin.mode === 'Eggs'
+                          ? 'Collect eggs, let them hatch, and walk to speed things up.'
+                          : 'Collect eggs to hatch and packs to open whenever you like.'}{' '}
+                      Rewards are funded by this coin’s collected creator fees.
+                    </p>
+                    <a href="#/rewards" className="kanto-market-inline-action">
+                      View your rewards
+                      <Icon name="ArrowRight" size={17} />
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="kanto-market-feature kanto-market-gym-feature">
+                  <div className="kanto-market-gym-badge">
+                    <CoinAvatar coin={coin} size={84} />
+                  </div>
+                  <div>
+                    <span className="kanto-market-label">Community gym</span>
+                    <h3>Team {coin.ticker}</h3>
+                    <p>
+                      Support this gym with your Pokémon collection. The coin’s own image is your
+                      community badge.
+                    </p>
+                    <a href={'#/gym/' + coin.id} className="kanto-market-inline-action">
+                      Visit the gym
+                      <Icon name="ArrowRight" size={17} />
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+        <aside className="kanto-market-sidebar" aria-label="Trading and rewards">
+          <section className="kanto-market-trade-box" aria-label="Trade coin">
+            <div className="kanto-market-trade-heading">
+              <h2>Trade</h2>
+              <span>${coin.ticker}</span>
+            </div>
+            <div
+              className={'kanto-market-trade-tabs ' + (side === 'Sell' ? 'is-sell' : '')}
+              role="group"
+              aria-label="Trade side"
+            >
+              {(['Buy', 'Sell'] as const).map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  aria-pressed={side === name}
+                  onClick={() => {
+                    setSide(name);
+                    setAmount(name === 'Buy' ? '0.1' : '');
+                  }}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+            <label className="kanto-market-amount-label" htmlFor={tabsId + '-amount'}>
+              {side === 'Buy' ? 'You pay' : 'You sell'}
+            </label>
+            <div className="kanto-market-amount-input">
               <input
-                aria-label="Trade amount"
+                id={tabsId + '-amount'}
                 inputMode="decimal"
+                placeholder="0.00"
+                autoComplete="off"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(event) => setAmount(event.target.value)}
               />
               <span>{side === 'Buy' ? 'SOL' : coin.ticker}</span>
             </div>
-            <div className="quick-amounts">
-              {[0.1, 0.5, 1, 5].map((n) => (
-                <button onClick={() => setAmount(String(n))} key={n}>
-                  {n}
+            {side === 'Sell' && tradeAmount > coin.holding && (
+              <p className="kanto-market-trade-note" role="status">
+                Amount exceeds your {compact(coin.holding)} {coin.ticker} holding.
+              </p>
+            )}
+            <div className="kanto-market-quick-amounts">
+              {(side === 'Buy' ? [0.1, 0.5, 1, 5] : [25, 50, 75, 100]).map((value) => (
+                <button
+                  type="button"
+                  key={value}
+                  disabled={side === 'Sell' && coin.holding <= 0}
+                  onClick={() =>
+                    setAmount(String(side === 'Buy' ? value : (coin.holding * value) / 100))
+                  }
+                >
+                  {value}
+                  {side === 'Sell' ? '%' : ''}
                 </button>
               ))}
             </div>
-            <div className="trade-estimate">
-              <span>You receive (estimate)</span>
+            <div className="kanto-market-estimate">
+              <span>Estimated receive</span>
               <strong>
-                {Number.isFinite(Number(amount))
-                  ? compact(
-                      side === 'Buy'
-                        ? Number(amount) / Math.max(coin.price, 0.00001)
-                        : Number(amount) * coin.price,
-                    )
-                  : '—'}{' '}
-                {side === 'Buy' ? coin.ticker : 'SOL'}
+                {validEstimate ? (side === 'Buy' ? compact(estimate!) : sol(estimate!)) : '—'}{' '}
+                <small>{side === 'Buy' ? coin.ticker : 'SOL'}</small>
               </strong>
             </div>
             <Button
-              className="full-width"
+              className={'kanto-market-trade-action ' + (side === 'Sell' ? 'is-sell' : '')}
               onClick={() => setReview(true)}
-              disabled={!Number(amount) || Number(amount) < 0}
+              disabled={!validTrade || !validEstimate}
             >
-              {mode === 'demo' ? 'Preview ' : ''}
-              {side.toLowerCase() + ' $' + coin.ticker}
-              <Icon name="ArrowRight" size={16} />
+              Review {side.toLowerCase()}
+              <Icon name="ArrowRight" size={17} />
             </Button>
-            <p className="mini-note">
-              {mode === 'demo'
-                ? 'Demo market · no real funds are used.'
-                : 'Review your transaction before signing.'}
+            <p className="kanto-market-trade-note">
+              {isDemo
+                ? 'Demo trade · no real funds are used.'
+                : 'Trading is not connected yet. Review only.'}
             </p>
-          </div>
-          <div className="panel reward-vault">
-            <div className="row-between">
-              <h3>Reward vault</h3>
-              <Icon name="Shield" size={18} />
+            <div className="kanto-market-position">
+              <div>
+                <span>Your position</span>
+                <a href="#/portfolio">
+                  Portfolio
+                  <Icon name="ArrowUpRight" size={12} />
+                </a>
+              </div>
+              <strong>
+                {compact(coin.holding)} <small>{coin.ticker}</small>
+              </strong>
+              <span>
+                {coin.holding > 0
+                  ? `${coin.holdingDays} day${coin.holdingDays === 1 ? '' : 's'} held`
+                  : 'No holding yet'}
+              </span>
+            </div>
+          </section>
+          <section className="kanto-market-vault">
+            <div className="kanto-market-vault-heading">
+              <span className="kanto-market-vault-icon">
+                <Icon name="Lock" size={18} />
+              </span>
+              <h2>Reward vault</h2>
             </div>
             <SolValue amount={coin.vault} />
-            <p>Set aside for this community’s rewards.</p>
-            <div className="divider" />
-            <div className="row-between">
-              <span className="muted small">Next assessment</span>
-              <strong className="small">2h 14m</strong>
+            <p>Collected for this community’s Pokémon rewards.</p>
+            <div
+              className="kanto-market-fee-split"
+              aria-label="Creator fees are split equally between creator and holder rewards"
+            >
+              <span />
+              <span />
             </div>
-            <div className="funding-split">
-              <span>50% creator</span>
-              <span>50% holders</span>
+            <div className="kanto-market-fee-labels">
+              <span>
+                <i />
+                50% creator
+              </span>
+              <span>
+                <i />
+                50% rewards
+              </span>
             </div>
-          </div>
-          <div className="panel holding-card">
-            <Icon name="Flame" size={25} />
-            <h3>Your holding streak</h3>
-            <strong>{coin.holdingDays} days</strong>
-            <p>
-              {coin.holding
-                ? compact(coin.holding) + ' ' + coin.ticker + ' in your portfolio'
-                : 'No holding yet.'}
-            </p>
-            <a href="#/portfolio" className="text-link">
-              View portfolio
-              <Icon name="ArrowRight" size={14} />
-            </a>
-          </div>
+          </section>
         </aside>
       </div>
       {review && (
@@ -897,8 +1028,8 @@ export function CoinPage({ id }: { id: string }) {
                 (side === 'Buy' ? 'SOL worth of ' + coin.ticker : coin.ticker)}
             </h3>
             <p>
-              This frontend previews the trading flow. Connecting a wallet and submitting a
-              transaction will be handled by the future backend integration.
+              This is a trade preview. Wallet signing and transaction submission will become
+              available when trading is connected.
             </p>
             <div className="notice">
               <Icon name="Info" />
@@ -916,6 +1047,6 @@ export function CoinPage({ id }: { id: string }) {
           </div>
         </Modal>
       )}
-    </>
+    </div>
   );
 }

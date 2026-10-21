@@ -5,7 +5,6 @@ import { gymRankings } from '../state/gyms';
 import { DEMO_TRAINERS, ownTrainer } from '../services/trainers';
 import {
   Avatar,
-  Badge,
   Button,
   CoinAvatar,
   EmptyState,
@@ -14,6 +13,7 @@ import {
   PokemonArt,
   SolValue,
 } from '../components/UI';
+import { GymBadge } from '../components/GymBadge';
 import { compact, sol } from '../utils';
 
 type Gym = ReturnType<typeof gymRankings>[number];
@@ -66,7 +66,7 @@ export function GymsPage() {
                 <Icon name="Trophy" size={15} /> Leading gym
               </span>
               <div className="league-champion-name">
-                <Badge label={champion.badge} color={champion.color} size={58} />
+                <GymBadge coin={champion.coin} size={58} />
                 <div>
                   <h2>{champion.name}</h2>
                   <span>${champion.coin.ticker} community</span>
@@ -93,7 +93,7 @@ export function GymsPage() {
             {supported ? (
               <>
                 <div className="league-support-identity">
-                  <Badge label={supported.badge} color={supported.color} size={48} />
+                  <GymBadge coin={supported.coin} size={48} />
                   <div>
                     <strong>{supported.name}</strong>
                     <span>Rank #{ranked.indexOf(supported) + 1}</span>
@@ -167,7 +167,7 @@ export function GymsPage() {
                 {String(ranked.indexOf(gym) + 1).padStart(2, '0')}
               </span>
               <div className="league-row-community">
-                <Badge label={gym.badge} color={gym.color} size={45} />
+                <GymBadge coin={gym.coin} size={45} />
                 <span>
                   <strong>{gym.name}</strong>
                   <small>
@@ -205,8 +205,7 @@ export function GymsPage() {
       </section>
       <p className="league-ranking-note">
         <Icon name="Info" size={14} />
-        One trainer, one gym. Rankings use Pokémon’s funded value; listing prices do not change the
-        score.
+        One trainer, one gym. Rankings use the redeemable value of each supporter’s Pokémon.
       </p>
     </div>
   );
@@ -250,7 +249,7 @@ export function GymDetailPage({ id }: { id: string }) {
         style={{ '--league-color': gym.color } as CSSProperties}
       >
         <div className="league-team-identity">
-          <Badge label={gym.badge} color={gym.color} size={78} />
+          <GymBadge coin={gym.coin} size={78} />
           <div>
             <span className="league-leader-label">
               <Icon name="Trophy" size={14} />
@@ -333,7 +332,7 @@ export function GymDetailPage({ id }: { id: string }) {
             </a>
           </section>
           <aside className="league-badge-preview">
-            <Badge label={gym.badge} color={gym.color} size={88} />
+            <GymBadge coin={gym.coin} size={88} />
             <div>
               <h2>The {gym.badge} badge</h2>
               <p>Your team identity, displayed on your trainer profile.</p>
@@ -390,14 +389,14 @@ export function GymDetailPage({ id }: { id: string }) {
             className="league-badge-display"
             style={{ '--league-color': gym.color } as CSSProperties}
           >
-            <Badge label={gym.badge} color={gym.color} size={148} />
+            <GymBadge coin={gym.coin} size={148} />
           </div>
           <div>
             <span className="league-section-label">${gym.coin.ticker} community</span>
             <h2>{gym.badge} badge</h2>
             <p>
-              Every coin has a badge based on its ticker. Support this gym to show its identity on
-              your trainer profile.
+              The coin’s image is its gym badge. Support this gym to show its identity on your
+              trainer profile.
             </p>
             <a className="button secondary" href="#/profile">
               View trainer profile <Icon name="ArrowRight" size={15} />
@@ -408,7 +407,7 @@ export function GymDetailPage({ id }: { id: string }) {
       {confirm && (
         <Modal title={'Join ' + gym.name + '?'} onClose={() => setConfirm(false)}>
           <div className="modal-body support-modal league-support-modal">
-            <Badge label={gym.badge} color={gym.color} size={80} />
+            <GymBadge coin={gym.coin} size={80} />
             <h3>{state.profile.supportedGym ? 'Change supported gym' : 'Choose your gym'}</h3>
             <p>
               Your {sol(collectionValue(state))} SOL of Pokémon value will support {gym.name}.

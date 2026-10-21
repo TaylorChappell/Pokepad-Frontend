@@ -1,6 +1,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -15,6 +16,8 @@ import { SPRITES } from '../data/sprites';
 import { ART_BOUNDS } from '../data/art-bounds';
 import { useOptionalApp } from '../state/AppContext';
 import { TrainerPalettePixels } from './TrainerPalette';
+import { trainerPortraitGeometry } from './trainer-portrait';
+import { lockPageScroll } from './overlay-scroll-lock';
 export type IconName = keyof typeof PIXEL_ICONS | 'Pokeball' | 'Candy' | 'Gym';
 export function Icon({
   name,
@@ -122,11 +125,11 @@ export function Icon({
     </svg>
   );
 }
-export function PokepadLogo({ size = 38 }: { size?: number }) {
+export function KantoLogo({ size = 38 }: { size?: number }) {
   return (
     <img
-      src={asset('brand/pokepad-emblem.png')}
-      className="pokepad-logo"
+      src={asset('brand/kanto-emblem.png')}
+      className="kanto-logo"
       alt=""
       width={size}
       height={size}
@@ -137,8 +140,8 @@ export function Wordmark() {
   return (
     <img
       className="pokemon-wordmark generated-wordmark brand-lockup"
-      src={asset('brand/pokepad-lockup.png')}
-      alt="Poképad"
+      src={asset('brand/kanto-lockup.png')}
+      alt="Kanto"
       width={2172}
       height={724}
       decoding="async"
@@ -463,31 +466,7 @@ export function Avatar({
   profile: Pick<Profile, 'character' | 'accessoryColor'>;
   size?: number;
 }) {
-  // Source-pixel head bounds keep hair intact while allowing shoulders to crop.
-  const crops = {
-    red: { left: 24, right: 39, top: 8, headHeight: 16 },
-    leaf: { left: 23, right: 49, top: 8, headHeight: 22 },
-    misty: { left: 25, right: 49, top: 2, headHeight: 24 },
-    brock: { left: 22, right: 41, top: 1, headHeight: 18 },
-    blue: { left: 25, right: 46, top: 6, headHeight: 17 },
-  };
-  const crop = crops[profile.character] || crops.red;
-  const innerSize = size - 2;
-  const scale = Math.max(
-    1,
-    Math.min(
-      Math.round(innerSize / 24),
-      Math.floor(innerSize / (crop.right - crop.left)),
-      Math.floor((innerSize - 2) / crop.headHeight),
-    ),
-  );
-  const pixelStyle: CSSProperties = {
-    width: 64 * scale,
-    height: 64 * scale,
-    left: Math.round(innerSize / 2 - ((crop.left + crop.right) / 2) * scale),
-    top: 2 - crop.top * scale,
-    clipPath: `inset(${crop.top * scale}px 0 ${(64 - crop.top - 26) * scale}px 0)`,
-  };
+  const { scale: _scale, ...pixelStyle } = trainerPortraitGeometry(profile.character, size);
   return (
     <span
       className={'trainer-avatar pixel-avatar trainer-portrait trainer-' + profile.character}
@@ -557,7 +536,7 @@ export function PackArt({
     >
       <div className="pack-crimp top" />
       <div className="pack-inner">
-        <span className="pack-brand">POKéPAD</span>
+        <span className="pack-brand">KANTO</span>
         <span className="pack-edition">KANTO COLLECTION</span>
         <span className="pack-ball-emblem">
           <svg viewBox="0 0 80 80" aria-hidden="true">
@@ -665,15 +644,16 @@ export function Modal({
 }) {
   const id = useId(),
     panel = useRef<HTMLDivElement>(null),
-    closeRef = useRef(onClose);
+    closeRef = useRef(onClose),
+    closeDisabledRef = useRef(closeDisabled);
   closeRef.current = onClose;
-  useEffect(() => {
+  closeDisabledRef.current = closeDisabled;
+  useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    panel.current?.focus();
+    const unlockScroll = lockPageScroll(document);
+    panel.current?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !closeDisabled) closeRef.current();
+      if (e.key === 'Escape' && !closeDisabledRef.current) closeRef.current();
       if (e.key === 'Tab') {
         const focusable = panel.current?.querySelectorAll<HTMLElement>(
           'button:not([disabled]),a,input,select,textarea,[tabindex="0"]',
@@ -688,21 +668,21 @@ export function Modal({
           e.shiftKey &&
           (document.activeElement === first || document.activeElement === panel.current)
         ) {
-          last.focus();
+          last.focus({ preventScroll: true });
           e.preventDefault();
         } else if (!e.shiftKey && document.activeElement === last) {
-          first.focus();
+          first.focus({ preventScroll: true });
           e.preventDefault();
         }
       }
     };
     document.addEventListener('keydown', key);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      unlockScroll();
       document.removeEventListener('keydown', key);
-      previous?.focus();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
-  }, [closeDisabled]);
+  }, []);
   return (
     <div
       className="modal-backdrop"

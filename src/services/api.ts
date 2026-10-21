@@ -1,9 +1,9 @@
 import type { Action, AppSnapshot, OwnedPokemon, Reward, Profile } from '../types';
-import { createInitialState } from '../data/demo';
-import { applyAction, STORAGE_KEY } from '../state/model';
+import { COINS, createInitialState } from '../data/demo';
+import { applyAction, assertSupportedAction, STORAGE_KEY } from '../state/model';
 import { getPokemonHealth } from '../data/stats';
 import { decorateDemoCoins } from '../data/coin-presentation';
-export interface PokepadApi {
+export interface KantoApi {
   mode: 'demo' | 'live';
   load(): Promise<AppSnapshot>;
   dispatch(action: Action): Promise<AppSnapshot>;
@@ -37,6 +37,8 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
     const p = item as OwnedPokemon & { stardust?: number };
     p.rareCandy = nonNegative(p.rareCandy ?? p.stardust);
     delete p.stardust;
+    // Marketplace retirement releases every legacy listing without touching its funded value.
+    delete p.listed;
     // Legacy saves did not fund evolution. A zero reserve must be topped up by an actual vault debit.
     p.evolutionReserve = nonNegative(p.evolutionReserve);
     p.moveOffers = Array.isArray(p.moveOffers) ? p.moveOffers : [];
@@ -56,15 +58,23 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
     } else reward.shiny = reward.shiny === true;
     return reward;
   });
+  const currentCopy = (value: string) =>
+    value
+      .replace(/stardust/gi, 'Rare Candy')
+      .replace(/\bPok[eé]pad\b/gi, 'Kanto')
+      .replace(/\$POKE\b/g, '$KANTO')
+      .replace(/\bTeam POKE\b/g, 'Team KANTO');
   s.notifications = s.notifications.map((n) => ({
     ...n,
-    title: n.title.replace(/stardust/gi, 'Rare Candy'),
-    description: n.description.replace(/stardust/gi, 'Rare Candy'),
+    title: currentCopy(n.title),
+    description: currentCopy(n.description),
+    href: n.href.startsWith('/marketplace') ? '/pokemon' : n.href,
   }));
   s.activity = s.activity.map((a) => ({
     ...a,
-    title: a.title.replace(/stardust/gi, 'Rare Candy'),
-    detail: a.detail.replace(/stardust/gi, 'Rare Candy'),
+    title: currentCopy(a.title),
+    detail: currentCopy(a.detail),
+    href: a.href.startsWith('/marketplace') ? '/pokemon' : a.href,
   }));
   return s;
 }
@@ -73,7 +83,30 @@ const readLocal = (): AppSnapshot => {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const migrated = migrateSnapshot(JSON.parse(raw));
-      if (migrated) return { ...migrated, coins: decorateDemoCoins(migrated.coins) };
+      if (migrated)
+        return {
+          ...migrated,
+          coins: decorateDemoCoins(
+            migrated.coins.map((coin) => {
+              // Only known local demo fixtures get demo creator identities; never guess live creators.
+              const fixture = COINS.find((item) => item.id === coin.id && item.ca === coin.ca);
+              return fixture
+                ? {
+                    ...coin,
+                    ...(fixture.main
+                      ? {
+                          name: fixture.name,
+                          ticker: fixture.ticker,
+                          description: fixture.description,
+                        }
+                      : {}),
+                    creatorWallet: coin.creatorWallet || fixture.creatorWallet,
+                    creatorName: coin.creatorName || fixture.creatorName,
+                  }
+                : coin;
+            }),
+          ),
+        };
     }
   } catch {
     /* Recover from corrupt or inaccessible local storage. */
@@ -81,7 +114,7 @@ const readLocal = (): AppSnapshot => {
   return createInitialState();
 };
 let memory: AppSnapshot | undefined;
-export const demoApi: PokepadApi = {
+export const demoApi: KantoApi = {
   mode: 'demo',
   async load() {
     memory = readLocal();
@@ -103,7 +136,7 @@ export const demoApi: PokepadApi = {
     return structuredClone(next);
   },
 };
-export function createHttpApi(base: string): PokepadApi {
+export function createHttpApi(base: string): KantoApi {
   const root = base.replace(/\/$/, '');
   async function request(path: string, body?: unknown): Promise<AppSnapshot> {
     const controller = new AbortController();
@@ -142,9 +175,12 @@ export function createHttpApi(base: string): PokepadApi {
   return {
     mode: 'live',
     load: () => request('/bootstrap'),
-    dispatch: (action) => request('/actions', action),
+    dispatch: async (action) => {
+      assertSupportedAction(action);
+      return request('/actions', action);
+    },
   };
 }
-export const api: PokepadApi = import.meta.env?.VITE_API_BASE_URL
+export const api: KantoApi = import.meta.env?.VITE_API_BASE_URL
   ? createHttpApi(import.meta.env?.VITE_API_BASE_URL)
   : demoApi;

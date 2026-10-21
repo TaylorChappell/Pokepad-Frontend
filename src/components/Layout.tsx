@@ -13,7 +13,6 @@ const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/analytics', label: 'Analytics', icon: 'Activity' },
   { path: '/pokemon', label: 'My PC', icon: 'Pokeball', group: 'TRAINER' },
   { path: '/pokedex', label: 'Pokédex', icon: 'BookOpen' },
-  { path: '/marketplace', label: 'Marketplace', icon: 'Grid2X2' },
   { path: '/battles', label: 'Battle arena', icon: 'Swords', group: 'LEAGUE' },
   { path: '/gyms', label: 'Gyms', icon: 'Gym' },
   { path: '/guide', label: 'How-to', icon: 'BookOpen' },
@@ -78,7 +77,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
           >
             <Icon name="Menu" />
           </button>
-          <a href="#/discover" className="brand" aria-label="Poképad home">
+          <a href="#/discover" className="brand" aria-label="Kanto home">
             <Wordmark />
           </a>
         </div>
@@ -103,7 +102,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               height={29}
               aria-hidden="true"
             />
-            <span>Search Poképad</span>
+            <span>Search Kanto</span>
             <kbd>⌘ / Ctrl K</kbd>
           </button>
           <button
@@ -131,7 +130,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             }}
           >
             <span className="avatar-wrap">
-              <Avatar profile={state.profile} size={54} />
+              <Avatar profile={state.profile} size={58} />
             </span>
             <span className="account-name">
               {profileName(state)}
@@ -258,7 +257,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
         {children}
         <footer className="page-footer">
           <Pokeball size={17} />
-          <span>POKéPAD · KANTO</span>
+          <span>KANTO</span>
           <a href="#/guide">
             Trainer handbook <Icon name="ArrowUpRight" size={12} />
           </a>

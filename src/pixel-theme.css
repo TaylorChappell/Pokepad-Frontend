@@ -1,4 +1,4 @@
-/* Poképad v2: actual Pokémon lettering, handheld-game pixels and field-guide paper. */
+/* Kanto pixel theme: actual Pokémon lettering, handheld-game pixels and field-guide paper. */
 @font-face {
   font-family: PokemonHollow;
   src: url('../public/assets/fonts/PokemonHollow.ttf') format('truetype');
@@ -220,7 +220,7 @@ textarea {
 .brand {
   gap: 9px;
 }
-.pokepad-logo {
+.kanto-logo {
   image-rendering: pixelated;
   object-fit: contain;
   flex-shrink: 0;
@@ -1961,7 +1961,7 @@ textarea {
   .brand > .pokemon-wordmark {
     font-size: 25px;
   }
-  .brand .pokepad-logo {
+  .brand .kanto-logo {
     width: 29px;
     height: 33px;
   }
@@ -2034,7 +2034,7 @@ textarea {
   .brand > .pokemon-wordmark {
     font-size: 23px;
   }
-  .brand .pokepad-logo {
+  .brand .kanto-logo {
     width: 25px;
     height: 30px;
   }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Avatar, Badge, EmptyState, Icon, PokemonArt, SolValue, TypeChip } from '../components/UI';
+import { Avatar, EmptyState, Icon, PokemonArt, SolValue, TypeChip } from '../components/UI';
+import { GymBadge, coinForBadge } from '../components/GymBadge';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { ownTrainer, trainerDirectory, type PublicTrainer } from '../services/trainers';
@@ -145,12 +146,15 @@ export function TrainerPage({ wallet }: { wallet: string }) {
         <section className="trainer-public-badges">
           <h2>Gym badges</h2>
           <div>
-            {trainer.badges.map((badge) => (
-              <span key={badge}>
-                <Badge label={badge} size={48} />
-                <strong>{badge}</strong>
-              </span>
-            ))}
+            {trainer.badges.map((badge) => {
+              const coin = coinForBadge(state.coins, badge);
+              return coin ? (
+                <a key={badge} href={'#/gym/' + coin.id} title={coin.name + ' gym'}>
+                  <GymBadge coin={coin} size={48} />
+                  <strong>{coin.ticker}</strong>
+                </a>
+              ) : null;
+            })}
           </div>
         </section>
       )}

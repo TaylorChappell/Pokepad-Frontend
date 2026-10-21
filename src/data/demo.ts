@@ -2,11 +2,15 @@ import type { Coin, Gym, AppSnapshot, Profile, OwnedPokemon } from '../types';
 import { pokemonById } from './pokemon';
 import { getPokemonStats } from './stats';
 import { decorateDemoCoins } from './coin-presentation';
+import { DEMO_TRAINERS } from '../services/trainers';
 export const COINS: Coin[] = [
   {
     id: 'poke',
-    name: 'Poképad',
-    ticker: 'POKE',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[0].wallet,
+    creatorName: DEMO_TRAINERS[0].displayName,
+    name: 'Kanto',
+    ticker: 'KANTO',
     ca: 'PokePad1111111111111111111111111111111111111',
     pokemonId: 25,
     color: '#fff0b1',
@@ -19,7 +23,7 @@ export const COINS: Coin[] = [
     holders: 2841,
     vault: 64.2,
     description:
-      'The main Poképad token. Choose your starter, collect holder rewards, and connect with every gym in Kanto.',
+      'The main Kanto token. Choose your starter, collect holder rewards, and connect with every gym in Kanto.',
     main: true,
     active: true,
     holding: 1248000,
@@ -27,6 +31,9 @@ export const COINS: Coin[] = [
   },
   {
     id: 'char',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[1].wallet,
+    creatorName: DEMO_TRAINERS[1].displayName,
     name: 'Charizard Club',
     ticker: 'CHAR',
     ca: 'CharPad1111111111111111111111111111111111111',
@@ -48,6 +55,9 @@ export const COINS: Coin[] = [
   },
   {
     id: 'geng',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[1].wallet,
+    creatorName: DEMO_TRAINERS[1].displayName,
     name: 'Shadow Crew',
     ticker: 'GENG',
     ca: 'GengPad1111111111111111111111111111111111111',
@@ -68,6 +78,9 @@ export const COINS: Coin[] = [
   },
   {
     id: 'squirt',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[1].wallet,
+    creatorName: DEMO_TRAINERS[1].displayName,
     name: 'Squirtle Squad',
     ticker: 'SQUIRT',
     ca: 'SquirtPad11111111111111111111111111111111111',
@@ -89,6 +102,9 @@ export const COINS: Coin[] = [
   },
   {
     id: 'bulb',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[0].wallet,
+    creatorName: DEMO_TRAINERS[0].displayName,
     name: 'Seed Society',
     ticker: 'BULB',
     ca: 'BulbPad1111111111111111111111111111111111111',
@@ -110,6 +126,9 @@ export const COINS: Coin[] = [
   },
   {
     id: 'eevee',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[0].wallet,
+    creatorName: DEMO_TRAINERS[0].displayName,
     name: 'Evolution Club',
     ticker: 'EEVEE',
     ca: 'EeveePad111111111111111111111111111111111111',
@@ -130,6 +149,9 @@ export const COINS: Coin[] = [
   },
   {
     id: 'snorlax',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[0].wallet,
+    creatorName: DEMO_TRAINERS[0].displayName,
     name: 'Chill Collective',
     ticker: 'SNORLAX',
     ca: 'SnorPad1111111111111111111111111111111111111',
@@ -151,6 +173,9 @@ export const COINS: Coin[] = [
   },
   {
     id: 'drago',
+    // Sample creator from the public demo trainer directory.
+    creatorWallet: DEMO_TRAINERS[1].wallet,
+    creatorName: DEMO_TRAINERS[1].displayName,
     name: 'Dragon Den',
     ticker: 'DRAGO',
     ca: 'DragoPad111111111111111111111111111111111111',
@@ -206,7 +231,7 @@ export const GYMS: Gym[] = [
   },
   {
     coinId: 'poke',
-    name: 'Team POKE',
+    name: 'Team KANTO',
     badge: 'Journey',
     supporters: 2841,
     externalScore: 9.7,

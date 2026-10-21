@@ -1,9 +1,10 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Coin } from '../types';
 import { compact, navigate } from '../utils';
 import { useOptionalApp } from '../state/AppContext';
 import { Avatar, CoinAvatar, Icon, Pokeball, PokemonArt } from './UI';
+import { lockPageScroll } from './overlay-scroll-lock';
 import {
   matchesTrainer,
   ownTrainer,
@@ -115,19 +116,18 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
   }
 
   // Keep background navigation out of the focus order while the search device is open.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
+    const unlockScroll = lockPageScroll(document);
     const appRoot = document.getElementById('root');
     const wasInert = appRoot?.hasAttribute('inert');
     appRoot?.setAttribute('inert', '');
-    document.body.style.overflow = 'hidden';
-    input.current?.focus();
+    input.current?.focus({ preventScroll: true });
     return () => {
       clearTimeout(closeTimer.current);
-      document.body.style.overflow = previousOverflow;
+      unlockScroll();
       if (!wasInert) appRoot?.removeAttribute('inert');
-      if (previous?.isConnected) previous.focus();
+      if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, []);
 
@@ -152,10 +152,10 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
         (document.activeElement === first || !panel.current.contains(document.activeElement))
       ) {
         event.preventDefault();
-        last.focus();
+        last.focus({ preventScroll: true });
       } else if (!event.shiftKey && document.activeElement === last) {
         event.preventDefault();
-        first.focus();
+        first.focus({ preventScroll: true });
       }
     };
     document.addEventListener('keydown', key, true);
@@ -197,7 +197,7 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
         <div className="coin-search-screen">
           <header className="coin-search-heading">
             <div>
-              <h2 id={`${id}-title`}>Search Poképad</h2>
+              <h2 id={`${id}-title`}>Search Kanto</h2>
               <p id={`${id}-description`}>Find a coin or visit another trainer.</p>
             </div>
             <Pokeball size={32} />

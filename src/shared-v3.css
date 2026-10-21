@@ -1,6 +1,6 @@
 /* Shared identity and artwork. Original sprites retain their original pixel palettes. */
-.brand .pokepad-logo,
-.pokepad-logo {
+.brand .kanto-logo,
+.kanto-logo {
   image-rendering: auto;
   width: auto;
   filter: drop-shadow(0 2px 1px #21364a14);
@@ -71,6 +71,17 @@
     opacity: 1;
     transform: scale(1.1) rotate(12deg);
   }
+}
+/* Reserve the page scrollbar for overlays as well as ordinary page scrolling. */
+html {
+  scrollbar-gutter: stable;
+}
+/* Fallback for engines without scrollbar-gutter; the root receives matching
+   padding in lockPageScroll while viewport-fixed surfaces keep their width. */
+html .topbar,
+html .modal-backdrop,
+html .coin-search-backdrop {
+  right: var(--overlay-scrollbar-gap, 0px);
 }
 .trainer-avatar.trainer-portrait {
   display: inline-block;

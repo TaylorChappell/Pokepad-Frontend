@@ -158,7 +158,7 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
       document.querySelector('.brand-lockup img')?.getAttribute('src') ||
         document.querySelector('img.brand-lockup')?.getAttribute('src') ||
         '',
-      /brand\/pokepad-lockup\.png$/,
+      /brand\/kanto-lockup\.png$/,
     );
     assert.deepEqual(
       [...document.querySelectorAll('.sidebar .nav-link')]
@@ -197,7 +197,6 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
       '/pokemon',
       '/pokemon/partner',
       '/pokedex',
-      '/marketplace',
       '/gyms',
       '/gym/char',
       '/profile',
@@ -404,18 +403,61 @@ test('coin watchlists, shiny PC filtering, and analytics categories stay usable 
     assert.ok(shinyCards.length > 0);
     assert.ok([...shinyCards].every((item) => item.getAttribute('data-variant') === 'shiny'));
     await go('/analytics');
+    assert.deepEqual(
+      [...document.querySelectorAll('.analytics-metric-copy > span')].map(
+        (item) => item.textContent,
+      ),
+      ['Total rewards', 'Platform trading volume', 'Active users'],
+    );
+    assert.match(
+      document.querySelector('.analytics-connection')?.textContent || '',
+      /Demo account/,
+    );
+    assert.equal(
+      document.querySelector('.analytics-local-label')?.textContent,
+      'Your demo activity',
+    );
+    assert.equal(
+      document.querySelector('.analytics-feed-source'),
+      null,
+      'No fabricated community feed',
+    );
     await click(app.button('Hatches', document.querySelector('.analytics-event-filters')!));
-    assert.ok(document.querySelectorAll('.analytics-event').length > 0);
+    assert.equal(
+      document.querySelectorAll('.analytics-event').length,
+      0,
+      'No hatch events are invented',
+    );
+    assert.match(
+      document.querySelector('.analytics-feed-empty')?.textContent || '',
+      /No hatches yet/,
+    );
+    await go('/rewards');
+    await click(app.button('Hatch egg'));
+    await app.until(
+      () => !!document.querySelector('.reveal-v3.is-revealed'),
+      'A real local hatch completes before it appears in Analytics',
+    );
+    const hatchEvent = app.saved().activity.find((entry) => entry.title.includes('hatched'))!;
+    assert.ok(hatchEvent, 'The reward action records the hatch');
+    await go('/analytics');
+    await click(app.button('Hatches', document.querySelector('.analytics-event-filters')!));
+    assert.equal(document.querySelectorAll('.analytics-event').length, 1);
     assert.ok(
       [...document.querySelectorAll('.analytics-event')].every((item) =>
         item.classList.contains('event-egg'),
       ),
     );
-    await click(app.button('Your activity'));
-    assert.match(
-      document.querySelector('.analytics-feed-note')?.textContent || '',
-      /YOUR DEMO ACCOUNT/,
+    assert.equal(
+      document.querySelector('.analytics-event-action h3')?.textContent,
+      hatchEvent.title,
     );
+    assert.equal(
+      document.querySelector('.analytics-event-action')?.getAttribute('href'),
+      '#' + hatchEvent.href,
+    );
+    await click(app.button('Redemptions', document.querySelector('.analytics-event-filters')!));
+    assert.equal(document.querySelectorAll('.analytics-event').length, 0);
     await go('/discover');
     await click(document.querySelector('.watchlist-tab'));
     assert.equal(
@@ -636,16 +678,16 @@ test('declined moves stay dismissed on return and evolution is unavailable witho
 test('My PC prioritises actionable Pokémon and keeps explicit sorting available', async () => {
   const app = await mountApp('/pokemon', (state) => {
     state.pokemon.find((p) => p.id === 'gengar')!.acquiredAt = Date.now();
-    state.pokemon.find((p) => p.id === 'partner')!.listed = 0.2;
+    state.pokemon.find((p) => p.id === 'partner')!.locked = true;
   });
   try {
     const cards = [...app.document.querySelectorAll('.pc-slot')];
     const firstPlain = cards.findIndex((card) => !card.classList.contains('pc-attention'));
     assert.ok(firstPlain > 0, 'Ready Pokémon appear first');
     assert.ok(cards.slice(firstPlain).every((card) => !card.classList.contains('pc-attention')));
-    const listed = app.document.querySelector('a[href="#/pokemon/partner"].pc-slot');
-    assert.equal(listed?.classList.contains('pc-attention'), false);
-    assert.match(listed?.textContent || '', /Move waiting/);
+    const locked = app.document.querySelector('a[href="#/pokemon/partner"].pc-slot');
+    assert.equal(locked?.classList.contains('pc-attention'), false);
+    assert.match(locked?.textContent || '', /Move waiting/);
     const sort = app.document.querySelector<HTMLSelectElement>('[aria-label="Sort Pokémon"]')!;
     assert.equal(sort.value, 'Ready first');
     await act(async () => {
@@ -660,7 +702,7 @@ test('My PC prioritises actionable Pokémon and keeps explicit sorting available
 
 test('the launch wizard validates steps and keeps the chosen Pokémon, image, and links when going back', async () => {
   const app = await mountApp('/create', (state) => {
-    state.pokemon.find((p) => p.id === 'gengar')!.listed = 0.4;
+    state.pokemon.find((p) => p.id === 'gengar')!.locked = true;
   });
   const { document, click, fill } = app;
   const originalImage = globalThis.Image;
@@ -942,6 +984,46 @@ test('trainer edits auto-save the latest rapid choices and a name survives leavi
         ?.getAttribute('aria-pressed'),
       'true',
     );
+  } finally {
+    await app.close();
+  }
+});
+
+test('Pokémon selling confirms the exact redeemable value and removes the old marketplace', async () => {
+  const app = await mountApp('/pokemon/bulbasaur', (state) => {
+    state.pokemon.find((p) => p.id === 'bulbasaur')!.listed = 9999;
+    const main = state.coins.find((c) => c.main)!;
+    main.name = 'Poképad';
+    main.ticker = 'POKE';
+    main.description = 'The main Poképad token.';
+    delete main.creatorWallet;
+    delete main.creatorName;
+  });
+  try {
+    const main = app.saved().coins.find((c) => c.main)!;
+    assert.equal(main.name, 'Kanto');
+    assert.equal(main.ticker, 'KANTO');
+    assert.match(main.description, /The main Kanto token/);
+    assert.equal(main.creatorWallet, DEMO_TRAINERS[0].wallet);
+    assert.equal(app.document.querySelector('a[href="#/marketplace"]'), null);
+    await app.click(app.button('Sell'));
+    const dialog = app.document.querySelector('[role="dialog"]')!;
+    assert.match(dialog.textContent || '', /You receive.*0.08/s);
+    assert.equal(dialog.querySelector('input'), null);
+    assert.doesNotMatch(dialog.textContent || '', /asking price|listing/i);
+    await app.click(app.button('Keep Pokémon', dialog));
+    assert.ok(app.saved().pokemon.some((p) => p.id === 'bulbasaur'));
+    await app.click(app.button('Sell'));
+    await app.click(app.button('Sell for 0.08 SOL'));
+    assert.equal(
+      app.saved().pokemon.some((p) => p.id === 'bulbasaur'),
+      false,
+    );
+    assert.ok(app.saved().discovered.includes(1));
+    assert.equal(app.saved().coins.find((c) => c.id === 'bulb')!.vault, 5.64);
+    await app.go('/marketplace');
+    assert.ok(app.document.querySelector('.pc-storage'));
+    assert.equal(app.document.querySelector('.marketplace-tabs'), null);
   } finally {
     await app.close();
   }

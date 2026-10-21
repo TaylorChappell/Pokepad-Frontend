@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
+import { useRevealAudio } from '../audio/sound';
 import { POKEMON, pokemonById } from '../data/pokemon';
 import { moveByName } from '../data/moves';
 import { getPokemonHealth, getPokemonStats } from '../data/stats';
@@ -69,7 +70,7 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
     equipped = state.profile.equippedId === pokemon.id,
     offer = pendingMove(pokemon),
     evolution = getEvolutionStatus(state, pokemon),
-    canLearn = !!offer && !pokemon.listed && !pokemon.locked,
+    canLearn = !!offer && !pokemon.locked,
     needsAttention = evolution.canEvolve || canLearn;
   return (
     <a
@@ -130,7 +131,6 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
               Can evolve
             </span>
           )}
-          {pokemon.listed && <span className="pc-listed-alert">Listed</span>}
           {pokemon.locked && <span>In battle</span>}
         </div>
         <div className="pokemon-card-value">
@@ -149,8 +149,7 @@ export function InventoryPage() {
   const attention = new Map(
     state.pokemon.map((p) => [
       p.id,
-      Number(getEvolutionStatus(state, p).canEvolve) +
-        Number(!!pendingMove(p) && !p.listed && !p.locked),
+      Number(getEvolutionStatus(state, p).canEvolve) + Number(!!pendingMove(p) && !p.locked),
     ]),
   );
   const list = state.pokemon
@@ -159,13 +158,9 @@ export function InventoryPage() {
         (filter === 'All' ||
           (filter === 'Shiny' && !!p.shiny) ||
           (filter === 'Partner' && p.id === state.profile.equippedId) ||
-          (filter === 'Battle ready' &&
-            !p.listed &&
-            !p.locked &&
-            getPokemonHealth(p).current > 0) ||
-          (filter === 'Listed' && !!p.listed) ||
+          (filter === 'Battle ready' && !p.locked && getPokemonHealth(p).current > 0) ||
           (filter === 'Can evolve' && getEvolutionStatus(state, p).canEvolve) ||
-          (filter === 'New move' && !!pendingMove(p) && !p.listed && !p.locked)) &&
+          (filter === 'New move' && !!pendingMove(p) && !p.locked)) &&
         pokemonById(p.speciesId).name.toLowerCase().includes(search.toLowerCase()),
     )
     .sort((a, b) =>
@@ -189,18 +184,16 @@ export function InventoryPage() {
       </PageHeading>
       <div className="collection-toolbar">
         <div className="filter-pills">
-          {['All', 'Shiny', 'Battle ready', 'Partner', 'Can evolve', 'New move', 'Listed'].map(
-            (f) => (
-              <button
-                key={f}
-                className={filter === f ? 'active' : ''}
-                aria-pressed={filter === f}
-                onClick={() => setFilter(f)}
-              >
-                {f}
-              </button>
-            ),
-          )}
+          {['All', 'Shiny', 'Battle ready', 'Partner', 'Can evolve', 'New move'].map((f) => (
+            <button
+              key={f}
+              className={filter === f ? 'active' : ''}
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+            >
+              {f}
+            </button>
+          ))}
         </div>
         <div className="toolbar-right">
           <div className="small-search">
@@ -268,15 +261,15 @@ type EvolutionScene = {
   phase: 'ready' | 'evolving' | 'complete';
 };
 export function PokemonDetailPage({ id }: { id: string }) {
-  const { state, act, busy, toast } = useApp(),
+  const { state, mode, act, busy, toast } = useApp(),
     p = state.pokemon.find((p) => p.id === id),
-    [dialog, setDialog] = useState<'learn' | 'evolve' | 'sell' | 'redeem' | null>(null),
+    [dialog, setDialog] = useState<'learn' | 'evolve' | 'sell' | null>(null),
     [section, setSection] = useState<'stats' | 'moves' | 'evolution' | 'details'>('stats'),
     [replaceIndex, setReplaceIndex] = useState<number | null>(null),
     [declining, setDeclining] = useState(false),
-    [price, setPrice] = useState(''),
     [evolution, setEvolution] = useState<EvolutionScene | null>(null),
     timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const revealAudio = useRevealAudio();
   useEffect(() => () => clearTimeout(timer.current), []);
   if (!p)
     return (
@@ -294,7 +287,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
     equipped = state.profile.equippedId === id,
     offer = pendingMove(p),
     evoStatus = getEvolutionStatus(state, p),
-    unavailable = !!p.listed || !!p.locked,
+    unavailable = !!p.locked,
     newMove = offer ? moveByName(offer.move) : null,
     stats = getPokemonStats(p),
     health = getPokemonHealth(p);
@@ -307,24 +300,32 @@ export function PokemonDetailPage({ id }: { id: string }) {
   ];
   const statScale = Math.max(...statRows.map((stat) => stat.value), stats.hp) * 1.12;
   const closeDialog = () => {
+    clearTimeout(timer.current);
+    revealAudio.stop();
     setDialog(null);
     setDeclining(false);
     setReplaceIndex(null);
   };
   const startEvolution = async () => {
     if (!evolution || busy) return;
+    revealAudio.unlock();
     const before = { ...evolution, phase: 'evolving' as const };
     setEvolution(before);
     const result = await act({ type: 'pokemon.evolve', id: p.id }),
       changed = result?.pokemon.find((x) => x.id === p.id);
     if (!changed) {
+      revealAudio.stop();
       setEvolution({ ...before, phase: 'ready' });
       return;
     }
     const scene = { ...before, to: changed.speciesId, after: changed.backing };
     setEvolution(scene);
+    revealAudio.play('evolve', 'opening');
     timer.current = setTimeout(
-      () => setEvolution({ ...scene, phase: 'complete' }),
+      () => {
+        setEvolution({ ...scene, phase: 'complete' });
+        revealAudio.play('evolve', 'revealed');
+      },
       state.profile.reducedMotion ? 150 : 4200,
     );
   };
@@ -347,15 +348,13 @@ export function PokemonDetailPage({ id }: { id: string }) {
       closeDialog();
     }
   };
-  const sell = async () => {
-    if (await act({ type: 'pokemon.list', id: p.id, amount: Number(price) })) {
-      toast('Demo listing created.');
-      closeDialog();
-    }
-  };
   const redeem = async () => {
     if (await act({ type: 'pokemon.redeem', id: p.id })) {
-      toast('Demo Pokémon redeemed. No SOL was sent.');
+      toast(
+        mode === 'demo'
+          ? 'Pokémon sold in demo. No SOL was sent.'
+          : species.name + ' sold for ' + sol(p.backing) + ' SOL.',
+      );
       closeDialog();
       navigate('/pokemon');
     }
@@ -373,13 +372,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
           }
         >
           <span />
-          {p.listed
-            ? 'Listed on marketplace'
-            : p.locked
-              ? 'In battle'
-              : health.current === 0
-                ? 'Needs healing'
-                : 'Ready for battle'}
+          {p.locked ? 'In battle' : health.current === 0 ? 'Needs healing' : 'Ready for battle'}
         </span>
       </div>
       <div className="summary-workspace">
@@ -430,32 +423,17 @@ export function PokemonDetailPage({ id }: { id: string }) {
               <Icon name="Heart" size={16} />
               {equipped ? 'Equipped' : 'Equip Pokémon'}
             </Button>
-            {p.listed ? (
-              <Button
-                variant="secondary"
-                disabled={busy}
-                onClick={async () => {
-                  if (await act({ type: 'pokemon.unlist', id: p.id })) toast('Listing removed.');
-                }}
-              >
-                Unlist
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                disabled={!!p.starter || !!p.locked || busy}
-                onClick={() => {
-                  setPrice(String(Math.round(p.backing * 1.2 * 100) / 100));
-                  setDialog('sell');
-                }}
-              >
-                Sell
-              </Button>
-            )}
+            <Button
+              variant="secondary"
+              disabled={!!p.starter || !!p.locked || busy}
+              onClick={() => setDialog('sell')}
+            >
+              Sell
+            </Button>
           </div>
           {p.starter && (
             <p className="summary-starter-note">
-              Your starter becomes tradeable after a funded evolution.
+              Your starter can be sold after its first funded evolution.
             </p>
           )}
         </section>
@@ -714,13 +692,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                   <div>
                     <dt>Status</dt>
                     <dd>
-                      {p.listed
-                        ? 'Listed on marketplace'
-                        : p.locked
-                          ? 'In battle'
-                          : p.starter
-                            ? 'Starter Pokémon'
-                            : 'In your inventory'}
+                      {p.locked ? 'In battle' : p.starter ? 'Starter Pokémon' : 'In your inventory'}
                     </dd>
                   </div>
                   <div>
@@ -743,9 +715,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                   Open Pokédex entry
                   <Icon name="ArrowUpRight" size={15} />
                 </a>
-                <p>
-                  Your Pokédex remembers this species even after you sell or redeem this Pokémon.
-                </p>
+                <p>Your Pokédex remembers this species even after you sell this Pokémon.</p>
               </section>
             )}
           </div>
@@ -923,52 +893,26 @@ export function PokemonDetailPage({ id }: { id: string }) {
         </Modal>
       )}
       {dialog === 'sell' && (
-        <Modal title={'Sell ' + species.name} onClose={closeDialog}>
+        <Modal title={'Sell ' + species.name + '?'} onClose={closeDialog} closeDisabled={busy}>
           <div className="modal-body sell-modal">
             <PokemonArt id={p.speciesId} shiny={p.shiny} />
             <div className="sale-value">
+              <span>You receive</span>
               <SolValue amount={p.backing} />
             </div>
-            <label className="field-label" htmlFor="listing-price">
-              Asking price / SOL
-            </label>
-            <input
-              id="listing-price"
-              className="text-input"
-              type="number"
-              min=".0001"
-              step=".01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-            <p className="small muted">
-              A buyer must accept your asking price. Listed Pokémon cannot be equipped or battled.
+            <p>
+              Selling redeems this Pokémon’s full value and removes it from your inventory. Its
+              discovery stays in your Pokédex.
             </p>
-            <Button
-              className="full-width"
-              disabled={busy || !Number(price) || Number(price) <= 0}
-              onClick={sell}
-            >
-              Create demo listing
-            </Button>
-            <button className="text-link redeem-link" onClick={() => setDialog('redeem')}>
-              Redeem for {sol(p.backing)} SOL →
-            </button>
-          </div>
-        </Modal>
-      )}
-      {dialog === 'redeem' && (
-        <Modal title={'Redeem ' + species.name + '?'} onClose={closeDialog}>
-          <div className="modal-body">
-            <p>Redemption removes this Pokémon from your inventory. Its Pokédex discovery stays.</p>
-            <div className="notice">This is a frontend preview. No SOL is transferred.</div>
-            <SolValue amount={p.backing} />
+            {mode === 'demo' && (
+              <div className="notice">This is a demo sale. No SOL is transferred.</div>
+            )}
             <div className="modal-actions">
-              <Button variant="secondary" onClick={closeDialog}>
+              <Button variant="secondary" disabled={busy} onClick={closeDialog}>
                 Keep Pokémon
               </Button>
               <Button variant="danger" disabled={busy} onClick={redeem}>
-                Redeem in demo
+                {busy ? 'Selling…' : 'Sell for ' + sol(p.backing) + ' SOL'}
               </Button>
             </div>
           </div>
@@ -976,6 +920,9 @@ export function PokemonDetailPage({ id }: { id: string }) {
       )}
     </div>
   );
+}
+function PokeballMini() {
+  return <span className="pokeball-mark" />;
 }
 export function PokedexPage({ selectedId }: { selectedId?: number }) {
   const { state } = useApp(),
@@ -1087,185 +1034,19 @@ export function PokedexPage({ selectedId }: { selectedId?: number }) {
             </div>
             <p>
               {found.has(selected)
-                ? 'Discovered. This entry remains even after you trade this Pokémon.'
-                : 'Undiscovered. Obtain this Pokémon from a reward or marketplace listing.'}
+                ? 'Discovered. This entry remains even after you sell this Pokémon.'
+                : 'Undiscovered. Hatch an egg or open a pack for a chance to meet this Pokémon.'}
             </p>
             <Button
               onClick={() => {
                 const owned = state.pokemon.find((p) => p.speciesId === selected);
-                navigate(owned ? '/pokemon/' + owned.id : '/marketplace');
+                navigate(owned ? '/pokemon/' + owned.id : '/rewards');
                 setSelected(null);
               }}
             >
               {state.pokemon.some((p) => p.speciesId === selected)
                 ? 'View in my inventory'
-                : 'Explore the marketplace'}
-              <Icon name="ArrowRight" />
-            </Button>
-          </div>
-        </Modal>
-      )}
-    </>
-  );
-}
-function PokeballMini() {
-  return <span className="pokeball-mark" />;
-}
-export function MarketplacePage() {
-  const { state, act, busy, toast } = useApp(),
-    [type, setType] = useState('All'),
-    [sort, setSort] = useState('Featured'),
-    [selected, setSelected] = useState<{ speciesId: number; ask: number; backing: number } | null>(
-      null,
-    ),
-    [tab, setTab] = useState('Browse');
-  const listings = [
-    { speciesId: 6, ask: 0.48, backing: 0.3 },
-    { speciesId: 94, ask: 0.36, backing: 0.22 },
-    { speciesId: 131, ask: 0.34, backing: 0.2 },
-    { speciesId: 143, ask: 0.32, backing: 0.18 },
-    { speciesId: 149, ask: 0.44, backing: 0.28 },
-    { speciesId: 25, ask: 0.18, backing: 0.1 },
-    { speciesId: 133, ask: 0.16, backing: 0.09 },
-    { speciesId: 150, ask: 0.95, backing: 0.6 },
-  ];
-  let results = listings.filter(
-    (l) => type === 'All' || pokemonById(l.speciesId).types.includes(type),
-  );
-  results = [...results].sort((a, b) =>
-    sort === 'Price: low to high'
-      ? a.ask - b.ask
-      : sort === 'Price: high to low'
-        ? b.ask - a.ask
-        : 0,
-  );
-  const own = state.pokemon.filter((p) => p.listed);
-  return (
-    <>
-      <PageHeading title="Marketplace">
-        <a href="#/pokemon" className="button primary">
-          <Icon name="Plus" />
-          List a Pokémon
-        </a>
-      </PageHeading>
-      <div className="tab-bar marketplace-tabs">
-        {['Browse', 'My listings'].map((t) => (
-          <button className={tab === t ? 'active' : ''} onClick={() => setTab(t)} key={t}>
-            {t}
-            {t === 'My listings' && <span>{own.length}</span>}
-          </button>
-        ))}
-      </div>
-      {tab === 'Browse' ? (
-        <>
-          <div className="collection-toolbar">
-            <div className="filter-pills">
-              {['All', 'Fire', 'Water', 'Grass', 'Electric', 'Ghost', 'Psychic'].map((t) => (
-                <button className={type === t ? 'active' : ''} onClick={() => setType(t)} key={t}>
-                  {t}
-                </button>
-              ))}
-            </div>
-            <select
-              value={sort}
-              className="sort-select"
-              aria-label="Sort listings"
-              onChange={(e) => setSort(e.target.value)}
-            >
-              {['Featured', 'Price: low to high', 'Price: high to low'].map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </select>
-          </div>
-          <div className="pokemon-grid market-grid">
-            {results.map((l) => {
-              const p = pokemonById(l.speciesId);
-              return (
-                <button
-                  className="pokemon-card market-card"
-                  onClick={() => setSelected(l)}
-                  key={p.id}
-                  style={{ '--pokemon-color': TYPE_COLORS[p.types[0]] } as CSSProperties}
-                >
-                  <div className="pokemon-card-image">
-                    <span className="card-status">Kanto collection</span>
-                    <PokemonArt id={p.id} />
-                    <span className="level-tag">Lv. {18 + (p.id % 24)}</span>
-                  </div>
-                  <div className="pokemon-card-body">
-                    <h3>{p.name}</h3>
-                    <div className="type-row">
-                      {p.types.map((t) => (
-                        <TypeChip key={t} type={t} />
-                      ))}
-                    </div>
-                    <div className="market-price">
-                      <span>Asking price</span>
-                      <SolValue amount={l.ask} />
-                    </div>
-                    <div className="market-backing">
-                      Redeem: {sol(l.backing)} SOL
-                      <Icon name="ArrowUpRight" size={15} />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      ) : own.length ? (
-        <div className="pokemon-grid">
-          {own.map((p) => (
-            <div key={p.id}>
-              <PokemonCard pokemon={p} />
-              <Button
-                className="full-width"
-                variant="secondary"
-                disabled={busy}
-                onClick={async () => {
-                  if (await act({ type: 'pokemon.unlist', id: p.id })) toast('Listing removed.');
-                }}
-              >
-                Unlist · {sol(p.listed!)} SOL
-              </Button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          title="No Pokémon listed"
-          description="Choose a tradeable Pokémon in your inventory to create a listing."
-        >
-          <a className="button primary" href="#/pokemon">
-            My Pokémon
-          </a>
-        </EmptyState>
-      )}
-      {selected && (
-        <Modal title={pokemonById(selected.speciesId).name} onClose={() => setSelected(null)}>
-          <div className="modal-body market-purchase">
-            <PokemonArt id={selected.speciesId} />
-            <div className="row-between">
-              <span>Asking price</span>
-              <SolValue amount={selected.ask} />
-            </div>
-            <div className="row-between">
-              <span>Redeem for</span>
-              <strong>{sol(selected.backing)} SOL</strong>
-            </div>
-            <div className="notice">
-              <Icon name="Info" />
-              This is a sample marketplace listing. Purchasing and ownership transfer will be
-              connected to the backend.
-            </div>
-            <Button
-              className="full-width"
-              onClick={() => {
-                setSelected(null);
-                toast('Purchase preview complete. No funds were used.');
-              }}
-            >
-              Preview purchase
+                : 'View rewards'}
               <Icon name="ArrowRight" />
             </Button>
           </div>

@@ -26,10 +26,7 @@ function validSocial(value: string) {
 
 export function CreateCoinPage() {
   const { state, act, busy, toast } = useApp();
-  const eligible = useMemo(
-    () => state.pokemon.filter((p) => !p.listed && !p.locked),
-    [state.pokemon],
-  );
+  const eligible = useMemo(() => state.pokemon.filter((p) => !p.locked), [state.pokemon]);
   const [step, setStep] = useState(0);
   const [linksOpen, setLinksOpen] = useState(false);
   const [launchKind, setLaunchKind] = useState<'pokemon' | 'trainer'>(

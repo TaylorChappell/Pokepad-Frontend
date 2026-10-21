@@ -25,6 +25,8 @@ import './collection-v8.css';
 import './shared-v8.css';
 import './battle-screen-v8.css';
 import './brand-v10.css';
+import './kanto-v13.css';
+import './coin-page-v13.css';
 import './battle-geometry-v10.css';
 import './battle-effects-v10.css';
 import './battle-body-v11.css';

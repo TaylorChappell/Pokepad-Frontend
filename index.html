@@ -6,10 +6,10 @@
     <meta name="theme-color" content="#f6f4ee" />
     <meta
       name="description"
-      content="Poképad: discover community coins, collect eggs and packs, train Pokémon, and support your gym."
+      content="Kanto: discover community coins, collect eggs and packs, train Pokémon, and support your gym."
     />
-    <link rel="icon" type="image/png" href="./assets/brand/pokepad-emblem.png" />
-    <title>POKéPAD · Pokémon Launchpad</title>
+    <link rel="icon" type="image/png" href="./assets/brand/kanto-emblem.png" />
+    <title>Kanto · Pokémon Launchpad</title>
     <style>
       body {
         margin: 0;
@@ -85,7 +85,7 @@
       class="boot-screen"
       role="status"
       aria-live="polite"
-      aria-label="Loading Poképad"
+      aria-label="Loading Kanto"
     >
       <div class="boot-content">
         <div class="boot-stage" aria-hidden="true">
@@ -116,17 +116,17 @@
         <h1 class="boot-brand">
           <img
             class="pokemon-wordmark generated-wordmark brand-lockup"
-            src="./assets/brand/pokepad-lockup.png"
-            alt="Poképad"
+            src="./assets/brand/kanto-lockup.png"
+            alt="Kanto"
             width="2172"
             height="724"
           />
         </h1>
         <p id="boot-status" class="boot-status">Loading your trainer…</p>
         <button class="boot-reload" type="button" onclick="window.location.reload()">
-          Reload Poképad
+          Reload Kanto
         </button>
-        <noscript><p>Enable JavaScript to open Poképad.</p></noscript>
+        <noscript><p>Enable JavaScript to open Kanto.</p></noscript>
       </div>
     </div>
     <div id="root" inert aria-hidden="true"></div>
@@ -138,9 +138,9 @@
           if (!screen.isConnected || screen.dataset.dismissing) return;
           screen.classList.add('is-stalled');
           document.getElementById('boot-status').textContent = failed
-            ? 'Poképad could not load. Please reload to try again.'
+            ? 'Kanto could not load. Please reload to try again.'
             : 'Still loading. Check your connection or try reloading.';
-          screen.setAttribute('aria-label', 'Poképad loading help');
+          screen.setAttribute('aria-label', 'Kanto loading help');
         };
         screen.dataset.retryTimer = String(setTimeout(() => showRetry(false), 12000));
         window.__pokepadBootError = () => showRetry(true);

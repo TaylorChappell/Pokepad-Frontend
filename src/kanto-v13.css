@@ -1,0 +1,68 @@
+/* A single coin identity follows its community from the market to the gym. */
+.gym-coin-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.gym-coin-badge .coin-avatar {
+  border: 3px solid #fffdf7;
+  box-shadow:
+    0 0 0 1px #17314c22,
+    0 5px 12px #17314c12;
+  border-radius: 27%;
+  overflow: hidden;
+}
+.gym-coin-badge .coin-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.badge-shelf > a,
+.trainer-public-badges > div > a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 160ms ease;
+}
+.badge-shelf > a:hover,
+.trainer-public-badges > div > a:hover {
+  transform: translateY(-2px);
+}
+.league-badge-display .gym-coin-badge .coin-avatar {
+  border-width: 5px;
+  box-shadow:
+    0 0 0 1px #17314c22,
+    0 12px 24px #17314c1a;
+}
+.brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+  width: 210px;
+  height: 70px;
+  image-rendering: auto;
+}
+@media (max-width: 760px) {
+  .brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+    width: 164px;
+    height: 55px;
+  }
+}
+@media (max-width: 420px) {
+  .brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+    width: 142px;
+    height: 48px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge-shelf > a,
+  .trainer-public-badges > div > a {
+    transition: none;
+  }
+}
+[data-motion='reduced'] .badge-shelf > a,
+[data-motion='reduced'] .trainer-public-badges > div > a {
+  transition: none;
+}

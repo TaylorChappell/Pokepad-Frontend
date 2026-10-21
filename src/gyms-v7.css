@@ -709,7 +709,7 @@
   line-height: 1.8;
   margin: 0 0 20px;
 }
-.league-support-modal > .gym-badge {
+.league-support-modal > .gym-coin-badge {
   margin: 0 auto 15px;
 }
 .league-support-modal p {
@@ -891,7 +891,7 @@
     gap: 8px;
     margin: 14px 0;
   }
-  .league-champion-name > .gym-badge {
+  .league-champion-name > .gym-coin-badge {
     display: none;
   }
   .league-champion-name h2 {
@@ -964,7 +964,7 @@
   .league-row-community {
     gap: 8px;
   }
-  .league-row-community > .gym-badge {
+  .league-row-community > .gym-coin-badge {
     display: none;
   }
   .league-row-community strong {
@@ -1001,7 +1001,7 @@
   .league-team-identity {
     gap: 9px;
   }
-  .league-team-identity > .gym-badge {
+  .league-team-identity > .gym-coin-badge {
     display: none;
   }
   .league-team-identity h1 {

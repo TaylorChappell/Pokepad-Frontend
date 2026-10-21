@@ -20,6 +20,7 @@ import {
 } from '../components/UI';
 import type { AppSnapshot, Reward } from '../types';
 import { duration, navigate, relativeTime } from '../utils';
+import { useRevealAudio } from '../audio/sound';
 
 const legendaryIds = [144, 145, 146, 150, 151];
 function SourceCoin({ id }: { id: string }) {
@@ -46,7 +47,15 @@ function progressOf(reward: Reward, now: number) {
     : 100;
 }
 
-export function RewardOpening({ reward, onClose }: { reward: Reward; onClose: () => void }) {
+export function RewardOpening({
+  reward,
+  onClose,
+  audio,
+}: {
+  reward: Reward;
+  onClose: () => void;
+  audio: ReturnType<typeof useRevealAudio>;
+}) {
   const { state, act, busy } = useApp();
   const [phase, setPhase] = useState<'opening' | 'revealed'>('opening');
   const [result, setResult] = useState<AppSnapshot | null>(null);
@@ -62,14 +71,19 @@ export function RewardOpening({ reward, onClose }: { reward: Reward; onClose: ()
         return;
       }
       setResult(next);
+      audio.play(reward.kind === 'egg' ? 'hatch' : 'pack', 'opening');
       timer.current = setTimeout(
-        () => setPhase('revealed'),
+        () => {
+          setPhase('revealed');
+          audio.play(reward.kind === 'egg' ? 'hatch' : 'pack', 'revealed');
+        },
         next.profile.reducedMotion ? 80 : 2400,
       );
     });
     return () => {
       cancelled = true;
       clearTimeout(timer.current);
+      audio.stop();
     };
   }, []);
   const resolvedReward = result?.rewards.find((r) => r.id === reward.id);
@@ -193,6 +207,7 @@ export function RewardOpening({ reward, onClose }: { reward: Reward; onClose: ()
 
 export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
   const { state, now, mode } = useApp();
+  const revealAudio = useRevealAudio();
   const [tab, setTab] = useState(initialTab),
     [detail, setDetail] = useState<Reward | null>(null),
     [opening, setOpening] = useState<Reward | null>(null),
@@ -229,6 +244,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
       showDetail(r);
       return;
     }
+    revealAudio.unlock();
     setDetail(null);
     setOpening(r);
   };
@@ -545,7 +561,16 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
           </div>
         </Modal>
       )}
-      {opening && <RewardOpening reward={opening} onClose={() => setOpening(null)} />}
+      {opening && (
+        <RewardOpening
+          reward={opening}
+          audio={revealAudio}
+          onClose={() => {
+            revealAudio.stop();
+            setOpening(null);
+          }}
+        />
+      )}
     </div>
   );
 }

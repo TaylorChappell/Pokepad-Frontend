@@ -287,7 +287,7 @@ export function BattlesPage() {
     },
     [],
   );
-  const available = state.pokemon.filter((pokemon) => !pokemon.listed && !pokemon.locked);
+  const available = state.pokemon.filter((pokemon) => !pokemon.locked);
   const chosen = useMemo(
     () =>
       selectedIds

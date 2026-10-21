@@ -1,0 +1,628 @@
+{
+  "sourceRepository": "https://github.com/audinowho/DumpAsset",
+  "revision": "d74394dc662612d6655a4f820553adca1bbcde08",
+  "game": "Pok\u00e9mon Mystery Dungeon resources distributed with PMDO",
+  "encoding": "Original Ogg samples transcoded with ffmpeg to 44.1kHz MP3, quality 4. No new synthesized audio. Playback uses bounded original segments, fades and layered timing.",
+  "assets": {
+    "DUN_Absorb": {
+      "source": "Content/Sound/Battle/DUN_Absorb.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Absorb.ogg",
+      "sourceGitBlob": "986a1fb180f29bb3b40d8cdf08c68b968bb62209",
+      "sourceSha256": "e0b7647bdc52e2c55968a20e9034f9c71dbb9985d175aa5d4a1299714f988731",
+      "file": "effects/DUN_Absorb.mp3",
+      "sha256": "a888332f0933f65ba8106aaed61b22635ddcea247e2af4e14ba68fe7ccde299f",
+      "durationSeconds": 0.548571,
+      "bytes": 9274
+    },
+    "DUN_Bite": {
+      "source": "Content/Sound/Battle/DUN_Bite.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Bite.ogg",
+      "sourceGitBlob": "01e4eee5eff79d7ef693f1508e415304d06825ac",
+      "sourceSha256": "b1f16169755745fa2380e64b8d11c4446eb182d2875344c07c67c1d594b3ba51",
+      "file": "effects/DUN_Bite.mp3",
+      "sha256": "6b4683147a9432f4304c1abacc4f6832162b733ccba5ce1364e6f0f8b96da58d",
+      "durationSeconds": 0.182857,
+      "bytes": 3747
+    },
+    "DUN_Close_Combat": {
+      "source": "Content/Sound/Battle/DUN_Close_Combat.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Close_Combat.ogg",
+      "sourceGitBlob": "5d1cceaf8a4ebee337a2cffeea0269f966e623bd",
+      "sourceSha256": "a8a66991f630f39f8d2521d82013b2fee9827f3b41688c790fd5842c036fcd1f",
+      "file": "effects/DUN_Close_Combat.mp3",
+      "sha256": "16dbcdc1d164417e805567205a456c7ec440a448465fb130db30ca05d7f2835d",
+      "durationSeconds": 0.470204,
+      "bytes": 7870
+    },
+    "DUN_Confusion": {
+      "source": "Content/Sound/Battle/DUN_Confusion.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Confusion.ogg",
+      "sourceGitBlob": "9cde06a36452ef30245ff696f290c9a4309b1df8",
+      "sourceSha256": "5901dcf5a99a7fe2404cd432573b1854857b223afd63739c674aa6029e42e1c1",
+      "file": "effects/DUN_Confusion.mp3",
+      "sha256": "54747fa12e59fb1e62d2d521f11efdacfe191b24b93792e9183ad2e5b8affe73",
+      "durationSeconds": 0.679184,
+      "bytes": 17110
+    },
+    "DUN_Curse": {
+      "source": "Content/Sound/Battle/DUN_Curse.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Curse.ogg",
+      "sourceGitBlob": "d40c5f979bb65263e3d3694928ee4e175406e3e2",
+      "sourceSha256": "2e61f9f00686297edc93a56f461a7f6c49fed713203c306be110f9de6d6e32ec",
+      "file": "effects/DUN_Curse.mp3",
+      "sha256": "98ead119275f2c2006e1c18104227125259adb790bff296cc0d2c7341dbbbb59",
+      "durationSeconds": 0.966531,
+      "bytes": 16208
+    },
+    "DUN_Deep_Fall": {
+      "source": "Content/Sound/Battle/DUN_Deep_Fall.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Deep_Fall.ogg",
+      "sourceGitBlob": "82917b4fbb824522aa7de84d92beaa0fa4c989e6",
+      "sourceSha256": "f22624e6e6f46b8930c0f06120434a60a63f300b71de17dc6b82302f6a20f7fa",
+      "file": "effects/DUN_Deep_Fall.mp3",
+      "sha256": "25f934f8a8d88dddff96805dfdf3b825ab51d9db39e32df291ef296559c4fc9b",
+      "durationSeconds": 1.07102,
+      "bytes": 18819
+    },
+    "DUN_Double_Team": {
+      "source": "Content/Sound/Battle/DUN_Double_Team.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Double_Team.ogg",
+      "sourceGitBlob": "7ac3557eb35c390f9e49e6bbd853b3a8e446c4ab",
+      "sourceSha256": "d26e002ca3a430e7c70adcc4369d8bd9cfa4476081e0caf3802fe146ab6dca00",
+      "file": "effects/DUN_Double_Team.mp3",
+      "sha256": "de7651afb53a3f787940bf914f3e828b6c167592b242ead4bbb803159a320f5b",
+      "durationSeconds": 0.783673,
+      "bytes": 13001
+    },
+    "DUN_Ember": {
+      "source": "Content/Sound/Battle/DUN_Ember.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Ember.ogg",
+      "sourceGitBlob": "59871e5e702b470ae4125117ace11ce4d8d408ca",
+      "sourceSha256": "1699701df5b9a5efc28655f26bc6e9a20bc92233f02096fdc7e71b92d0c1e832",
+      "file": "effects/DUN_Ember.mp3",
+      "sha256": "00c6fdeeec0f29cfe02a12d0debaa15d7d6c99736a06216a9cf1d7f41af5dc4a",
+      "durationSeconds": 0.339592,
+      "bytes": 5885
+    },
+    "DUN_Fire_Blast_2": {
+      "source": "Content/Sound/Battle/DUN_Fire_Blast_2.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Fire_Blast_2.ogg",
+      "sourceGitBlob": "1d37c6e4c3ccae32b42ed2c360134575ef3f61a9",
+      "sourceSha256": "0a838c717bc146d84bc6e51b29ef8aa4f022f1505337f66c8fa33548dbf83d61",
+      "file": "effects/DUN_Fire_Blast_2.mp3",
+      "sha256": "da9bd4355bd0899dbee706cc614a6e5c7f140901423835766e5a3f534ffb84f6",
+      "durationSeconds": 0.862041,
+      "bytes": 13972
+    },
+    "DUN_Fire_Spin": {
+      "source": "Content/Sound/Battle/DUN_Fire_Spin.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Fire_Spin.ogg",
+      "sourceGitBlob": "2d704b03403313314b1d44dbb4b9cfc8e2eae4d9",
+      "sourceSha256": "7d4174869de7603f788f3eab7570f52716e475900bf64ea17d9f644d39faac77",
+      "file": "effects/DUN_Fire_Spin.mp3",
+      "sha256": "2fc85d4cf72df28bfe4921b5a4354945540bd9c08817bb4c008d0270c58602e3",
+      "durationSeconds": 0.914286,
+      "bytes": 13865
+    },
+    "DUN_Flamethrower_2": {
+      "source": "Content/Sound/Battle/DUN_Flamethrower_2.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Flamethrower_2.ogg",
+      "sourceGitBlob": "2b2912018584f4084801466a7c34ae19ffb925ea",
+      "sourceSha256": "b04de41d5affbd2c54ab0a5d97918bd3fd0f71d1de2cd726dede0a91677f3058",
+      "file": "effects/DUN_Flamethrower_2.mp3",
+      "sha256": "f9c0fb978d7f9730628aa03ae36bab79438cc333e051b0ff98fedd63ee28e618",
+      "durationSeconds": 0.705306,
+      "bytes": 11310
+    },
+    "DUN_Fly": {
+      "source": "Content/Sound/Battle/DUN_Fly.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Fly.ogg",
+      "sourceGitBlob": "55aa01d16140ea86cc6f7f8ad091de184747ff07",
+      "sourceSha256": "6de87e885a75761e3dad86459815ebba0fb3bf63d32608d591eb56f48d8ec54a",
+      "file": "effects/DUN_Fly.mp3",
+      "sha256": "f0875325f5e1bd78dd8c56d019e971e8f370edb77bd5d27411ea5b670f1b938b",
+      "durationSeconds": 0.600816,
+      "bytes": 9691
+    },
+    "DUN_Growl": {
+      "source": "Content/Sound/Battle/DUN_Growl.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Growl.ogg",
+      "sourceGitBlob": "ad1f8c77583d46b879573cd9f9fe0a3f42b51943",
+      "sourceSha256": "bfe774894005de400108044ed56bd73261dd93900bbe80b867b566904cf97791",
+      "file": "effects/DUN_Growl.mp3",
+      "sha256": "cdb10be90999ad66a08a48ed9bf89c9ea9b50218c29d28cb5b325bb7888f9efc",
+      "durationSeconds": 0.287347,
+      "bytes": 7246
+    },
+    "DUN_HP_Drain_2": {
+      "source": "Content/Sound/Battle/DUN_HP_Drain_2.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_HP_Drain_2.ogg",
+      "sourceGitBlob": "e37185390108b7fca64151ba0447a7e131aea601",
+      "sourceSha256": "462945679662ab56e6968bdeb3d2192c58ba626c6cc1a2c015c65190296ba4b1",
+      "file": "effects/DUN_HP_Drain_2.mp3",
+      "sha256": "bd995c34b8763746894a163b525cbd08100426eb81552bcdbfea4b6849473a3f",
+      "durationSeconds": 0.600816,
+      "bytes": 10421
+    },
+    "DUN_Harden": {
+      "source": "Content/Sound/Battle/DUN_Harden.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Harden.ogg",
+      "sourceGitBlob": "667119d831da5654ae688bf9cb3c5d5210866b46",
+      "sourceSha256": "b38a5b31ac20809b87bb5f5e4a10da751a31baea7fb5c7ad329ea97245709d17",
+      "file": "effects/DUN_Harden.mp3",
+      "sha256": "12be095ab6d6bc8295688af254d8150bb24775f2aa0c25c33cb96f64739a3752",
+      "durationSeconds": 0.235102,
+      "bytes": 4425
+    },
+    "DUN_Heal": {
+      "source": "Content/Sound/Battle/DUN_Heal.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Heal.ogg",
+      "sourceGitBlob": "f53a4e42b42f004c9ba2a06450d382590e866370",
+      "sourceSha256": "8491cff70358e1fb066a1d35b7d5b2f356552d2044f2873087c09a5fccf28741",
+      "file": "effects/DUN_Heal.mp3",
+      "sha256": "2eb1413dfd4453d2fc2e59109313acd1212f70a1eeaa6d57577ddcdee8f9ec17",
+      "durationSeconds": 1.044898,
+      "bytes": 17721
+    },
+    "DUN_Hydro_Pump": {
+      "source": "Content/Sound/Battle/DUN_Hydro_Pump.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Hydro_Pump.ogg",
+      "sourceGitBlob": "eb4916d74d12b3252cc8e2e747fdfb35ca4d8bce",
+      "sourceSha256": "e58a6c511424e61d2c0b57838dea6a92dcc86464266c6b7e4dc2b99c664cb162",
+      "file": "effects/DUN_Hydro_Pump.mp3",
+      "sha256": "d8929ff7e0092968309f863ac8cc7e2c713c30aed726221296611f2733c803e7",
+      "durationSeconds": 0.470204,
+      "bytes": 7710
+    },
+    "DUN_Hyper_Beam": {
+      "source": "Content/Sound/Battle/DUN_Hyper_Beam.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Hyper_Beam.ogg",
+      "sourceGitBlob": "9a2ea57e86e99b7fb9c0865151c2ada905c8691a",
+      "sourceSha256": "9bfbbf1e28130d6d2d140883f2ee56118918c7e6d4af3a08e628c75c0eea2cc0",
+      "file": "effects/DUN_Hyper_Beam.mp3",
+      "sha256": "07e05ef714fc1e21052afca1860f76a7711dfc41ad5e40f9bf4697e91800c279",
+      "durationSeconds": 0.992653,
+      "bytes": 15950
+    },
+    "DUN_Ice_Beam": {
+      "source": "Content/Sound/Battle/DUN_Ice_Beam.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Ice_Beam.ogg",
+      "sourceGitBlob": "c098b66b5b5a0c50821573796453ce045173fa52",
+      "sourceSha256": "29352603c7947dead3e595562b0363f0c2d893e1a1ca1d16132dd4d62848bf34",
+      "file": "effects/DUN_Ice_Beam.mp3",
+      "sha256": "afb6981389e2af3e2f8ee8de6f51bc801288273b73b7fd1e585b0575a71a7394",
+      "durationSeconds": 0.757551,
+      "bytes": 11777
+    },
+    "DUN_Leech_Life": {
+      "source": "Content/Sound/Battle/DUN_Leech_Life.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Leech_Life.ogg",
+      "sourceGitBlob": "ddd39825096322b2b56c74dccd467c9982f5e13f",
+      "sourceSha256": "7cfa8dd533e1752256a0985d9906469469e16f9cd27dafce5454e6eee6ec993a",
+      "file": "effects/DUN_Leech_Life.mp3",
+      "sha256": "03e8af61c9af6b0011f8784eda726dd9a3dcb94d11445219b8d97764e8d98bed",
+      "durationSeconds": 0.705306,
+      "bytes": 11569
+    },
+    "DUN_Move_Start": {
+      "source": "Content/Sound/Battle/DUN_Move_Start.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Move_Start.ogg",
+      "sourceGitBlob": "0f2e8697c341f2fc4b8a55afb34ccb2a419bff18",
+      "sourceSha256": "4c8f0e313de10806732c6d59dc86f68754097515b2874ca1fdd67c24df992373",
+      "file": "effects/DUN_Move_Start.mp3",
+      "sha256": "d5ba860c502ab777dff63ea4abef782a7f5051813b55c0a2100460d8d4bd1a22",
+      "durationSeconds": 0.313469,
+      "bytes": 5731
+    },
+    "DUN_Night_Shade_3": {
+      "source": "Content/Sound/Battle/DUN_Night_Shade_3.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Night_Shade_3.ogg",
+      "sourceGitBlob": "d298bc6231c33607b7b92120d2e72a1742c404ad",
+      "sourceSha256": "6cd3fa5c7e53ed97c9e138fa63330aa2b96752a3893e75c735cd7478feeb6d79",
+      "file": "effects/DUN_Night_Shade_3.mp3",
+      "sha256": "b9228cdb16b8cfab9d423aa96289123aacdefe1cc7bf975cbd9134e56293b4ef",
+      "durationSeconds": 0.940408,
+      "bytes": 15378
+    },
+    "DUN_Protect": {
+      "source": "Content/Sound/Battle/DUN_Protect.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Protect.ogg",
+      "sourceGitBlob": "55b511656942496af0537bb24c90a0e4ef7dea4f",
+      "sourceSha256": "abf89391cb8c81817e73106d6fc9e55bc7ad32647101c3222049dbf52c2a9f89",
+      "file": "effects/DUN_Protect.mp3",
+      "sha256": "31847aa5af11cade690128ddd9cd753f5b777e6e4a1816f5bd08c6ea274be19b",
+      "durationSeconds": 0.783673,
+      "bytes": 12820
+    },
+    "DUN_Psybeam": {
+      "source": "Content/Sound/Battle/DUN_Psybeam.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Psybeam.ogg",
+      "sourceGitBlob": "6c990ae9020193c516d9df83d4421cc136e0001f",
+      "sourceSha256": "d4f4de21137a31f6736f0aa187b0c52fbc68da2e4cef13b397f2079e442fcc58",
+      "file": "effects/DUN_Psybeam.mp3",
+      "sha256": "3307277cd78df410f5710150f9c13caf75e599b0251bf72d1cd6cb24bded907a",
+      "durationSeconds": 0.731429,
+      "bytes": 12299
+    },
+    "DUN_Punch": {
+      "source": "Content/Sound/Battle/DUN_Punch.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Punch.ogg",
+      "sourceGitBlob": "c338e234dd87485a9af5c87031d9733ebaa2063f",
+      "sourceSha256": "3db3009dc919cd67b2c79d6b629863a715ffdc23ebb84f0dcc59f672ca8015f9",
+      "file": "effects/DUN_Punch.mp3",
+      "sha256": "f58807d82059609128c2d1049c62e1483aebc1b6854a4a34da39c20aa051e4b9",
+      "durationSeconds": 0.20898,
+      "bytes": 3643
+    },
+    "DUN_Razor_Leaf": {
+      "source": "Content/Sound/Battle/DUN_Razor_Leaf.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Razor_Leaf.ogg",
+      "sourceGitBlob": "cc704c5c21aef685b05b0b1bf1aae8f44428c5e0",
+      "sourceSha256": "dd3c5d265c0832fc736a6f7fe135cf4392e2637ae034405c00e363314737a5ae",
+      "file": "effects/DUN_Razor_Leaf.mp3",
+      "sha256": "f46d84de23319f27ed55187b5309daa46843900acaee38be6e6ca54d28f8309c",
+      "durationSeconds": 0.966531,
+      "bytes": 15662
+    },
+    "DUN_Rest": {
+      "source": "Content/Sound/Battle/DUN_Rest.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Rest.ogg",
+      "sourceGitBlob": "7607e9dda23c85cfef0535718b9b37a7388a97be",
+      "sourceSha256": "5a5a8e630d10975d54e6c9ce8dd0f75a9c6ec4028417056f023840eb8c7500c6",
+      "file": "effects/DUN_Rest.mp3",
+      "sha256": "0d2054a7731c9ad0da03f386a53e965f592bbdfa9561c493dd605969df8171ba",
+      "durationSeconds": 0.731429,
+      "bytes": 11936
+    },
+    "DUN_Rock_Slide": {
+      "source": "Content/Sound/Battle/DUN_Rock_Slide.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Rock_Slide.ogg",
+      "sourceGitBlob": "00d07f6a5ef62d311badfe9d267a2fecc2b05af3",
+      "sourceSha256": "9e2ae0a52caea391bc00dc6e23c088b6d8456f0c3eeff3eb89bef722503a58e9",
+      "file": "effects/DUN_Rock_Slide.mp3",
+      "sha256": "4482f91985432327eb1506de149cacbf79a20ccb763be5cb16b57ca5bbcd483f",
+      "durationSeconds": 1.201633,
+      "bytes": 20881
+    },
+    "DUN_Sacred_Fire": {
+      "source": "Content/Sound/Battle/DUN_Sacred_Fire.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Sacred_Fire.ogg",
+      "sourceGitBlob": "9e1e33a2cf326d6184de31e21d21b20f65f564b9",
+      "sourceSha256": "dd0b3981d8c01662889f5db381df587150fa1374d603a13bf503370dba97c4c9",
+      "file": "effects/DUN_Sacred_Fire.mp3",
+      "sha256": "e377c794f4ecc274391b8b838a896056ed2ea93119c3051762850e7d9f5d1d67",
+      "durationSeconds": 0.626939,
+      "bytes": 10265
+    },
+    "DUN_Scratch": {
+      "source": "Content/Sound/Battle/DUN_Scratch.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Scratch.ogg",
+      "sourceGitBlob": "bba12255bb9aa74c174bef7159123eb4408f9af8",
+      "sourceSha256": "c536dcbf9bdabe181e2edd353049426cd72ddab79c40c57234f91bdd9cec356e",
+      "file": "effects/DUN_Scratch.mp3",
+      "sha256": "58dc0850b12b7fec0fd0bd83e189e950abf8d703be5ef7de503d60c2048ab0cd",
+      "durationSeconds": 0.130612,
+      "bytes": 2914
+    },
+    "DUN_Send_Home": {
+      "source": "Content/Sound/Battle/DUN_Send_Home.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Send_Home.ogg",
+      "sourceGitBlob": "244113ca3b9bbdaeb473017ef4186668ef017d1a",
+      "sourceSha256": "0ca2b0e93976fe67850c1e733675aac5a5d43cc52a87bedf7b27e6c1488172c6",
+      "file": "effects/DUN_Send_Home.mp3",
+      "sha256": "2006e1b694e2b9a0e44ae308737c115497cdb6a858bf1a9b876ba6482fec41c8",
+      "durationSeconds": 0.522449,
+      "bytes": 10111
+    },
+    "DUN_Shock_Wave": {
+      "source": "Content/Sound/Battle/DUN_Shock_Wave.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Shock_Wave.ogg",
+      "sourceGitBlob": "8bd8fd71a09898739151222e5ce18fbcb6a7af57",
+      "sourceSha256": "05e02799923e99048c4d3c183cb509003fa3f63e81a7641407b67dc368bc224c",
+      "file": "effects/DUN_Shock_Wave.mp3",
+      "sha256": "13fea79077102158aaa1f12c653fbe6bdd5cce1f7da79b4f54384525c40eb399",
+      "durationSeconds": 0.966531,
+      "bytes": 15532
+    },
+    "DUN_Slash": {
+      "source": "Content/Sound/Battle/DUN_Slash.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Slash.ogg",
+      "sourceGitBlob": "f12e6e9c5bcbbad83e18570db5d82f74317e1996",
+      "sourceSha256": "886f73635a3ff704ec2cadda915a94dcb6fd05a17766ed0ae611d4a9bb15e66b",
+      "file": "effects/DUN_Slash.mp3",
+      "sha256": "f88f3167809d967d7026e02950c49611564d3964d8dbdf49ebd41943a40a6f23",
+      "durationSeconds": 0.182857,
+      "bytes": 4009
+    },
+    "DUN_String_Shot": {
+      "source": "Content/Sound/Battle/DUN_String_Shot.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_String_Shot.ogg",
+      "sourceGitBlob": "c3c6ac184a501c9c9e6712d622d7ca756f46551a",
+      "sourceSha256": "8ccf9ba2762c1517deb35e316903cb0b3a1d64d111a1e2621565447586422098",
+      "file": "effects/DUN_String_Shot.mp3",
+      "sha256": "9e792c15eeb9898760cc52ee9dc65ee9993671c750d205460eab5aaebdbc827d",
+      "durationSeconds": 0.365714,
+      "bytes": 6406
+    },
+    "DUN_Stun_Spore": {
+      "source": "Content/Sound/Battle/DUN_Stun_Spore.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Stun_Spore.ogg",
+      "sourceGitBlob": "f197cc49ff6a135fcd2be38ce610052fd9cab487",
+      "sourceSha256": "4d05422d8c1e643fdcf67d8a4634a2e99cd3a495ae2226fd5da50e25e0924565",
+      "file": "effects/DUN_Stun_Spore.mp3",
+      "sha256": "c8fac148b1a1b8805090afaae263c8da5e6a15a7febac8130a407bfa83e5d2c9",
+      "durationSeconds": 0.862041,
+      "bytes": 15901
+    },
+    "DUN_Summon_Trap": {
+      "source": "Content/Sound/Battle/DUN_Summon_Trap.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Summon_Trap.ogg",
+      "sourceGitBlob": "361a9c63ea0fc5e008a92ca092f81b7586762345",
+      "sourceSha256": "7cee74b25865d2330a933551f79ffcd02dc1fe495e047f1ccd28058359f6da75",
+      "file": "effects/DUN_Summon_Trap.mp3",
+      "sha256": "4636060c0cab09c8c89cfd22aab2ed33708780613e3ddba925333b212f44d3df",
+      "durationSeconds": 0.914286,
+      "bytes": 15898
+    },
+    "DUN_Surf": {
+      "source": "Content/Sound/Battle/DUN_Surf.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Surf.ogg",
+      "sourceGitBlob": "b44934277974180a9766da5ffaa4b24de86e4144",
+      "sourceSha256": "2b2b293b5891059b12e046987bfe3cad8cb104dfd8b13ce92b7ea7f7006cdf12",
+      "file": "effects/DUN_Surf.mp3",
+      "sha256": "4fd66626b4305464fe4e272e357f1ccd4c3541bfb26d05373ae50ec84d357ef3",
+      "durationSeconds": 1.123265,
+      "bytes": 16630
+    },
+    "DUN_Swift": {
+      "source": "Content/Sound/Battle/DUN_Swift.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Swift.ogg",
+      "sourceGitBlob": "a958a0b8f0ffb2cb507241509be7254df73f3bbc",
+      "sourceSha256": "a4cb6bcd9daf03ddf4ac4e81103d7a1a1d425451ebd6af6e9cd69d5a8778d7be",
+      "file": "effects/DUN_Swift.mp3",
+      "sha256": "7fa22e8ad85830d07b32bbc55cd2313a7242646d1b4175efbb2ef20b254a70ed",
+      "durationSeconds": 0.287347,
+      "bytes": 5051
+    },
+    "DUN_Swords_Dance_2": {
+      "source": "Content/Sound/Battle/DUN_Swords_Dance_2.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Swords_Dance_2.ogg",
+      "sourceGitBlob": "a66fc7af23a1d8c35e893979938cf5b278685e14",
+      "sourceSha256": "6c27b6286d99ceb0b6be60f34ae1fe0f8abb2591ccb2c10e942ae552d75c1952",
+      "file": "effects/DUN_Swords_Dance_2.mp3",
+      "sha256": "b046f244b398b3a71b8876efc8616530aac8a6c2a60ca50af39d4ee820acafdc",
+      "durationSeconds": 1.17551,
+      "bytes": 21427
+    },
+    "DUN_Tackle": {
+      "source": "Content/Sound/Battle/DUN_Tackle.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Tackle.ogg",
+      "sourceGitBlob": "d8c257b044420106a5fac52615c87e9cf3d14bef",
+      "sourceSha256": "0dad8a201bc6dd2eba8eecba7533eb1516fc38d60097d01e31afa5c3e4150d57",
+      "file": "effects/DUN_Tackle.mp3",
+      "sha256": "5e03c9e23caa8b1f9bda2f855a68c4995ff57472a167c01b6f5fdda444f182b1",
+      "durationSeconds": 0.287347,
+      "bytes": 6043
+    },
+    "DUN_Throw_Spike": {
+      "source": "Content/Sound/Battle/DUN_Throw_Spike.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Throw_Spike.ogg",
+      "sourceGitBlob": "9af8927210df2abdb7e3a37728edf7968f3cba40",
+      "sourceSha256": "d59b4436a75942d1a131960f064748cf6256417ac73566fd4d0b0c6c3648a78b",
+      "file": "effects/DUN_Throw_Spike.mp3",
+      "sha256": "87c24268b50ec91b5f44eba6d297ac5f8fd082d7935cb91fb29006ae432d49d0",
+      "durationSeconds": 0.182857,
+      "bytes": 3435
+    },
+    "DUN_Thunder_Shock": {
+      "source": "Content/Sound/Battle/DUN_Thunder_Shock.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Thunder_Shock.ogg",
+      "sourceGitBlob": "f4c5fe6636bd3f670e2271138b3b01cd7d0a679a",
+      "sourceSha256": "95c71e901c8385165d097c604faef7e7b880479d5967f17e31a25aed58957b2f",
+      "file": "effects/DUN_Thunder_Shock.mp3",
+      "sha256": "4eedaeabbcd825a2fcc80e68d2da2b3a36fd203cc3ffdf0cff163e04833f3067",
+      "durationSeconds": 0.653061,
+      "bytes": 10996
+    },
+    "DUN_Trapbust_Orb": {
+      "source": "Content/Sound/Battle/DUN_Trapbust_Orb.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Trapbust_Orb.ogg",
+      "sourceGitBlob": "4bc2f11febfaea155ffc381879a4a00688f0086a",
+      "sourceSha256": "7ca610f78f606417ec1ea07894c6a0b9dcd877238cddd12545d3be6bb32b6a6c",
+      "file": "effects/DUN_Trapbust_Orb.mp3",
+      "sha256": "160e64c794d5578d12c4e76eacf11409a84d48061735cf6ca33c1b49138722b0",
+      "durationSeconds": 0.417959,
+      "bytes": 7711
+    },
+    "DUN_Two-Edge": {
+      "source": "Content/Sound/Battle/DUN_Two-Edge.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Two-Edge.ogg",
+      "sourceGitBlob": "4e6b3d9a75b9694576a1dacd6e1749b64d70bc11",
+      "sourceSha256": "9efe366bf483f230888152a2900062efe77345db405187c3cfbd86d8263f0f4a",
+      "file": "effects/DUN_Two-Edge.mp3",
+      "sha256": "052fe3418751d72e1268a3f2488375379bcbb4dc6db8fbf61fcb5686c5b4fdd3",
+      "durationSeconds": 0.470204,
+      "bytes": 8545
+    },
+    "DUN_Vine_Whip": {
+      "source": "Content/Sound/Battle/DUN_Vine_Whip.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Vine_Whip.ogg",
+      "sourceGitBlob": "4842185fecbb3285aa3266d8ab32f23e296edcf4",
+      "sourceSha256": "d06869462a60a12deee334a6a1e0c6911c63fe375304b3ba7a4dfc10faee70fe",
+      "file": "effects/DUN_Vine_Whip.mp3",
+      "sha256": "9e04ccc4bf4d398b9280d1c76cd63d57855fc4290f1aece74c45763c1b4ad05d",
+      "durationSeconds": 0.313469,
+      "bytes": 5834
+    },
+    "DUN_Water_Gun_2": {
+      "source": "Content/Sound/Battle/DUN_Water_Gun_2.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Water_Gun_2.ogg",
+      "sourceGitBlob": "1659d5a8e6b77ee259e67129b771f322432fb9ec",
+      "sourceSha256": "6e98cc6fc24b3dd7fa6343f7dd069cbf9f7b295558ced249abd8e1126f8d1987",
+      "file": "effects/DUN_Water_Gun_2.mp3",
+      "sha256": "057bdc14b9f2d49854fa5c7883dbc9aa6af8610d1c84ee405356131170e24f5b",
+      "durationSeconds": 0.470204,
+      "bytes": 8102
+    },
+    "DUN_Wing_Attack_2": {
+      "source": "Content/Sound/Battle/DUN_Wing_Attack_2.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Wing_Attack_2.ogg",
+      "sourceGitBlob": "c5d22ad641f13c6771f2d820ed17a6ce72d5c24d",
+      "sourceSha256": "63fe0e9feb92d400322174857609d2898cacdeaab107b7c89c3ad94050bfd100",
+      "file": "effects/DUN_Wing_Attack_2.mp3",
+      "sha256": "adfbcc4ea71e6c9139638264979a13f11d1960787d16a474eb05078e41be58d3",
+      "durationSeconds": 0.600816,
+      "bytes": 10475
+    },
+    "DUN_Zap_Cannon": {
+      "source": "Content/Sound/Battle/DUN_Zap_Cannon.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/DUN_Zap_Cannon.ogg",
+      "sourceGitBlob": "f07cd2105efa8eaa2adb5c385b594cb970002d16",
+      "sourceSha256": "c867faf87c0790a6f08ebe07556ae8677023d670fa08ebe96751d231acba0b57",
+      "file": "effects/DUN_Zap_Cannon.mp3",
+      "sha256": "dffecf221246f57a9553fea21caf6679f92e9d16a0fc835a2e8dfa3d406e6fe8",
+      "durationSeconds": 0.809796,
+      "bytes": 13446
+    },
+    "EVT_CH02_Box_Open": {
+      "source": "Content/Sound/Battle/EVT_CH02_Box_Open.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/EVT_CH02_Box_Open.ogg",
+      "sourceGitBlob": "223559e5305f37476935be18d065c279d23d509c",
+      "sourceSha256": "3489a3d4de7aa00f73e9a88939370e4228c5d39ba65ab9fd1198cd3b96bbaa1d",
+      "file": "effects/EVT_CH02_Box_Open.mp3",
+      "sha256": "cd20c19826eabc80380a5cfe92d93b0fbf8deb5a5920afc9f337a46e7db40ab9",
+      "durationSeconds": 0.235102,
+      "bytes": 5419
+    },
+    "EVT_Egg": {
+      "source": "Content/Sound/Battle/EVT_Egg.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/EVT_Egg.ogg",
+      "sourceGitBlob": "7b168c8510bf382dbc94d10d44d6c87b30200ff7",
+      "sourceSha256": "b8c2602e566fe0bde4a2242f4b6867a31c9f5a9ba6f61b2a0c7da3b6727b85a1",
+      "file": "effects/EVT_Egg.mp3",
+      "sha256": "23b875ef5642ccf8dd46da02acf02b28ef2368a5271450d917ba69d857671fc9",
+      "durationSeconds": 8.333061,
+      "bytes": 116670
+    },
+    "EVT_Egg_Hatch": {
+      "source": "Content/Sound/Battle/EVT_Egg_Hatch.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/EVT_Egg_Hatch.ogg",
+      "sourceGitBlob": "bf1f4b1054f49ca165c70125914c0618fa0f2a66",
+      "sourceSha256": "bc654efa5200ed86c138ce54ea3e580f1d6bfddf57a0b3adb934c1ac92a96c54",
+      "file": "effects/EVT_Egg_Hatch.mp3",
+      "sha256": "0fe36e83aebbaf869cd007afab1e74278f4142376f75071dce37ad41082596d7",
+      "durationSeconds": 3.526531,
+      "bytes": 56564
+    },
+    "EVT_Egg_Single": {
+      "source": "Content/Sound/Battle/EVT_Egg_Single.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/EVT_Egg_Single.ogg",
+      "sourceGitBlob": "9eb7500f4be77d27fd14bddcbb18a77c4c437eb1",
+      "sourceSha256": "a85bc0ad928bac699291714f61bcbf9494fa7a2699f4641c7822b14fb1da23b0",
+      "file": "effects/EVT_Egg_Single.mp3",
+      "sha256": "4fe9dbbc0c2f760680cd0f2b6527ab961246eb5cdb33dbfac8a40c79cdfb9770",
+      "durationSeconds": 0.130612,
+      "bytes": 3802
+    },
+    "EVT_Evolution_Start": {
+      "source": "Content/Sound/Battle/EVT_Evolution_Start.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/EVT_Evolution_Start.ogg",
+      "sourceGitBlob": "b188348cd537060a475a6203e67cf0d22bfba1e5",
+      "sourceSha256": "f9b8c613fc0549bd55196ad1cfd1ce8fcca2885da2b110efc51e5ef2b722d254",
+      "file": "effects/EVT_Evolution_Start.mp3",
+      "sha256": "4a52c040ed15e43c0d6f86882c159887a388f252c6337035e338660da91bb0be",
+      "durationSeconds": 1.07102,
+      "bytes": 18088
+    },
+    "EVT_Tackle": {
+      "source": "Content/Sound/Battle/EVT_Tackle.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/EVT_Tackle.ogg",
+      "sourceGitBlob": "41744293df3efc7f26dd4065cbafdfc0faf65438",
+      "sourceSha256": "9db25b42d839f51d64723f512c3b1b2361e974e59944d754a355ab70632d6291",
+      "file": "effects/EVT_Tackle.mp3",
+      "sha256": "8232e267f189662ae37f8daa5283973edc01b2d81bbe4e09732a7bda64282f78",
+      "durationSeconds": 0.391837,
+      "bytes": 6930
+    },
+    "JoinTeam": {
+      "source": "Content/Sound/Fanfare/JoinTeam.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Fanfare/JoinTeam.ogg",
+      "sourceGitBlob": "b22e3f2aec132c3521fe622729438d19aba0de6c",
+      "sourceSha256": "cf2cad23a4551cb7e4bf73b76a17aa47d150a0eb660fb732eae7b3e5417f9607",
+      "file": "effects/JoinTeam.mp3",
+      "sha256": "237b1c742704e81ed878b4de43529d78204b6248dcea6a8caa95413cf372991c",
+      "durationSeconds": 1.567347,
+      "bytes": 25751
+    },
+    "LevelUp": {
+      "source": "Content/Sound/Fanfare/LevelUp.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Fanfare/LevelUp.ogg",
+      "sourceGitBlob": "7c3f0c036ebc6d3b13791a4c01e5367c7a1715e7",
+      "sourceSha256": "6872b82cf00a10e0b54a38bf9c50057dada80a551efadefed87faf4577197ac0",
+      "file": "effects/LevelUp.mp3",
+      "sha256": "182b309a1da94329587d86ee9674de0af813fe737a22a8d4d1d026e5d133645e",
+      "durationSeconds": 1.802449,
+      "bytes": 26376
+    },
+    "MissionClear": {
+      "source": "Content/Sound/Fanfare/MissionClear.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Fanfare/MissionClear.ogg",
+      "sourceGitBlob": "7036f5b8b6f52d9ab9fe7e9e03fd1863b2035272",
+      "sourceSha256": "b9fa9a3360e41565c0a6a703cae38f7233462ffea6088033cf660023fd222c61",
+      "file": "effects/MissionClear.mp3",
+      "sha256": "73728d3231cdc9bdc0d056dbdfffca7f8a20e91fa758e9eed5d74b7f48d0cd2e",
+      "durationSeconds": 1.959184,
+      "bytes": 28152
+    },
+    "MissionFail": {
+      "source": "Content/Sound/Fanfare/MissionFail.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Fanfare/MissionFail.ogg",
+      "sourceGitBlob": "4eb11d1cf229191872d796df87199040bf59c19c",
+      "sourceSha256": "63db2fa54a918ef7bf70239655d8dad346c6031cfea6cbb70596c7c6f1dd097f",
+      "file": "effects/MissionFail.mp3",
+      "sha256": "406eaea6cee855d49ec4fc35db7c4ecae8940db9cd26ba48905bf62428681c48",
+      "durationSeconds": 1.828571,
+      "bytes": 25183
+    },
+    "Select": {
+      "source": "Content/Sound/Menu/Select.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Menu/Select.ogg",
+      "sourceGitBlob": "f97a73396758f420a94d1b94a523296b8d183a3c",
+      "sourceSha256": "d4cbf338cc69c3e810f2d60f320ece70e2012339963dc0d0a2b081b8669d8116",
+      "file": "effects/Select.mp3",
+      "sha256": "8863f6ef375894265fcdf4bed6f456ede82cc5178c40be6bfbee57d1812ff81c",
+      "durationSeconds": 0.078367,
+      "bytes": 2549
+    },
+    "Treasure": {
+      "source": "Content/Sound/Fanfare/Treasure.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Fanfare/Treasure.ogg",
+      "sourceGitBlob": "8da70f9df9eb71ea0a75bd95ad4f2fe3f68dad3f",
+      "sourceSha256": "d2323e8d9fe0604ac9cf856029a386336000819d0c20664e27d766f16974fa7d",
+      "file": "effects/Treasure.mp3",
+      "sha256": "cfc0cab3167afa97500d8a917b4322eedf5132aaee34c13a1a5a5baec0d8bcba",
+      "durationSeconds": 1.697959,
+      "bytes": 17780
+    },
+    "_UNK_DUN_Rustle": {
+      "source": "Content/Sound/Battle/_UNK_DUN_Rustle.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/_UNK_DUN_Rustle.ogg",
+      "sourceGitBlob": "4cd919ea80c0c5c00b7a65cff19a5f275c60e328",
+      "sourceSha256": "a36393f5b1e368a70d6689f0e6cdc21ed433057882c382a4693d12ce6cce37d1",
+      "file": "effects/_UNK_DUN_Rustle.mp3",
+      "sha256": "fd3c73bfbd83ef29da41048669384ba37824463d5a96ffc87b4c9c04faffd46a",
+      "durationSeconds": 0.522449,
+      "bytes": 9118
+    },
+    "_UNK_DUN_Sneeze": {
+      "source": "Content/Sound/Battle/_UNK_DUN_Sneeze.ogg",
+      "sourceUrl": "https://raw.githubusercontent.com/audinowho/DumpAsset/d74394dc662612d6655a4f820553adca1bbcde08/Content/Sound/Battle/_UNK_DUN_Sneeze.ogg",
+      "sourceGitBlob": "cc5403a05531b13457f4c7cf414f3f149a717064",
+      "sourceSha256": "e3e291f744cc6d7b696d3196d7e50bf66c8dae93ffec5a7d941d73dbc75d5d41",
+      "file": "effects/_UNK_DUN_Sneeze.mp3",
+      "sha256": "21ad12b4201d0b76455ce3a846dff9f88574b72cf9579c491da1d021f9b79e22",
+      "durationSeconds": 0.313469,
+      "bytes": 5598
+    }
+  }
+}

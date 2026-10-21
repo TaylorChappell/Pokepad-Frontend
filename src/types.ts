@@ -16,6 +16,9 @@ export interface Coin {
   pokemonShiny?: boolean;
   launchKind?: 'pokemon' | 'trainer';
   launchPokemonId?: string;
+  /** Launching wallet and optional public trainer name, supplied by the backend. */
+  creatorWallet?: string;
+  creatorName?: string;
   trainer?: Pick<Profile, 'character' | 'accessoryColor'>;
   image?: string;
   socials?: CoinSocials;
@@ -65,6 +68,7 @@ export interface OwnedPokemon {
   starter?: boolean;
   moves: string[];
   acquiredAt: number;
+  /** Legacy save input only; migration removes old marketplace listings. */
   listed?: number;
   locked?: boolean;
 }
@@ -119,6 +123,7 @@ export interface Activity {
   kind: string;
   createdAt: number;
   pokemonId?: number;
+  shiny?: boolean;
   href: string;
 }
 export interface Gym {
@@ -164,8 +169,6 @@ export type Action =
   | { type: 'pokemon.evolve'; id: string }
   | { type: 'pokemon.learn'; id: string; offerId: string; replaceIndex?: number }
   | { type: 'pokemon.declineMove'; id: string; offerId: string }
-  | { type: 'pokemon.list'; id: string; amount: number }
-  | { type: 'pokemon.unlist'; id: string }
   | { type: 'pokemon.redeem'; id: string }
   | { type: 'gym.support'; id: string }
   | { type: 'walk.progress'; km: number }

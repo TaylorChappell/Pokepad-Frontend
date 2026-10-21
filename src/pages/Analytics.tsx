@@ -1,23 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../state/AppContext';
-import { Avatar, CoinAvatar, Icon, PokemonArt, Pokeball } from '../components/UI';
+import { Avatar, Icon, PokemonArt, Pokeball } from '../components/UI';
 import { profileName } from '../state/model';
-import { compact, relativeTime, sol } from '../utils';
-import type { Activity, AppSnapshot, Profile } from '../types';
+import { asset, compact, relativeTime, sol } from '../utils';
+import {
+  loadPlatformAnalytics,
+  mergeAnalyticsEvents,
+  type AnalyticsEvent,
+  type AnalyticsEventKind,
+  type PlatformAnalytics,
+} from '../services/analytics';
+import type { Activity, AppSnapshot } from '../types';
+export type { AnalyticsEvent } from '../services/analytics';
 
-type EventKind = 'egg' | 'pack' | 'market' | 'evolve' | 'launch' | 'other';
-export interface AnalyticsEvent {
-  id: string;
-  kind: EventKind;
-  trainer: string;
-  avatar: Pick<Profile, 'character' | 'accessoryColor'>;
-  title: string;
-  detail: string;
-  createdAt: number;
-  pokemonId?: number;
-  shiny?: boolean;
-  href: string;
-}
 export interface LaunchpadAnalytics {
   coins: number;
   activeCoins: number;
@@ -66,297 +61,226 @@ export function summarizeLaunchpad(state: AppSnapshot): LaunchpadAnalytics {
     ],
   };
 }
-function activityKind(entry: Activity): EventKind {
+function activityKind(entry: Activity): AnalyticsEventKind {
   const text = (entry.title + ' ' + entry.detail).toLowerCase();
   if (entry.kind === 'evolve') return 'evolve';
   if (entry.kind === 'coin') return 'launch';
-  if (['market', 'purchase', 'sale', 'listing'].includes(entry.kind)) return 'market';
+  if (entry.kind === 'redeem' || (entry.kind === 'trade' && text.includes('redeemed')))
+    return 'redeem';
   if (entry.kind === 'reward' && entry.pokemonId) {
     if (text.includes('pack')) return 'pack';
     if (text.includes('hatch') || text.includes('egg opened')) return 'egg';
   }
   return 'other';
 }
+
 export function accountAnalyticsEvents(state: AppSnapshot): AnalyticsEvent[] {
   return state.activity
+    .filter((entry) => !['market', 'purchase', 'sale', 'listing'].includes(entry.kind))
+    .filter((entry) => !entry.href.startsWith('/marketplace'))
     .map((entry) => ({
       ...entry,
       kind: activityKind(entry),
       trainer: profileName(state),
+      trainerWallet: state.profile.wallet,
       avatar: state.profile,
-      shiny: state.pokemon.find((pokemon) => entry.href === '/pokemon/' + pokemon.id)?.shiny,
+      shiny:
+        entry.shiny ??
+        state.pokemon.find((pokemon) => entry.href === '/pokemon/' + pokemon.id)?.shiny,
     }))
     .sort((a, b) => b.createdAt - a.createdAt);
 }
-/** Explicit illustration of the future community event stream, never included in metrics. */
-function exampleCommunityEvents(anchor: number): AnalyticsEvent[] {
-  return [
-    {
-      id: 'sample-pack-1',
-      kind: 'pack',
-      trainer: 'Leaf',
-      avatar: { character: 'leaf', accessoryColor: '#65b883' },
-      title: 'Opened a pack · Pikachu',
-      detail: 'From $GENG · Alternate-colour find',
-      pokemonId: 25,
-      shiny: true,
-      createdAt: anchor - 190000,
-      href: '/rewards?tab=packs',
-    },
-    {
-      id: 'sample-egg-1',
-      kind: 'egg',
-      trainer: 'Blue',
-      avatar: { character: 'blue', accessoryColor: '#4e9ee8' },
-      title: 'Hatched an egg · Lapras',
-      detail: 'Rare egg · From $SQUIRT',
-      pokemonId: 131,
-      createdAt: anchor - 420000,
-      href: '/rewards?tab=eggs',
-    },
-    {
-      id: 'sample-market-1',
-      kind: 'market',
-      trainer: 'Misty',
-      avatar: { character: 'misty', accessoryColor: '#ed87aa' },
-      title: 'Bought Gengar on the marketplace',
-      detail: 'Example purchase · 0.42 SOL',
-      pokemonId: 94,
-      createdAt: anchor - 780000,
-      href: '/marketplace',
-    },
-    {
-      id: 'sample-pack-2',
-      kind: 'pack',
-      trainer: 'Red',
-      avatar: { character: 'red', accessoryColor: '#ef5357' },
-      title: 'Opened a pack · Mewtwo',
-      detail: 'Epic pack · From $POKE',
-      pokemonId: 150,
-      createdAt: anchor - 1260000,
-      href: '/rewards?tab=packs',
-    },
-    {
-      id: 'sample-evolve-1',
-      kind: 'evolve',
-      trainer: 'Brock',
-      avatar: { character: 'brock', accessoryColor: '#efb13f' },
-      title: 'Evolved Eevee into Jolteon',
-      detail: 'Evolution complete · Funded value increased',
-      pokemonId: 135,
-      createdAt: anchor - 1980000,
-      href: '/pokemon',
-    },
-    {
-      id: 'sample-egg-2',
-      kind: 'egg',
-      trainer: 'Leaf',
-      avatar: { character: 'leaf', accessoryColor: '#65b883' },
-      title: 'Hatched an egg · Dratini',
-      detail: 'Standard egg · From $DRAGO',
-      pokemonId: 147,
-      createdAt: anchor - 2820000,
-      href: '/rewards?tab=eggs',
-    },
-    {
-      id: 'sample-launch-1',
-      kind: 'launch',
-      trainer: 'Blue',
-      avatar: { character: 'blue', accessoryColor: '#4e9ee8' },
-      title: 'Launched a community coin',
-      detail: 'Pokémon partner: Bulbasaur · Eggs mode',
-      pokemonId: 1,
-      createdAt: anchor - 3660000,
-      href: '/create',
-    },
-  ];
-}
-const filters: { id: 'all' | EventKind; label: string }[] = [
-  { id: 'all', label: 'Everything' },
+
+const filters: { id: 'all' | AnalyticsEventKind; label: string }[] = [
+  { id: 'all', label: 'All activity' },
   { id: 'egg', label: 'Hatches' },
   { id: 'pack', label: 'Packs' },
-  { id: 'market', label: 'Marketplace' },
   { id: 'evolve', label: 'Evolutions' },
+  { id: 'redeem', label: 'Redemptions' },
   { id: 'launch', label: 'Launches' },
 ];
-const eventLabels: Record<EventKind, string> = {
-  egg: 'HATCH',
-  pack: 'PACK',
-  market: 'MARKET',
-  evolve: 'EVOLUTION',
-  launch: 'LAUNCH',
-  other: 'ACTIVITY',
+const eventLabels: Record<AnalyticsEventKind, string> = {
+  egg: 'Hatched',
+  pack: 'Pack opened',
+  redeem: 'Redeemed',
+  evolve: 'Evolved',
+  launch: 'Coin launched',
+  other: 'Trainer update',
 };
+
+type Connection = 'demo' | 'connecting' | 'connected' | 'reconnecting' | 'unavailable';
+
+function usePlatformAnalytics(mode: 'demo' | 'live', refresh: number) {
+  const [snapshot, setSnapshot] = useState<PlatformAnalytics | null>(null);
+  const [connection, setConnection] = useState<Connection>(mode === 'demo' ? 'demo' : 'connecting');
+  const baseUrl = import.meta.env?.VITE_API_BASE_URL as string | undefined;
+  useEffect(() => {
+    if (mode === 'demo' || !baseUrl) {
+      setConnection('demo');
+      return;
+    }
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const controller = new AbortController();
+    async function poll() {
+      let retry = false;
+      try {
+        const next = await loadPlatformAnalytics(baseUrl!, controller.signal);
+        if (disposed) return;
+        setSnapshot(next);
+        setConnection('connected');
+      } catch {
+        if (disposed) return;
+        retry = true;
+        setConnection((current) =>
+          current === 'connected' || current === 'reconnecting' ? 'reconnecting' : 'unavailable',
+        );
+      }
+      if (!disposed) timer = setTimeout(poll, retry ? 15000 : 10000);
+    }
+    void poll();
+    return () => {
+      disposed = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [baseUrl, mode, refresh]);
+  return { snapshot, connection };
+}
 
 export function AnalyticsPage() {
   const { state, mode, now } = useApp();
-  const [feed, setFeed] = useState<'account' | 'example'>(mode === 'demo' ? 'example' : 'account');
-  const [filter, setFilter] = useState<'all' | EventKind>('all');
-  const examples = useMemo(() => exampleCommunityEvents(Date.now()), []);
-  const summary = summarizeLaunchpad(state);
-  const yourEvents = accountAnalyticsEvents(state);
-  const events = (feed === 'example' ? examples : yourEvents).filter(
-    (event) => filter === 'all' || event.kind === filter,
+  const [filter, setFilter] = useState<'all' | AnalyticsEventKind>('all');
+  const [scope, setScope] = useState<'community' | 'account'>('community');
+  const [refresh, setRefresh] = useState(0);
+  const { snapshot, connection } = usePlatformAnalytics(mode, refresh);
+  const accountEvents = useMemo(() => accountAnalyticsEvents(state), [state]);
+  const communityEvents = useMemo(
+    () => mergeAnalyticsEvents(snapshot?.events ?? [], accountEvents),
+    [snapshot, accountEvents],
   );
-  const currency = (amount: number) =>
-    summary.currency === 'USD' ? '$' + compact(amount) : compact(amount) + ' SOL';
-  const ranked = [...state.coins].sort((a, b) => b.volume - a.volume).slice(0, 5);
-  const largestVolume = Math.max(1, ...ranked.map((coin) => coin.volume));
+  const selectedEvents = scope === 'account' || mode === 'demo' ? accountEvents : communityEvents;
+  const events = selectedEvents
+    .filter((event) => filter === 'all' || event.kind === filter)
+    .slice(0, 100);
+  const metrics = snapshot?.metrics;
+  const connectionLabel: Record<Connection, string> = {
+    demo: 'Demo account',
+    connecting: 'Connecting',
+    connected: 'Connected · auto-updating',
+    reconnecting: 'Reconnecting',
+    unavailable: 'Awaiting connection',
+  };
+
   return (
     <div className="analytics-page">
       <header className="analytics-heading">
         <div>
-          <h1>Launchpad analytics</h1>
-          <p>Community markets, reward pools, and the latest discoveries.</p>
+          <h1>Analytics</h1>
+          <p>Rewards, trading, and trainer activity across Kanto.</p>
         </div>
-        <span className="analytics-source-label">
-          {mode === 'demo' ? 'Demo snapshot' : 'Available market snapshot'}
+        <span className={'analytics-connection ' + connection} role="status">
+          <i aria-hidden="true" />
+          {connectionLabel[connection]}
         </span>
       </header>
-      <div className="analytics-metrics">
-        <div>
-          <span>Combined market cap</span>
-          <strong>{currency(summary.combinedMarketCap)}</strong>
-          <small>Across {summary.coins} tracked coins</small>
-        </div>
-        <div>
-          <span>Reported trading volume</span>
-          <strong>{currency(summary.combinedVolume)}</strong>
-          <small>Combined coin volume in this snapshot</small>
-        </div>
-        <div>
-          <span>Active communities</span>
-          <strong>
-            {summary.activeCoins}
-            <em> / {summary.coins}</em>
-          </strong>
-          <small>Coins currently marked active</small>
-        </div>
-        <div>
-          <span>Available reward pools</span>
-          <strong>
-            {sol(summary.availableRewardFunds)}
-            <em> SOL</em>
-          </strong>
-          <small>Unallocated reward funds</small>
-        </div>
-      </div>
-      <p className="analytics-data-caption">
-        {mode === 'demo'
-          ? 'Demo figures use sample market quotes. Community examples below are not real transactions.'
-          : 'Totals cover the coins returned to this account, not a complete all-chain ledger.'}{' '}
-        Reward funds exclude Pokémon values and allocated evolution budgets.
-      </p>
-      <div className="analytics-overview">
-        <section className="analytics-volume-panel">
-          <div className="analytics-panel-heading">
-            <div>
-              <h2>Most active coins</h2>
-              <p>Ranked by reported trading volume</p>
-            </div>
-            <a href="#/explore">
-              Explore <Icon name="ArrowUpRight" size={14} />
-            </a>
-          </div>
-          <div className="analytics-volume-list">
-            {ranked.map((coin, index) => (
-              <a key={coin.id} href={'#/coin/' + coin.id} className="analytics-volume-row">
-                <span className="analytics-rank">{index + 1}</span>
-                <CoinAvatar coin={coin} size={38} />
-                <div className="analytics-volume-name">
-                  <strong>{coin.name}</strong>
-                  <span>${coin.ticker}</span>
-                </div>
-                <div className="analytics-volume-chart">
-                  <span
-                    style={{
-                      width: Math.max(2, (coin.volume / largestVolume) * 100) + '%',
-                      background: coin.color,
-                    }}
-                  />
-                </div>
-                <strong>
-                  {currency(summary.currency === 'USD' ? coin.volumeUsd! : coin.volume)}
-                </strong>
-              </a>
-            ))}
-            {!ranked.length && (
-              <p className="analytics-empty-inline">No markets have been returned yet.</p>
-            )}
-          </div>
-        </section>
-        <section className="analytics-mode-panel">
-          <div className="analytics-panel-heading">
-            <div>
-              <h2>How communities reward</h2>
-              <p>Reward modes across tracked coins</p>
-            </div>
-          </div>
-          <div
-            className="analytics-mode-track"
-            role="img"
-            aria-label={summary.modes.map((item) => `${item.mode}: ${item.count} coins`).join(', ')}
-          >
-            {summary.modes.map((item) => (
-              <span
-                key={item.mode}
-                style={{ flex: item.count || '0 0 0px', background: item.color }}
-              />
-            ))}
-          </div>
-          <div className="analytics-mode-legend">
-            {summary.modes.map((item) => (
-              <div key={item.mode}>
-                <i style={{ background: item.color }} />
-                <span>{item.mode === 'Mixed' ? 'Eggs + packs' : item.mode}</span>
-                <strong>{item.count}</strong>
-                <small>{summary.coins ? Math.round((item.count / summary.coins) * 100) : 0}%</small>
-              </div>
-            ))}
-          </div>
-          <a className="analytics-funding-link" href="#/guide?topic=value">
-            <Pokeball size={23} />
-            <span>Where reward value comes from</span>
-            <Icon name="ArrowRight" size={15} />
-          </a>
-        </section>
-      </div>
-      <section className="analytics-feed-panel">
-        <div className="analytics-feed-heading">
-          <div>
-            <h2>Trainer activity</h2>
-            <p>Pack reveals, egg hatches, and moments from the community.</p>
-          </div>
-          <div className="analytics-feed-source" aria-label="Activity source">
-            <button
-              className={feed === 'example' ? 'active' : ''}
-              aria-pressed={feed === 'example'}
-              onClick={() => setFeed('example')}
-            >
-              Community preview
-            </button>
-            <button
-              className={feed === 'account' ? 'active' : ''}
-              aria-pressed={feed === 'account'}
-              onClick={() => setFeed('account')}
-            >
-              Your activity
-            </button>
-          </div>
-        </div>
-        <div className={'analytics-feed-note ' + (feed === 'example' ? 'example' : '')}>
-          <span>
-            {feed === 'example'
-              ? 'SAMPLE EVENTS'
-              : mode === 'demo'
-                ? 'YOUR DEMO ACCOUNT'
-                : 'YOUR ACCOUNT'}
+
+      <section className="analytics-metrics" aria-label="Platform totals">
+        <div className="analytics-metric rewards">
+          <span className="analytics-metric-icon">
+            <Icon name="Candy" size={24} />
           </span>
-          <p>
-            {feed === 'example'
-              ? 'Examples of the community feed. Live trainer events need the connected backend and do not affect the totals above.'
-              : 'Recorded actions from this account. New pack openings, hatches, evolutions, and launches appear here.'}
-          </p>
+          <div className="analytics-metric-copy">
+            <span>Total rewards</span>
+            <strong aria-label={metrics ? undefined : 'Total rewards unavailable'}>
+              {metrics ? sol(metrics.totalRewardsSol) : '—'}
+              <em>
+                <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
+                SOL
+              </em>
+            </strong>
+            <small>Distributed to trainers · all time</small>
+          </div>
+        </div>
+        <div className="analytics-metric volume">
+          <span className="analytics-metric-icon">
+            <Icon name="TrendingUp" size={24} />
+          </span>
+          <div className="analytics-metric-copy">
+            <span>Platform trading volume</span>
+            <strong
+              aria-label={metrics ? undefined : 'Platform trading volume unavailable'}
+              title={metrics ? sol(metrics.platformTradingVolumeSol) + ' SOL' : undefined}
+            >
+              {metrics ? compact(metrics.platformTradingVolumeSol) : '—'}
+              <em>
+                <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
+                SOL
+              </em>
+            </strong>
+            <small>Across all Kanto coins · all time</small>
+          </div>
+        </div>
+        <div className="analytics-metric trainers">
+          <span className="analytics-metric-icon">
+            <Icon name="Users" size={24} />
+          </span>
+          <div className="analytics-metric-copy">
+            <span>Active users</span>
+            <strong aria-label={metrics ? undefined : 'Active users unavailable'}>
+              {metrics ? metrics.activeUsers24h.toLocaleString('en-US') : '—'}
+            </strong>
+            <small>Unique active trainers · past 24 hours</small>
+          </div>
+        </div>
+      </section>
+      <div className="analytics-data-caption">
+        <p>
+          {mode === 'demo'
+            ? 'Platform totals appear when the backend is connected. Your demo activity updates as you play.'
+            : snapshot
+              ? 'Platform totals updated ' +
+                relativeTime(snapshot.updatedAt, now).toLowerCase() +
+                '.'
+              : 'Connecting to platform totals. Your account activity is available below.'}
+          {connection === 'reconnecting' && ' Showing the last update while we reconnect.'}
+        </p>
+        {mode === 'live' && (connection === 'unavailable' || connection === 'reconnecting') && (
+          <button onClick={() => setRefresh((value) => value + 1)}>Try again</button>
+        )}
+      </div>
+
+      <section className="analytics-feed-panel" aria-labelledby="trainer-activity-title">
+        <div className="analytics-feed-heading">
+          <div className="analytics-feed-title">
+            <span className="analytics-feed-ball">
+              <Pokeball size={30} />
+            </span>
+            <div>
+              <h2 id="trainer-activity-title">Trainer Activity</h2>
+              <p>Hatches, pack reveals, evolutions, and redemptions.</p>
+            </div>
+          </div>
+          {mode === 'live' ? (
+            <div className="analytics-feed-source" aria-label="Activity source">
+              <button
+                className={scope === 'community' ? 'active' : ''}
+                aria-pressed={scope === 'community'}
+                onClick={() => setScope('community')}
+              >
+                Community
+              </button>
+              <button
+                className={scope === 'account' ? 'active' : ''}
+                aria-pressed={scope === 'account'}
+                onClick={() => setScope('account')}
+              >
+                Your activity
+              </button>
+            </div>
+          ) : (
+            <span className="analytics-local-label">Your demo activity</span>
+          )}
         </div>
         <nav className="analytics-event-filters" aria-label="Filter trainer activity">
           {filters.map((item) => (
@@ -370,47 +294,85 @@ export function AnalyticsPage() {
             </button>
           ))}
         </nav>
-        <div className="analytics-event-list" aria-live="polite">
+        <div className="analytics-feed-meta">
+          <span>
+            {events.length} recent {events.length === 1 ? 'event' : 'events'}
+          </span>
+          <span>
+            {mode === 'demo' || scope === 'account'
+              ? 'Updates as you play'
+              : snapshot
+                ? 'Updates every 10 seconds'
+                : 'Showing your account activity'}
+          </span>
+        </div>
+        <div className="analytics-event-list">
           {events.length ? (
             events.map((event) => (
-              <a
-                className={'analytics-event event-' + event.kind}
-                href={'#' + event.href}
-                key={event.id}
-              >
-                <Avatar profile={event.avatar} size={44} />
+              <article className={'analytics-event event-' + event.kind} key={event.id}>
+                <a
+                  className="analytics-trainer-avatar"
+                  href={
+                    event.trainerWallet
+                      ? '#/trainer/' + encodeURIComponent(event.trainerWallet)
+                      : '#' + event.href
+                  }
+                  aria-label={'View ' + event.trainer}
+                >
+                  <Avatar profile={event.avatar} size={46} />
+                </a>
                 <div className="analytics-event-copy">
-                  <div>
-                    <strong>{event.trainer}</strong>
+                  <div className="analytics-event-byline">
+                    {event.trainerWallet ? (
+                      <a href={'#/trainer/' + encodeURIComponent(event.trainerWallet)}>
+                        {event.trainer}
+                      </a>
+                    ) : (
+                      <strong>{event.trainer}</strong>
+                    )}
                     <span className={'analytics-event-tag ' + event.kind}>
                       {eventLabels[event.kind]}
                     </span>
-                    <time dateTime={new Date(event.createdAt).toISOString()}>
-                      {relativeTime(event.createdAt, now)}
-                    </time>
                   </div>
-                  <h3>{event.title}</h3>
-                  <p>{event.detail}</p>
+                  <a className="analytics-event-action" href={'#' + event.href}>
+                    <h3>{event.title}</h3>
+                    <p>{event.detail}</p>
+                  </a>
                 </div>
                 {event.pokemonId && (
-                  <div className="analytics-event-pokemon">
+                  <a
+                    className="analytics-event-pokemon"
+                    href={'#' + event.href}
+                    aria-label={event.title}
+                  >
                     <PokemonArt id={event.pokemonId} shiny={event.shiny} animated={false} />
-                  </div>
+                  </a>
                 )}
-                <Icon name="ChevronRight" size={14} />
-              </a>
+                <time dateTime={new Date(event.createdAt).toISOString()}>
+                  {relativeTime(event.createdAt, now)}
+                </time>
+                <a
+                  className="analytics-event-open"
+                  href={'#' + event.href}
+                  aria-label={event.title}
+                >
+                  <Icon name="ChevronRight" size={16} />
+                </a>
+              </article>
             ))
           ) : (
             <div className="analytics-feed-empty">
-              <Pokeball size={40} />
-              <h3>No matching activity yet</h3>
-              <p>
-                {feed === 'account'
-                  ? 'Open a reward, evolve a Pokémon, or create a coin to add to your activity.'
-                  : 'Choose another event category to explore the sample feed.'}
-              </p>
+              <Pokeball size={44} />
+              <h3>
+                {filter === 'all'
+                  ? 'Your next discovery starts here'
+                  : 'No ' +
+                    filters.find((item) => item.id === filter)?.label.toLowerCase() +
+                    ' yet'}
+              </h3>
+              <p>Open a reward, evolve a Pokémon, or launch a coin to join the activity.</p>
               <a href="#/rewards">
-                Go to Rewards <Icon name="ArrowRight" size={14} />
+                Explore your rewards <Icon name="ArrowRight" size={15} />
               </a>
             </div>
           )}

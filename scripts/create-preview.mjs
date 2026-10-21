@@ -19,6 +19,8 @@ const mimeTypes = {
   '.woff2': 'font/woff2',
   '.eot': 'application/vnd.ms-fontobject',
   '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
   '.json': 'application/json',
 };
 const imageExtensions = new Set(
@@ -108,12 +110,12 @@ for (const url of stylesheetUrls) {
 // Font files are already embedded in CSS and are not duplicated in this map.
 const map = {};
 await collectImages(publicAssets, map);
-const favicon = await dataUrl(path.join(publicAssets, 'brand/pokepad-emblem.png'));
+const favicon = await dataUrl(path.join(publicAssets, 'brand/kanto-emblem.png'));
 const output =
   '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
   '<meta name="viewport" content="width=device-width,initial-scale=1">' +
   '<meta name="theme-color" content="#f6f4ee">' +
-  '<title>Poképad · Frontend preview</title><link rel="icon" type="image/png" href="' +
+  '<title>Kanto · Frontend preview</title><link rel="icon" type="image/png" href="' +
   favicon +
   '"><style>' +
   styles.join('\n') +
@@ -125,9 +127,9 @@ const output =
   '</script></body></html>';
 
 await mkdir(path.join(root, 'artifacts'), { recursive: true });
-await writeFile(path.join(root, 'artifacts/Pokepad-Preview.html'), output);
+await writeFile(path.join(root, 'artifacts/Kanto-Preview.html'), output);
 console.log(
-  'Created artifacts/Pokepad-Preview.html (' +
+  'Created artifacts/Kanto-Preview.html (' +
     (Buffer.byteLength(output) / 1024 / 1024).toFixed(1) +
     ' MiB), with ' +
     Object.keys(map).length +

@@ -4,7 +4,7 @@ import { Layout } from './components/Layout';
 import { EmptyState } from './components/UI';
 import { DiscoverPage, CoinPage } from './pages/Discover';
 import { RewardsPage, WalkPage } from './pages/Rewards';
-import { InventoryPage, PokemonDetailPage, PokedexPage, MarketplacePage } from './pages/Collection';
+import { InventoryPage, PokemonDetailPage, PokedexPage } from './pages/Collection';
 import {
   PortfolioPage,
   ProfilePage,
@@ -54,7 +54,7 @@ function Routes() {
         selectedId={Number(params.get('species')) || undefined}
       />
     );
-  else if (path === '/marketplace') page = <MarketplacePage />;
+  else if (path === '/marketplace') page = <InventoryPage />;
   else if (path === '/gyms') page = <GymsPage />;
   else if (path.startsWith('/gym/')) page = <GymDetailPage key={path} id={path.split('/')[2]} />;
   else if (path === '/battles' || path === '/battle') page = <BattlesPage />;
@@ -69,13 +69,17 @@ function Routes() {
         description="This page doesn’t exist. Return to Discover to continue."
       >
         <a href="#/discover" className="button primary">
-          Back to Poképad
+          Back to Kanto
         </a>
       </EmptyState>
     );
   useEffect(() => {
+    if (path === '/marketplace') {
+      window.location.replace('#/pokemon');
+      return;
+    }
     const label = path.split('/')[1] || 'Discover';
-    document.title = label.charAt(0).toUpperCase() + label.slice(1) + ' · Poképad';
+    document.title = label.charAt(0).toUpperCase() + label.slice(1) + ' · Kanto';
   }, [path]);
   return <Layout path={path}>{page}</Layout>;
 }

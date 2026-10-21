@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInitialState } from '../src/data/demo';
 import { accountAnalyticsEvents, summarizeLaunchpad } from '../src/pages/Analytics';
+import { applyAction } from '../src/state/model';
 
 test('analytics totals use one currency and keep unallocated funds separate', () => {
   const state = createInitialState(1700000000000);
@@ -71,4 +72,40 @@ test('account analytics shows recorded outcomes in order and does not invent com
   );
   assert.equal(events[2].shiny, true);
   assert.equal(events.length, state.activity.length);
+});
+
+test('opening a reward and redeeming a Pokémon immediately update account analytics', () => {
+  const now = 1700000000000;
+  const initial = createInitialState(now);
+  const opened = applyAction(initial, { type: 'reward.open', id: 'pack-one' }, now, () => 0);
+  const openedEvents = accountAnalyticsEvents(opened);
+  assert.equal(openedEvents[0].kind, 'pack');
+  assert.equal(openedEvents[0].trainerWallet, initial.profile.wallet);
+  assert.equal(openedEvents.length, accountAnalyticsEvents(initial).length + 1);
+  const pokemon = opened.pokemon.at(-1)!;
+  const redeemed = applyAction(opened, { type: 'pokemon.redeem', id: pokemon.id }, now + 1);
+  const redeemedEvents = accountAnalyticsEvents(redeemed);
+  assert.equal(redeemedEvents[0].kind, 'redeem');
+  assert.equal(redeemedEvents[0].pokemonId, pokemon.speciesId);
+  assert.equal(redeemedEvents.length, openedEvents.length + 1);
+});
+
+test('redemption history retains shiny appearance after the Pokémon leaves the inventory', () => {
+  const state = createInitialState(1700000000000);
+  state.pokemon = [];
+  state.activity = [
+    {
+      id: 'redeemed-shiny',
+      title: 'Redeemed Pikachu',
+      detail: '0.15 SOL',
+      kind: 'redeem',
+      createdAt: 1700000000000,
+      pokemonId: 25,
+      shiny: true,
+      href: '/activity',
+    },
+  ];
+  const events = accountAnalyticsEvents(state);
+  assert.equal(events[0].kind, 'redeem');
+  assert.equal(events[0].shiny, true);
 });

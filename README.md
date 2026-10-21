@@ -1,10 +1,10 @@
-# Poképad frontend · interface v12
+# Kanto frontend · interface v13
 
 A Pokémon launchpad frontend built with React, TypeScript, Vite, and Pokémon game artwork. This is a frontend preview: the future Railway backend belongs in a separate repository.
 
 ## Try the preview
 
-Build a single-file preview with `npm run preview:file`, then open `artifacts/Pokepad-Preview.html` in a modern browser. It embeds the app, fonts, trainers, normal artwork, and pixel sprites for all 151 Gen 1 Pokémon, including their shiny palettes. Battle front/back animation frames, their metadata for every normal and shiny species, and the battle soundtrack are local project assets. Drawn shiny artwork still loads from PokeAPI’s public sprite repository and needs a network connection. Demo changes persist in that browser when local storage is available.
+Build a single-file preview with `npm run preview:file`, then open `artifacts/Kanto-Preview.html` in a modern browser. It embeds the app, fonts, trainers, normal artwork, and pixel sprites for all 151 Gen 1 Pokémon, including their shiny palettes. Battle front/back animation frames, their metadata for every normal and shiny species, and the battle soundtrack are local project assets. Drawn shiny artwork still loads from PokeAPI’s public sprite repository and needs a network connection. Demo changes persist in that browser when local storage is available.
 
 For development, use Node.js 24:
 
@@ -13,7 +13,7 @@ For development, use Node.js 24:
 
 The preview starts with sample coins, Pokémon, eggs, and packs. No wallet is connected. Trading, wagering, redemption, and walking use labelled preview flows.
 
-## What changed in interface v12
+## Current interface
 
 Battles now use a viewport-constrained, Gen III-inspired battlefield: the rival faces forward at the upper right, while the player's Pokémon uses its actual back sprite at the lower left. Opposing HP panels and a fixed command area keep the action together. The root menu offers only Fight and Pokémon; moves and party choices replace that command area. Team selection is paginated. The layout is intended to avoid document scrolling, with responsive rules for short and narrow screens; browser visual verification remains outstanding.
 
@@ -25,9 +25,9 @@ Character actions and effects share the cue clock, with emission and impact anch
 
 Switching now retains the outgoing Pokémon during recall, returns it to a Poké Ball, then throws and opens the incoming Pokémon's ball before revealing its silhouette and colour. A replacement after fainting skips recall. Both sides use the same sequence and clock; cancelling or leaving a battle clears the presentation.
 
-The battle soundtrack is the classic Kanto trainer battle recording from HeartGold/SoulSilver. It begins after a battle-button interaction, loops, and has a persistent mute control. Move sounds are synthesized by effect family with move-specific variations. Audio pauses when the page is hidden and stops when leaving the battle. Reduced-motion settings simplify the visual playback.
+The battle soundtrack is the classic Kanto trainer battle recording from HeartGold/SoulSilver. It begins after a battle-button interaction, loops, and has a persistent mute control. All 48 playable moves now use an explicit mapping to locally bundled original Mystery Dungeon sound samples. Hatching, pack opening, and evolution use synchronized reveal sounds. A shared Game sound preference controls music and effects. Audio pauses when the page is hidden and stops when leaving the battle. Reduced-motion settings simplify the visual playback.
 
-The header uses the approved coral, cream and navy Poké Ball-on-a-pad symbol and rounded Poképad lettering as one combined lockup. Its matching standalone emblem appears in the favicon and main-token artwork. The generated magnifying-glass search icon remains. The trainer portrait remains separate from the equipped Pokémon. Navigation retains Discover, Create Coin, Portfolio, Rewards and Analytics as its first destinations.
+The header and loader use the approved coral, cream and navy Kanto lockup, pairing a K-emblem Poké Ball with rounded italic lettering. Its matching standalone emblem appears in the favicon and main-token artwork. The generated magnifying-glass search icon remains. The trainer portrait remains separate from the equipped Pokémon. Navigation retains Discover, Create Coin, Portfolio, Rewards and Analytics as its first destinations.
 
 My PC defaults to Ready first: Pokémon with actionable evolution or move-learning opportunities appear before the rest, with coloured outlines and readiness ribbons. Newest, value and level sorts remain available. Summary pages retain the Stats/Moves/Evolution/Details menu, while future evolutions appear as grey silhouettes and question marks until revealed. The extra funding explanation is removed from the evolution interface; affordability and eligibility checks still apply. Eevee retains three equally likely outcomes.
 
@@ -41,25 +41,28 @@ Discover retains separate coin artwork and mascots, stable hover animation, comp
 | -------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | Discover       | Main token, market-cap cards, stable hover mascots, compact trends, socials, launch age, watchlist and sorting          |
 | Search         | Coin name/ticker/contract search, trainer name/wallet lookup, public trainer profiles                                   |
-| Analytics      | Snapshot totals, volume ranking, reward-mode breakdown, account activity and labelled community examples                |
-| Coin           | Illustrative chart, trades, holders, rewards, gym, buy/sell review                                                      |
+| Analytics      | Total rewards in SOL, platform trading volume, active users and automatically updating Trainer Activity                 |
+| Coin           | Market-cap line chart, interactive sample inspection, creator profile, trades, rewards, gym and trade review            |
 | Create coin    | Four-step wizard, owned Pokémon or trainer choice, Details links, fixed step controls and local draft                   |
 | Portfolio      | Holdings, holding streaks, Pokémon value, equipped partner's Rare Candy                                                 |
 | Rewards        | Eggs/Packs/Opened tabs, source coin badges, timers, walking equivalents, reward tables                                  |
 | Reveals        | Animated pack opening, egg hatching and evolution, looping reveal stars, reduced-motion setting                         |
 | Walking        | Illustrated map, partner, simulated sessions, egg timer acceleration                                                    |
 | Inventory      | Ready-first ordering, readiness outlines, search, filters, equip action and move notifications                          |
-| Pokémon detail | Persistent actions, Stats/Moves/Evolution/Details menu, move-ready prompt and mystery evolution previews                |
+| Pokémon detail | Exact-value redemption, Stats/Moves/Evolution/Details menu, move-ready prompt and mystery evolution previews            |
 | Pokédex        | All 151 Gen 1 species and permanent discovery history                                                                   |
-| Marketplace    | Sample listings, asking prices, own listings and purchase review                                                        |
 | Battles        | Fixed Gen III-inspired commands, 48 playable moves, event VFX/audio, local front/back sprites and four bot difficulties |
 | Online setup   | Friendly/SOL/token/Pokémon format selection, whole-team loss explanation; no matchmaking or settlement                  |
-| Gyms           | League leader and contribution panels, one supported gym, ticker badges, rankings and trainer profiles                  |
+| Gyms           | League leader and contribution panels, one supported gym, coin-image badges, rankings and trainer profiles              |
 | Account        | Autosaving trainer appearance, shoulder portrait, display name, art preference and notifications                        |
 | How-to         | Categorized guide to coins, rewards, collection, progression, funding, gyms, battles and account settings               |
 | Other          | Starter selection, wallet placeholder, How-to in account help and error states                                          |
 
 The sidebar fits the viewport and becomes a mobile drawer. The header search button opens a keyboard-accessible Pokédex-style panel for coin names, tickers, contract addresses, and trainer names or wallets (Ctrl/⌘ K). Unread notifications show a red dot. The account portrait shows the trainer only; the equipped partner remains available in My PC and the sidebar companion. Settings are reached through the account menu. A Poké Ball startup screen appears on full page loads and clears after the account state is ready.
+
+Coin detail now leads with market cap and a line graph, with a creator profile link and an animated information switcher. Its chart uses real price samples and supply when present; sample history is explicitly labelled. No candle chart or launch mascot appears on that screen. Gym badges consistently use the coin image, including uploaded logos. Search reserves scrollbar space while open so the page and fixed header stay aligned. Leaf uses padded, integer-scale portrait framing.
+
+Marketplace navigation and listing/purchase flows are removed. Sell opens a confirmation for the Pokémon’s exact redeemable value; no asking price is entered. Legacy listings are released during local save migration without changing backing, and old marketplace links lead to My PC.
 
 ## Reward and evolution accounting
 
@@ -98,14 +101,15 @@ Keep the backend in its own repository. Set the frontend repository variable **V
 
 For local development, copy .env.example to .env.local and set the same variable. An empty value selects the local demo adapter. With an API configured, failures are shown rather than silently replaced with sample data.
 
-The snapshot and public trainer-directory adapters expect:
+The snapshot, trainer-directory and analytics adapters expect:
 
 - GET /v1/bootstrap → authenticated account view state.
 - POST /v1/actions → validate an action and return updated view state.
 - GET /v1/trainers?query=... → { trainers: PublicTrainer[] }.
 - GET /v1/trainers/:wallet → { trainer: PublicTrainer }, or 404.
+- GET /v1/analytics → platform totals and recent public trainer events.
 
-`Coin.marketCap` and `Coin.volume` remain SOL amounts. Optional `marketCapUsd` and `volumeUsd` are separate display quotes; `launchedAt` is a Unix timestamp in milliseconds. Optional `priceHistory` contains ordered numeric price samples for the card trend. Local fixtures use `DEMO_SOL_USD = 150` solely to produce sample USD figures. The HTTP adapter never applies this fixture conversion. Analytics currently summarizes the snapshot rather than calling a platform analytics endpoint; live community events need a separate server feed.
+`Coin.marketCap` and `Coin.volume` remain SOL amounts. Optional `marketCapUsd` and `volumeUsd` are separate display quotes; `launchedAt` is a Unix timestamp in milliseconds. Optional `priceHistory` contains ordered numeric price samples for the card trend. Local fixtures use `DEMO_SOL_USD = 150` solely to produce sample USD figures. The HTTP adapter never applies this fixture conversion. Analytics polls /v1/analytics when connected. Demo account events update immediately; unknown platform totals remain unavailable rather than being inferred from account balances.
 
 See [docs/backend-contract.md](docs/backend-contract.md). VITE-prefixed environment variables are public browser configuration; backend secrets belong in Railway.
 
@@ -118,7 +122,7 @@ To recreate the single-file preview:
 
     npm run preview:file
 
-The result is artifacts/Pokepad-Preview.html. Deploy the normal dist/ build to GitHub Pages. Formatting is available with npm run format.
+The result is artifacts/Kanto-Preview.html. Deploy the normal dist/ build to GitHub Pages. Formatting is available with npm run format.
 
 Model tests cover funded random outcomes, shiny values, legendary availability, health, duplicate opening, egg timing, evolution conservation, all three Eevee outcomes, one-time moves, redemption, eligibility, ticker handling, and save migration. Additional tests cover practice battles, trainer-directory responses, watchlist persistence, and analytics. DOM tests cover the main interaction flows, including the wizard and autosaving settings.
 

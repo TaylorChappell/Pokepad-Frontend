@@ -17,7 +17,7 @@ const topics: GuideTopic[] = [
     id: 'start',
     label: 'Getting started',
     icon: 'Compass',
-    title: 'Your first steps in Poképad',
+    title: 'Your first steps in Kanto',
     intro: 'A coin community, a growing collection, and a Pokémon to call your partner.',
     pokemon: 25,
     color: '#fff1bd',
@@ -40,7 +40,7 @@ const topics: GuideTopic[] = [
         title: 'Know what is connected',
         text: [
           'This version is a frontend with a local demo account. Explore rewards, collection management, coin creation, and offline battles. Demo progress is saved in this browser.',
-          'Wallet transactions, live trading, verified walking, marketplace purchases, and online settlement need the connected backend. A preview confirmation does not move real funds.',
+          'Wallet transactions, live trading, verified walking, redemptions, and online settlement need the connected backend. A preview confirmation does not move real funds.',
         ],
         note: 'Resetting demo data clears this browser’s saved collection and settings. It does not affect a blockchain wallet.',
       },
@@ -132,7 +132,7 @@ const topics: GuideTopic[] = [
       {
         title: 'My PC is your current inventory',
         text: [
-          'Select a Pokémon to see its level, HP, typing, battle stats, moves, Rare Candy, and SOL value. Equip it as your partner or manage an available evolution, move, or listing.',
+          'Select a Pokémon to see its level, HP, typing, battle stats, moves, Rare Candy, and SOL value. Equip it as your partner or manage an available evolution, move, or redemption.',
           'Your equipped Pokémon appears beside your avatar and in the sidebar. Listed or locked Pokémon cannot take conflicting actions. Ownership is individual, so you can own several Pokémon of the same species.',
         ],
       },
@@ -140,7 +140,7 @@ const topics: GuideTopic[] = [
         title: 'Shiny is a colour variant',
         text: [
           'A shiny uses an alternate palette. There is no separate “Rare Pikachu” or “Standard Pikachu” tier attached to the individual Pokémon.',
-          'Normal and shiny variants can have different funded values. The demo gives shinies a higher issuance value; a marketplace asking price is separate. Shiny colour is preserved through the supported evolution flow.',
+          'Normal and shiny variants can have different funded values. The demo gives shinies a higher issuance value. Shiny colour is preserved through the supported evolution flow.',
         ],
       },
       {
@@ -195,10 +195,10 @@ const topics: GuideTopic[] = [
   },
   {
     id: 'value',
-    label: 'Value & marketplace',
+    label: 'Value & redemption',
     icon: 'Wallet',
     title: 'Rewards come from real funding',
-    intro: 'A Pokémon’s funded value and a seller’s asking price are separate numbers.',
+    intro: 'Sell a Pokémon back for its displayed redeemable SOL value.',
     pokemon: 52,
     color: '#fff0ca',
     sections: [
@@ -210,23 +210,23 @@ const topics: GuideTopic[] = [
         ],
       },
       {
-        title: 'Value, evolution budget, and asking price',
+        title: 'Current value and evolution budget',
         text: [
           'The SOL value on an owned Pokémon is its current funded amount. Future evolution money is separate; it is not added to current value or gym contribution.',
-          'A listing can have a different asking price. A seller’s chosen price does not increase the underlying funded amount. Compare both before buying.',
+          'Selling redeems the Pokémon for exactly its displayed value. There are no asking prices or player listings.',
         ],
       },
       {
-        title: 'Listing and redemption',
+        title: 'Selling your Pokémon',
         text: [
-          'Listing makes the Pokémon unavailable for equipping and conflicting actions. Unlist it to make it available again.',
+          'Open a Pokémon in My PC, choose Sell, and review its redeemable value before confirming. A Pokémon locked in battle must finish its battle first.',
           'Redemption removes the Pokémon from inventory in exchange for its current funded amount, while its Pokédex discovery stays. Unused evolution funds return to the source pool. Starter restrictions apply until a funded evolution makes it a regular funded instance.',
         ],
-        note: 'Marketplace purchases, payouts, signing, and transfers are previews here. No real SOL changes hands in this frontend.',
+        note: 'Payouts, signing, and transfers are previews here. No real SOL changes hands in this frontend.',
       },
     ],
     links: [
-      { label: 'Marketplace', path: '/marketplace' },
+      { label: 'My PC', path: '/pokemon' },
       { label: 'My portfolio', path: '/portfolio' },
     ],
   },
@@ -249,14 +249,14 @@ const topics: GuideTopic[] = [
       {
         title: 'How your collection contributes',
         text: [
-          'The contribution uses the current funded value of eligible owned Pokémon. Asking prices and unused evolution budgets do not inflate it.',
+          'The contribution uses the current funded value of eligible owned Pokémon. Unused evolution budgets do not inflate it.',
           'Scores should follow confirmed ownership and eligibility. External sample scores illustrate this preview; production rankings need a complete view of all supporters.',
         ],
       },
       {
         title: 'Badges and progress',
         text: [
-          'Your profile shows badges and the gym you support. A badge is a trainer achievement and team identity, not another tradeable Pokémon.',
+          'Each gym uses its coin’s image as its badge. Your profile shows the badges you have earned and the gym you support. A badge is a trainer achievement and team identity, not another tradeable Pokémon.',
           'Featured-gym promotion has been removed from Discover. Rankings remain on the Gyms page.',
         ],
       },
@@ -307,7 +307,7 @@ const topics: GuideTopic[] = [
     id: 'account',
     label: 'Trainer & preferences',
     icon: 'Settings',
-    title: 'Make Poképad feel like yours',
+    title: 'Make Kanto feel like yours',
     intro: 'Your trainer identity, preferred artwork, and collection travel together.',
     pokemon: 7,
     color: '#e0f1f4',
@@ -316,7 +316,7 @@ const topics: GuideTopic[] = [
         title: 'Your trainer profile',
         text: [
           'Open the account menu beside the bell for profile and settings. Choose a display name, classic trainer avatar, and accessory colour. Without a display name, a shortened wallet address is used.',
-          'Appearance saves automatically. Searching a registered trainer’s wallet opens their profile; an unknown address is not automatically a Poképad account.',
+          'Appearance saves automatically. Searching a registered trainer’s wallet opens their profile; an unknown address is not automatically a Kanto account.',
         ],
       },
       {
@@ -463,7 +463,7 @@ export function GuidePage() {
       <header className="howto-page-heading">
         <div>
           <span className="howto-kicker">TRAINER HANDBOOK</span>
-          <h1>How Poképad works</h1>
+          <h1>How Kanto works</h1>
           <p>From your first starter to a fully trained team. Find the details here.</p>
         </div>
         <a className="button secondary" href="#/discover">

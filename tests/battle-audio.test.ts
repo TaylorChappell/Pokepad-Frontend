@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import React, { act } from 'react';
 import { JSDOM } from 'jsdom';
 import { useBattleAudio } from '../src/battle/audio';
+import { useRevealAudio } from '../src/audio/sound';
 
-const key = 'pokepad-battle-muted';
+const key = 'kanto-audio-muted';
+const legacyKey = 'pokepad-battle-muted';
 type AudioControls = ReturnType<typeof useBattleAudio>;
 
-async function mountAudio({ savedMuted = false, supported = true } = {}) {
+async function mountAudio({ savedMuted = false, supported = true, deferred = false } = {}) {
   const dom = new JSDOM('<div id="root"></div>', {
     url: 'https://example.test/',
     pretendToBeVisual: true,
@@ -44,7 +46,7 @@ async function mountAudio({ savedMuted = false, supported = true } = {}) {
       this.listeners.get(name)?.();
     }
   }
-  const parameter = () => ({ value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {} });
+  const parameter = () => ({ value: 0, setValueAtTime() {}, linearRampToValueAtTime() {} });
   class FakeSource {
     frequency = parameter();
     type = '';
@@ -78,21 +80,13 @@ async function mountAudio({ savedMuted = false, supported = true } = {}) {
     createGain() {
       return { gain: parameter(), connect() {}, disconnect() {} };
     }
-    createOscillator() {
-      const source = new FakeSource();
-      this.sources.push(source);
-      return source;
-    }
     createBufferSource() {
       const source = new FakeSource();
       this.sources.push(source);
       return source;
     }
-    createBiquadFilter() {
-      return { type: '', Q: parameter(), frequency: parameter(), connect() {}, disconnect() {} };
-    }
-    createBuffer(_channels: number, length: number) {
-      return { getChannelData: () => new Float32Array(length) };
+    decodeAudioData() {
+      return Promise.resolve({ duration: 1.5 });
     }
   }
   for (const name of ['window', 'document', 'navigator', 'localStorage']) {
@@ -112,10 +106,22 @@ async function mountAudio({ savedMuted = false, supported = true } = {}) {
     value: supported ? FakeContext : undefined,
     configurable: true,
   });
-  if (savedMuted) dom.window.localStorage.setItem(key, 'true');
+  if (savedMuted) dom.window.localStorage.setItem(legacyKey, 'true');
+  const previousFetch = globalThis.fetch;
+  const requested: string[] = [];
+  const pending: (() => void)[] = [];
+  globalThis.fetch = ((url: string) => {
+    requested.push(url);
+    const response = { ok: true, arrayBuffer: async () => new ArrayBuffer(16) };
+    return deferred
+      ? new Promise((resolve) => pending.push(() => resolve(response)))
+      : Promise.resolve(response);
+  }) as typeof fetch;
   let controls: AudioControls;
+  let reveal: ReturnType<typeof useRevealAudio>;
   function Probe({ active }: { active: boolean }) {
     controls = useBattleAudio(active);
+    reveal = useRevealAudio();
     return null;
   }
   const { createRoot } = await import('react-dom/client');
@@ -131,6 +137,15 @@ async function mountAudio({ savedMuted = false, supported = true } = {}) {
     dom,
     media,
     contexts,
+    requested,
+    async finishLoading() {
+      await act(async () => {
+        pending.splice(0).forEach((resolve) => resolve());
+      });
+    },
+    async invokeReveal(fn: (audio: ReturnType<typeof useRevealAudio>) => void) {
+      await act(async () => fn(reveal!));
+    },
     render,
     invoke,
     controls: () => controls!,
@@ -143,6 +158,7 @@ async function mountAudio({ savedMuted = false, supported = true } = {}) {
     async close() {
       await act(async () => root.unmount());
       dom.window.close();
+      globalThis.fetch = previousFetch;
     },
   };
 }
@@ -227,18 +243,66 @@ test('ending cues survive a result rerender while the battle screen remains open
       audio.playCue('win');
     });
     const endings = app.contexts[0].sources;
-    assert.equal(endings.length, 4);
+    assert.equal(endings.length, 1, 'victory uses the original recorded fanfare');
     await app.render(true);
     assert.ok(
       endings.every((source) => source.stops.every((time) => time !== undefined)),
-      'result rerender retains scheduled ending notes',
+      'result rerender retains the fanfare',
     );
     await app.render(false);
     assert.ok(
       endings.every((source) => source.stops.includes(undefined)),
-      'leaving still stops ending notes',
+      'leaving still stops the fanfare',
     );
   } finally {
     await app.close();
   }
+});
+
+test('all reward reveal phases use local recordings, share mute and stop on close or hidden', async () => {
+  const app = await mountAudio();
+  try {
+    await app.invokeReveal((audio) => audio.play('hatch', 'opening'));
+    assert.equal(app.contexts.length, 0, 'no reveal audio before a user gesture');
+    await app.invokeReveal((audio) => audio.unlock());
+    assert.ok(app.requested.every((url) => /assets\/audio\/effects\/.+\.mp3$/.test(url)));
+    for (const kind of ['hatch', 'pack', 'evolve'] as const) {
+      await app.invokeReveal((audio) => audio.play(kind, 'opening'));
+      const context = app.contexts[0];
+      const previous = [...context.sources];
+      await app.invokeReveal((audio) => audio.play(kind, 'revealed'));
+      assert.ok(
+        previous.every((source) => source.stops.includes(undefined)),
+        'reveal cancels pending opening sounds',
+      );
+      await app.invokeReveal((audio) => audio.stop());
+      assert.ok(
+        context.sources.every((source) => source.stops.includes(undefined)),
+        'close stops every voice',
+      );
+    }
+    await app.invokeReveal((audio) => audio.play('evolve', 'opening'));
+    await app.visibility(true);
+    assert.ok(app.contexts[0].sources.every((source) => source.stops.includes(undefined)));
+    await app.visibility(false);
+    const count = app.contexts[0].sources.length;
+    await app.invoke((audio) => audio.toggleMuted());
+    await app.invokeReveal((audio) => audio.play('pack', 'revealed'));
+    assert.equal(app.contexts[0].sources.length, count, 'battle mute also mutes rewards');
+  } finally {
+    await app.close();
+  }
+});
+
+test('in-flight audio cannot start after a reveal closes or the player unmounts', async () => {
+  const app = await mountAudio({ deferred: true });
+  await app.invokeReveal((audio) => {
+    audio.unlock();
+    audio.play('hatch', 'opening');
+  });
+  await app.invokeReveal((audio) => audio.stop());
+  await app.finishLoading();
+  assert.equal(app.contexts[0].sources.length, 0);
+  await app.close();
+  assert.equal(app.contexts[0].state, 'closed');
 });

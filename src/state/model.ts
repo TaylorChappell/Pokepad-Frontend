@@ -52,7 +52,7 @@ export function getEvolutionStatus(state: AppSnapshot, p: OwnedPokemon) {
   let reason: string | undefined;
   if (!pokemonById(p.speciesId).evolvesTo.length)
     reason = 'This Pokémon has reached its final Kanto evolution.';
-  else if (p.locked || p.listed) reason = 'Unlist this Pokémon or finish its battle first.';
+  else if (p.locked) reason = 'Finish this Pokémon’s battle first.';
   else if (p.rareCandy < EVOLUTION_CANDY) reason = 'Collect more Rare Candy to evolve.';
   else if (lamports(available) < lamports(fundingNeeded))
     reason = 'Waiting for this coin’s reward pool to fund the evolution.';
@@ -104,12 +104,36 @@ function cleanSocials(input: CoinSocials = {}): CoinSocials {
   }
   return result;
 }
+/** Reject removed or unknown actions before they can alter local state or reach the live API. */
+export function assertSupportedAction(action: Action): void {
+  const supported: ReadonlySet<string> = new Set<Action['type']>([
+    'profile.update',
+    'notification.read',
+    'reward.open',
+    'pokemon.equip',
+    'pokemon.evolve',
+    'pokemon.learn',
+    'pokemon.declineMove',
+    'pokemon.redeem',
+    'gym.support',
+    'walk.progress',
+    'starter.choose',
+    'coin.create',
+    'sync',
+    'demo.reset',
+  ]);
+  if (!action || !supported.has(action.type))
+    throw new Error(
+      'This action is no longer supported. Pokémon can only be sold for their redeemable value.',
+    );
+}
 export function applyAction(
   original: AppSnapshot,
   action: Action,
   now = Date.now(),
   randomIndex: (length: number) => number = secureRandomIndex,
 ): AppSnapshot {
+  assertSupportedAction(action);
   if (action.type === 'demo.reset') return createInitialState(now);
   const s = structuredClone(original);
   const activity = (entry: Omit<Activity, 'id' | 'createdAt'>) =>
@@ -182,12 +206,13 @@ export function applyAction(
       detail: r.tier + ' ' + r.kind + ' opened.',
       kind: 'reward',
       pokemonId: species.id,
+      shiny: !!r.shiny,
       href: '/pokemon/' + id,
     });
   }
   if (action.type === 'pokemon.equip') {
     const p = owned(action.id);
-    if (p.locked || p.listed) throw new Error('Unlist this Pokémon before equipping it.');
+    if (p.locked) throw new Error('Finish this Pokémon’s battle before equipping it.');
     s.profile.equippedId = p.id;
   }
   if (action.type === 'pokemon.evolve') {
@@ -222,12 +247,13 @@ export function applyAction(
       detail: 'Value increased by ' + status.valueIncrease + ' SOL from the funded reward pool.',
       kind: 'evolve',
       pokemonId: target,
+      shiny: !!p.shiny,
       href: '/pokemon/' + p.id,
     });
   }
   if (action.type === 'pokemon.learn' || action.type === 'pokemon.declineMove') {
     const p = owned(action.id);
-    if (p.locked || p.listed) throw new Error('This Pokémon is currently unavailable.');
+    if (p.locked) throw new Error('This Pokémon is currently unavailable.');
     const offer = pendingMove(p);
     if (!offer || offer.id !== action.offerId)
       throw new Error('This move-learning opportunity is no longer available.');
@@ -267,33 +293,19 @@ export function applyAction(
       if (n.id === 'move-' + offer.id) n.read = true;
     });
   }
-  if (action.type === 'pokemon.list') {
-    const p = owned(action.id);
-    if (p.starter || p.locked) throw new Error('This Pokémon cannot be listed.');
-    if (!Number.isFinite(action.amount) || action.amount <= 0 || action.amount > 10000)
-      throw new Error('Enter a valid SOL asking price.');
-    p.listed = action.amount;
-    if (s.profile.equippedId === p.id) s.profile.equippedId = null;
-    activity({
-      title: 'Listed ' + pokemonById(p.speciesId).name,
-      detail: action.amount + ' SOL asking price · demo listing',
-      kind: 'trade',
-      pokemonId: p.speciesId,
-      href: '/marketplace',
-    });
-  }
-  if (action.type === 'pokemon.unlist') delete owned(action.id).listed;
   if (action.type === 'pokemon.redeem') {
     const p = owned(action.id);
-    if (p.starter || p.listed || p.locked)
-      throw new Error('This Pokémon cannot currently be redeemed.');
+    if (p.starter || p.locked) throw new Error('This Pokémon cannot currently be redeemed.');
     const coin = s.coins.find((c) => c.id === p.originCoin);
+    if (!coin && p.evolutionReserve > 0)
+      throw new Error('This Pokémon’s funding pool is unavailable. Please try again later.');
     if (coin) coin.vault = fromLamports(lamports(coin.vault) + lamports(p.evolutionReserve));
     activity({
       title: 'Redeemed ' + pokemonById(p.speciesId).name,
       detail: p.backing + ' SOL · local preview, no payment sent',
-      kind: 'trade',
+      kind: 'redeem',
       pokemonId: p.speciesId,
+      shiny: !!p.shiny,
       href: '/activity',
     });
     s.pokemon = s.pokemon.filter((x) => x.id !== p.id);
@@ -373,8 +385,8 @@ export function applyAction(
       if (action.pokemonInstanceId) throw new Error('Choose either your trainer or a Pokémon.');
     } else if (action.pokemonInstanceId) {
       launchPokemon = owned(action.pokemonInstanceId);
-      if (launchPokemon.listed || launchPokemon.locked)
-        throw new Error('Unlist this Pokémon or finish its battle before launching a coin.');
+      if (launchPokemon.locked)
+        throw new Error('Finish this Pokémon’s battle before launching a coin.');
     } else if (s.pokemon.length || action.launchKind === 'pokemon') {
       throw new Error('Choose a Pokémon from your inventory or launch as your trainer.');
     }
@@ -395,6 +407,8 @@ export function applyAction(
       pokemonShiny: !!launchPokemon?.shiny,
       launchKind: launchPokemon ? 'pokemon' : 'trainer',
       launchPokemonId: launchPokemon?.id,
+      creatorWallet: s.profile.wallet,
+      creatorName: s.profile.displayName.trim() || undefined,
       trainer: { character: s.profile.character, accessoryColor: s.profile.accessoryColor },
       image: action.image || undefined,
       socials,

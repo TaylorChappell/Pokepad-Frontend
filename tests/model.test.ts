@@ -12,7 +12,7 @@ import {
   secureRandomIndex,
   rewardBudget,
 } from '../src/state/model';
-import { migrateSnapshot } from '../src/services/api';
+import { createHttpApi, migrateSnapshot } from '../src/services/api';
 import { gymRankings } from '../src/state/gyms';
 import { POKEMON } from '../src/data/pokemon';
 import { MOVES, MOVE_OPTIONS } from '../src/data/moves';
@@ -312,34 +312,96 @@ test('full move sets require a replacement and declined offers never reappear', 
     /no longer/,
   );
 });
-test('listing blocks equip/redemption; redemption keeps discoveries and releases unused evolution budget', () => {
-  const initial = createInitialState(now),
-    listed = applyAction(initial, { type: 'pokemon.list', id: 'bulbasaur', amount: 0.5 }, now);
-  assert.throws(
-    () => applyAction(listed, { type: 'pokemon.equip', id: 'bulbasaur' }, now),
-    /Unlist/,
-  );
-  assert.throws(() => applyAction(listed, { type: 'pokemon.redeem', id: 'bulbasaur' }, now));
-  const unlisted = applyAction(listed, { type: 'pokemon.unlist', id: 'bulbasaur' }, now);
-  const redeemed = applyAction(unlisted, { type: 'pokemon.redeem', id: 'bulbasaur' }, now);
+test('selling redeems only funded value once, keeps discoveries and returns unused evolution reserves', () => {
+  const initial = createInitialState(now);
+  initial.profile.equippedId = 'bulbasaur';
+  const before = initial.pokemon.find((p) => p.id === 'bulbasaur')!;
+  const redeemed = applyAction(initial, { type: 'pokemon.redeem', id: before.id }, now);
   assert.equal(
-    redeemed.pokemon.find((p) => p.id === 'bulbasaur'),
+    redeemed.pokemon.find((p) => p.id === before.id),
     undefined,
   );
-  assert.ok(redeemed.discovered.includes(1));
+  assert.equal(redeemed.profile.equippedId, null);
+  assert.ok(redeemed.discovered.includes(before.speciesId));
   assert.equal(redeemed.coins.find((c) => c.id === 'bulb')!.vault, 5.64);
-  assert.equal(totalFunded(initial) - totalFunded(redeemed), 80_000_000);
-  assert.throws(() =>
-    applyAction(initial, { type: 'pokemon.list', id: 'partner', amount: 1 }, now),
+  assert.equal(totalFunded(initial) - totalFunded(redeemed), Math.round(before.backing * 1e9));
+  assert.match(redeemed.activity[0].detail, /^0.08 SOL/);
+  assert.throws(
+    () => applyAction(redeemed, { type: 'pokemon.redeem', id: before.id }, now),
+    /no longer in your inventory/,
   );
+  assert.throws(
+    () => applyAction(initial, { type: 'pokemon.redeem', id: 'partner' }, now),
+    /cannot currently be redeemed/,
+  );
+  const locked = structuredClone(initial);
+  locked.pokemon.find((p) => p.id === before.id)!.locked = true;
+  assert.throws(() => applyAction(locked, { type: 'pokemon.redeem', id: before.id }, now));
+  const missingPool = structuredClone(initial);
+  missingPool.coins = missingPool.coins.filter((c) => c.id !== before.originCoin);
+  assert.throws(
+    () => applyAction(missingPool, { type: 'pokemon.redeem', id: before.id }, now),
+    /funding pool is unavailable/,
+  );
+  // Extra client fields cannot turn redemption into an arbitrary-price sale.
+  const attemptedPrice = { type: 'pokemon.redeem', id: before.id, amount: 9999 } as Action;
+  assert.equal(totalFunded(applyAction(initial, attemptedPrice, now)), totalFunded(redeemed));
 });
-test('support moves one actual inventory contribution between gyms, ignoring listing prices', () => {
+test('retired marketplace actions cannot mutate state or reach the live API', async () => {
+  const initial = createInitialState(now);
+  const legacy = ['pokemon.list', 'pokemon.unlist', 'pokemon.purchase', 'marketplace.purchase'];
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = async () => {
+    requests += 1;
+    throw new Error('Unexpected request');
+  };
+  try {
+    for (const type of legacy) {
+      const action = { type, id: 'gengar', amount: 9999 } as unknown as Action;
+      assert.throws(() => applyAction(initial, action, now), /no longer supported/);
+      await assert.rejects(
+        createHttpApi('https://api.example.test').dispatch(action),
+        /no longer supported/,
+      );
+    }
+    assert.equal(requests, 0);
+    assert.equal(initial.pokemon.find((p) => p.id === 'gengar')!.listed, undefined);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+test('legacy listings return to inventory without losing value or Pokédex history', () => {
+  const old = createInitialState(now);
+  old.pokemon.find((p) => p.id === 'bulbasaur')!.listed = 9999;
+  old.activity.unshift({
+    id: 'old-listing',
+    title: 'Listed Bulbasaur',
+    detail: '9999 SOL asking price · demo listing',
+    kind: 'trade',
+    createdAt: now - 1000,
+    href: '/marketplace',
+    pokemonId: 1,
+  });
+  const migrated = migrateSnapshot(old)!;
+  assert.equal(migrated.pokemon.find((p) => p.id === 'bulbasaur')!.listed, undefined);
+  assert.deepEqual(migrated.discovered, old.discovered);
+  assert.equal(totalFunded(migrated), totalFunded(old));
+  assert.equal(migrated.pokemon.length, old.pokemon.length);
+  assert.equal(migrated.activity[0].title, 'Listed Bulbasaur');
+  assert.equal(migrated.activity[0].href, '/pokemon');
+  assert.equal(
+    applyAction(migrated, { type: 'pokemon.equip', id: 'bulbasaur' }, now).profile.equippedId,
+    'bulbasaur',
+  );
+  const sold = applyAction(migrated, { type: 'pokemon.redeem', id: 'bulbasaur' }, now);
+  assert.equal(totalFunded(migrated) - totalFunded(sold), 80_000_000);
+});
+test('support moves the actual redeemable inventory value between gyms', () => {
   const initial = createInitialState(now),
     value = collectionValue(initial),
     before = gymRankings(initial);
-  let next = applyAction(initial, { type: 'pokemon.list', id: 'gengar', amount: 9999 }, now);
-  assert.equal(collectionValue(next), value);
-  next = applyAction(next, { type: 'gym.support', id: 'geng' }, now);
+  const next = applyAction(initial, { type: 'gym.support', id: 'geng' }, now);
   const after = gymRankings(next);
   assert.ok(
     Math.abs(
@@ -400,6 +462,11 @@ test('coin launches require an owned eligible instance, support an independent i
   assert.equal(coin.pokemonId, 9);
   assert.equal(coin.pokemonShiny, true);
   assert.equal(coin.launchPokemonId, 'blastoise');
+  assert.equal(coin.creatorWallet, s.profile.wallet);
+  assert.equal(coin.creatorName, undefined);
+  const named = structuredClone(s);
+  named.profile.displayName = '  Ash  ';
+  assert.equal(applyAction(named, action, now).coins[0].creatorName, 'Ash');
   assert.equal(coin.image, action.image);
   assert.equal(coin.socials?.website, 'https://example.com/');
   assert.equal(coin.vault, 0);
@@ -436,8 +503,8 @@ test('coin launches require an owned eligible instance, support an independent i
     () => applyAction(s, { ...action, image: 'data:image/svg+xml;base64,AAAA' }, now),
     /PNG/,
   );
-  s.pokemon.find((p) => p.id === 'blastoise')!.listed = 0.4;
-  assert.throws(() => applyAction(s, action, now), /Unlist/);
+  s.pokemon.find((p) => p.id === 'blastoise')!.locked = true;
+  assert.throws(() => applyAction(s, action, now), /battle/);
   s.pokemon = [];
   const trainer = applyAction(s, { ...action, pokemonInstanceId: undefined }, now).coins[0];
   assert.equal(trainer.launchKind, 'trainer');
@@ -496,6 +563,13 @@ test('profile defaults to pixel style and legacy saves migrate without minting e
   assert.equal(migrated.pokemon[0].evolutionReserve, 0);
   assert.deepEqual(migrated.coins, old.coins);
   assert.equal(migrateSnapshot({ version: 1 }), null);
+  old.notifications[0].title = 'Welcome to Poképad';
+  old.notifications[0].description = 'New pack from $POKE';
+  old.activity[0].title = 'Joined Team POKE';
+  const branded = migrateSnapshot(old)!;
+  assert.equal(branded.notifications[0].title, 'Welcome to Kanto');
+  assert.equal(branded.notifications[0].description, 'New pack from $KANTO');
+  assert.equal(branded.activity[0].title, 'Joined Team KANTO');
 });
 test('all 151 Kanto species and offered moves resolve to catalogue entries', () => {
   assert.deepEqual(

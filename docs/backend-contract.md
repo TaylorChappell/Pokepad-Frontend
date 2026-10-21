@@ -1,10 +1,10 @@
-# Backend integration boundary · interface v8
+# Backend integration boundary · interface v13
 
 The static frontend deploys to GitHub Pages using hash routes. The backend belongs in a separate repository and can deploy to Railway. Production balances, funding, movement, progression, random outcomes, and settlement must be server-authoritative. This package implements none of those backend services.
 
 ## Adapter and snapshots
 
-src/services/api.ts exposes PokepadApi:
+src/services/api.ts exposes KantoApi:
 
     load(): Promise<AppSnapshot>
     dispatch(action: Action): Promise<AppSnapshot>
@@ -26,9 +26,10 @@ src/types.ts is a view-model contract, not a database or ledger schema. Return o
 | GET /v1/auth/challenge   | Wallet and origin                        | Expiring single-use signing challenge  |
 | POST /v1/auth/verify     | Signed challenge                         | Session cookie and account identity    |
 | POST /v1/auth/logout     | Session                                  | Clears session                         |
+| GET /v1/analytics        | Public platform aggregate                | PlatformAnalytics                      |
 | GET /v1/events           | Authenticated event stream               | Reward, notification and battle events |
 
-Bootstrap, actions, and the two public trainer routes have client adapters. Wallet signing and live event subscription remain future work. Errors should use non-2xx JSON with a user-safe message and stable machine-readable code.
+Bootstrap, actions, analytics, and the two public trainer routes have client adapters. Wallet signing and live event subscription remain future work. Errors should use non-2xx JSON with a user-safe message and stable machine-readable code.
 
 ## Market quotes, price history, launch age and watchlists
 
@@ -48,35 +49,34 @@ Return the `PublicTrainer` view defined in that service: wallet, displayName, ch
 
 Without an API origin, the directory searches the current demo account and two named fixture trainers. Arbitrary blockchain addresses are not automatically indexed. Errors from a configured API are shown rather than replaced with sample trainers. The public route is `#/trainer/<wallet>`.
 
-## Analytics and community activity
+## Analytics and trainer activity
 
-`src/pages/Analytics.tsx` derives its totals from the coins in `AppSnapshot`: combined market cap, reported volume, active-coin count, free reward pools, and reward-mode counts. These cover the available snapshot, not a complete platform ledger or a historical time series. Volume is the snapshot's reported amount; the current contract has no explicit measurement-window field. Aggregate market figures use USD only if every returned coin has both finite USD quote fields; otherwise both totals consistently use SOL. Free reward-pool totals include `Coin.vault` only and exclude outstanding Pokémon values and evolution allocations.
+`GET /v1/analytics` returns `{ metrics: { totalRewardsSol, platformTradingVolumeSol, activeUsers24h }, updatedAt, events }`. Both SOL metrics are non-negative finite numbers from the platform ledger: cumulative rewards distributed and cumulative settled trading volume. Active users is the distinct active-wallet count over the trailing 24 hours, a non-negative safe integer. `updatedAt` is a Unix timestamp in milliseconds. These are platform totals, never the connected account’s collection value or free reward-vault funds.
 
-The account feed maps `AppSnapshot.activity` to display events. A separate, explicitly labelled community preview contains fixed examples of hatches, pack openings, marketplace purchases, evolutions, and launches. These examples are never added to metrics and do not represent settled transactions. The live adapter defaults to account activity, although the labelled example view remains available.
+`src/services/analytics.ts` validates the response, caps events, removes duplicate IDs and sorts newest first. Each event includes a stable ID, kind (`egg`, `pack`, `redeem`, `evolve`, `launch`, `other`), public trainer name and optional wallet, avatar, title, detail, timestamp, and internal destination. Pokémon ID and shiny variant are optional. Publish only completed reveals and confirmed public actions; never leak unopened outcomes or private information.
 
-There is no analytics endpoint or event subscription wired into this revision. A production service should supply a dedicated aggregate response with coverage, measurement windows, quote currency and timestamp, plus a paginated public event feed or stream. Events need stable IDs, server timestamps, explicit event kinds, public trainer identity, coin/instance references, outcome visibility, and settlement status. Send only completed public reveals and confirmed purchases to that feed; keep unopened outcomes and private account events private. Replace the example provider without mixing fixtures into live totals.
+The screen polls every 10 seconds, retries after 15 seconds on failure, cancels requests on unmount, retains the last successful response and shows reconnect status. Current account events update immediately through AppContext and merge with public events by stable ID. The backend should reuse account event IDs in its public feed to avoid duplicates. Demo mode has account activity only and unavailable platform metrics; it never invents active users or random community events.
 
 ## Actions represented by the frontend
 
-| Action                | Required server checks                                                                                |
-| --------------------- | ----------------------------------------------------------------------------------------------------- |
-| profile.update        | Account ownership, character/colour allowlists, display name, pixel/drawn preference                  |
-| notification.read     | Notification belongs to account                                                                       |
-| reward.open           | Ownership, server timer, unopened state, funded allocations, atomic authoritative reveal              |
-| pokemon.equip         | Ownership, no listing/battle lock                                                                     |
-| pokemon.evolve        | Ownership, earned Rare Candy, eligible species, no locks, fully funded increase, server random branch |
-| pokemon.learn         | Pending earned offer ID, level/learnset, unconsumed opportunity, valid replacement slot               |
-| pokemon.declineMove   | Pending earned offer ID; durable permanent decline for that instance and move                         |
-| pokemon.list / unlist | Ownership, non-starter, compatible locks, valid price                                                 |
-| pokemon.redeem        | Ownership, non-starter, backed claim, atomic removal and payout, unused-budget release                |
-| gym.support           | Active coin held, one supported gym, server eligibility                                               |
-| starter.choose        | Main-token holding, one claim, Pikachu strictly above 1% of supply                                    |
-| coin.create           | Explicit trainer or owned eligible Pokémon choice, validated content, token creation transaction      |
-| sync                  | Reconcile server-owned state                                                                          |
+| Action              | Required server checks                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| profile.update      | Account ownership, character/colour allowlists, display name, pixel/drawn preference                  |
+| notification.read   | Notification belongs to account                                                                       |
+| reward.open         | Ownership, server timer, unopened state, funded allocations, atomic authoritative reveal              |
+| pokemon.equip       | Ownership, no battle lock                                                                             |
+| pokemon.evolve      | Ownership, earned Rare Candy, eligible species, no locks, fully funded increase, server random branch |
+| pokemon.learn       | Pending earned offer ID, level/learnset, unconsumed opportunity, valid replacement slot               |
+| pokemon.declineMove | Pending earned offer ID; durable permanent decline for that instance and move                         |
+| pokemon.redeem      | Ownership, non-starter, backed claim, atomic removal and payout, unused-budget release                |
+| gym.support         | Active coin held, one supported gym, server eligibility                                               |
+| starter.choose      | Main-token holding, one claim, Pikachu strictly above 1% of supply                                    |
+| coin.create         | Explicit trainer or owned eligible Pokémon choice, validated content, token creation transaction      |
+| sync                | Reconcile server-owned state                                                                          |
 
 walk.progress and demo.reset are demo-only actions; reject them on the live API. Start and finish verified walking sessions through a separate backend interface. Never accept client distance as authoritative.
 
-Trade, purchase, and wager screens are review/practice flows. They do not submit live orders or escrow transactions. Add intent, signing, confirmation, and settlement endpoints when those operations are implemented.
+Trade and wager screens are review/practice flows. They do not submit live orders or escrow transactions. Add intent, signing, confirmation, and settlement endpoints when those operations are implemented.
 
 ## Reward ledger and conservation
 
@@ -112,7 +112,7 @@ After a successful evolution, the demo allocates as much of the next evolution's
 
 pokemon.evolve accepts only an instance ID. The client cannot select an evolution target. Eevee has exactly equal one-third chances of Vaporeon, Jolteon, and Flareon. Offline code uses crypto.getRandomValues with rejection sampling; tests can inject each branch. A live backend must select and durably record the result using its authoritative randomness policy. Client cryptography cannot stop an owner modifying or resetting their local preview.
 
-Starter Pokémon begin at zero value. Claiming reserves an initial evolution budget only from available main-token funds. Their first funded evolution makes them a regular funded instance in this provisional policy. Redemption pays only current backing, returns any unused evolutionReserve to the originating pool, and preserves the Pokédex discovery. Marketplace asking prices remain separate from funded value.
+Starter Pokémon begin at zero value. Claiming reserves an initial evolution budget only from available main-token funds. Their first funded evolution makes them a regular funded instance in this provisional policy. Redemption pays only current backing, returns any unused evolutionReserve to the originating pool, and preserves the Pokédex discovery. Selling is redemption at exactly current backing. There are no listings or buyer-set prices. Legacy list/unlist/purchase actions are rejected before sending to the HTTP API.
 
 ## One-time move opportunities
 
@@ -138,7 +138,7 @@ Profile.artStyle is pixel or drawn, defaulting to pixel. Character, accessory co
 
 ## Gyms, walking and holding
 
-Each trainer supports one active gym. Preview scores sum current Pokémon backing, never asking prices or unused evolution budgets, and include sample aggregates for other trainers. Replace those fixtures with current server-calculated inventory across eligible supporters. Prevent double attribution and define escrow/listing treatment and snapshot timing. If no gym qualifies, use the main token as the fallback on the Gyms page. The redesigned leader and contribution panels are view-only; available trainer roster entries link to public profiles without changing support eligibility.
+Each trainer supports one active gym. Preview scores sum current Pokémon backing, never asking prices or unused evolution budgets, and include sample aggregates for other trainers. Replace those fixtures with current server-calculated inventory across eligible supporters. Prevent double attribution and define escrow treatment and snapshot timing. If no gym qualifies, use the main token as the fallback on the Gyms page. The redesigned leader and contribution panels are view-only; available trainer roster entries link to public profiles without changing support eligibility.
 
 Demo walking removes two hours from egg timers per kilometre. This is a configurable preview parameter. Real verification needs server sessions, device signals, route/speed plausibility, and duplicate detection. A browser cannot supply cheat-proof GPS evidence; show pending/accepted/rejected progress without allowing local timers to mint rewards.
 
@@ -162,7 +162,7 @@ The lobby displays a possible matchup and an editable party preview, with pagina
 
 `src/battle/presentation.ts` maps every currently playable move to an authored effect and projects resolved engine events into sequential display frames. The local engine emits typed move names, charge/release phases, target sides, miss/immunity outcomes, and per-event player/rival/active/winner snapshots. Playback reads those fields rather than parsing message text; transient snapshots are stripped from the retained history. A future live stream should preserve this separation between event data and display text, with stable event IDs, instance references and server-authoritative state updates. Visual playback must never decide damage, outcomes or settlement. The present 48-move catalogue and simplified engine are not all 165 original Gen 1 moves or ROM-perfect mechanics.
 
-`src/battle/audio.ts` plays a bundled HeartGold/SoulSilver Kanto trainer battle recording after a battle-button gesture and synthesizes move-family sound effects. Mute is a local preference under `pokepad-battle-muted`, independent of account or ledger state. Hidden-page and match-exit cleanup control playback; browser audio permissions may still require a further gesture. These controls require no backend action.
+`src/battle/audio.ts` plays a bundled HeartGold/SoulSilver Kanto trainer battle recording after a battle-button gesture and plays locally bundled original Mystery Dungeon samples for all 48 moves. Hatching, evolution, and pack reveals share the same sound service. Mute is a local preference under `kanto-audio-muted` (migrating the previous `pokepad-battle-muted` choice), independent of account or ledger state. Hidden-page and match-exit cleanup control playback; browser audio permissions may still require a further gesture. These controls require no backend action.
 
 Battle state and the practice win streak are local to the screen. Offline matches do not dispatch ownership or balance changes, issue rewards, charge stakes, or persist damage. The Online tab exposes friendly, SOL, token, and Pokémon setup controls, but its matchmaking button is disabled and it sends no matchmaking request or escrow instruction. No local battle result may authorize a payout or transfer.
 
@@ -173,3 +173,11 @@ The backend needs full rules and learnsets, eligible-instance checks, match form
 Allow the exact frontend origin in CORS, with credentials and the Idempotency-Key header. Use a suitable session/CSRF design. Default GitHub Pages and Railway domains are cross-site; custom app/API domains under one site avoid reliance on third-party cookies.
 
 Keep signing, RPC, and database credentials server-side. VITE-prefixed frontend variables are public. Authoritative state needs a durable database, not process memory or an ephemeral filesystem.
+
+## Creator attribution and coin detail
+
+`Coin.creatorWallet?: string` is the verified wallet that launched the coin; `creatorName?: string` is its current public display name, if set. The frontend links the creator to `#/trainer/<encoded wallet>` and falls back to a shortened wallet. Absent creator fields show unavailable attribution. Local creation records the current profile, while known demo coins have explicit fixture creators. The backend must derive creator identity from authenticated launch transactions, never trust a submitted name or wallet.
+
+Coin detail charts market cap from finite price-history samples multiplied by total supply. USD conversion is applied only when a valid quoted ratio exists; otherwise values stay explicitly in SOL. No time intervals are invented for samples that lack timestamps. Return an empty history when unavailable.
+
+Local migration keeps existing storage keys and stable main-coin ID `poke`, updates its displayed branding to Kanto, clears legacy listing flags without changing asset values, and redirects old activity destinations to My PC. HTTP snapshots remain server-authoritative and need to omit retired listing state. Gym badges now use `Coin.image`, including uploaded logos; legacy named badges resolve to their original coin IDs. Future badge references should store stable coin IDs, not tickers, since tickers may be duplicated.

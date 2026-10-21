@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useSoundPreference } from '../audio/sound';
 import { useApp } from '../state/AppContext';
+import { GymBadge, coinForBadge } from '../components/GymBadge';
+import { gymRankings } from '../state/gyms';
 import { collectionValue, profileName, shortWallet } from '../state/model';
-import { ACCENT_COLORS, CHARACTERS, GYMS } from '../data/demo';
+import { ACCENT_COLORS, CHARACTERS } from '../data/demo';
 import { pokemonById } from '../data/pokemon';
 import {
   Avatar,
-  Badge,
   Button,
   CoinAvatar,
   EmptyState,
@@ -178,7 +180,7 @@ export function PortfolioPage() {
 
 export function ProfilePage() {
   const { state } = useApp(),
-    gym = GYMS.find((g) => g.coinId === state.profile.supportedGym),
+    gym = gymRankings(state).find((g) => g.coinId === state.profile.supportedGym),
     partner = state.pokemon.find((p) => p.id === state.profile.equippedId);
   return (
     <>
@@ -258,10 +260,7 @@ export function ProfilePage() {
           </div>
           {gym && (
             <a className="profile-gym" href={'#/gym/' + gym.coinId}>
-              <Badge
-                label={state.coins.find((c) => c.id === gym.coinId)?.ticker}
-                color={gym.color}
-              />
+              <GymBadge coin={gym.coin} />
               <span>
                 <h3>{gym.name}</h3>
                 <small>Supporting this community</small>
@@ -270,12 +269,15 @@ export function ProfilePage() {
             </a>
           )}
           <div className="badge-shelf">
-            {state.badges.map((b, i) => (
-              <div key={b}>
-                <Badge label={b} color={['#edaa69', '#7db9d2', '#92b694'][i % 3]} size={61} />
-                <small>{b}</small>
-              </div>
-            ))}
+            {state.badges.map((badge) => {
+              const coin = coinForBadge(state.coins, badge);
+              return coin ? (
+                <a key={badge} href={'#/gym/' + coin.id} title={coin.name + ' gym'}>
+                  <GymBadge coin={coin} size={61} />
+                  <small>{coin.ticker}</small>
+                </a>
+              ) : null;
+            })}
             <div className="locked-badge">
               <Icon name="Lock" />
               <small>Undiscovered</small>
@@ -338,6 +340,7 @@ const editableProfile = (profile: Profile) => ({
 });
 
 export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
+  const { muted, toggleMuted } = useSoundPreference();
   const { state, act, toast, busy, mode } = useApp();
   const [tab, setTab] = useState(initial);
   const [draft, setDraft] = useState<Profile>(state.profile);
@@ -569,6 +572,21 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
               <div className="settings-section-heading">
                 <h2>Just the updates you want.</h2>
                 <p>These preferences save as soon as you change them.</p>
+              </div>
+              <div className="toggle-row">
+                <div>
+                  <strong>Game sound</strong>
+                  <p>Battle music, attack effects, hatching, packs, and evolution.</p>
+                </div>
+                <button
+                  className={'toggle ' + (!muted ? 'on' : '')}
+                  role="switch"
+                  aria-checked={!muted}
+                  aria-label="Game sound"
+                  onClick={toggleMuted}
+                >
+                  <span />
+                </button>
               </div>
               {[
                 {
