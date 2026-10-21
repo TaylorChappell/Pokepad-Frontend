@@ -560,7 +560,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
           )}
         </section>
         <div className="summary-command-panel">
-          <nav className="summary-menu" aria-label="Pokémon information">
+          <div className="summary-menu" role="tablist" aria-label="Pokémon information">
             {(
               [
                 { id: 'stats', label: 'Stats', icon: 'Activity' },
@@ -569,8 +569,25 @@ export function PokemonDetailPage({ id }: { id: string }) {
             ).map((item) => (
               <button
                 key={item.id}
-                aria-pressed={section === item.id}
-                aria-controls={'summary-panel-' + id}
+                role="tab"
+                id={'summary-tab-' + id + '-' + item.id}
+                aria-selected={section === item.id}
+                aria-controls={'summary-panel-' + id + '-' + item.id}
+                tabIndex={section === item.id ? 0 : -1}
+                onKeyDown={(event) => {
+                  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+                  event.preventDefault();
+                  const next =
+                    event.key === 'Home'
+                      ? 'stats'
+                      : event.key === 'End'
+                        ? 'moves'
+                        : section === 'stats'
+                          ? 'moves'
+                          : 'stats';
+                  setSection(next);
+                  document.getElementById('summary-tab-' + id + '-' + next)?.focus();
+                }}
                 onClick={() => setSection(item.id)}
               >
                 <Icon name={item.icon} size={18} />
@@ -580,7 +597,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                 )}
               </button>
             ))}
-          </nav>
+          </div>
           {offer && newMove && (
             <button
               className="pending-move-prompt"
@@ -603,7 +620,14 @@ export function PokemonDetailPage({ id }: { id: string }) {
               </span>
             </button>
           )}
-          <div className="summary-information" id={'summary-panel-' + id}>
+          <div
+            className="summary-information"
+            role="tabpanel"
+            id={'summary-panel-' + id + '-stats'}
+            aria-labelledby={'summary-tab-' + id + '-stats'}
+            hidden={section !== 'stats'}
+            tabIndex={0}
+          >
             {section === 'stats' && (
               <section className="summary-stats" aria-label="Battle stats">
                 <div className="summary-section-heading">
@@ -646,6 +670,15 @@ export function PokemonDetailPage({ id }: { id: string }) {
                 </div>
               </section>
             )}
+          </div>
+          <div
+            className="summary-information"
+            role="tabpanel"
+            id={'summary-panel-' + id + '-moves'}
+            aria-labelledby={'summary-tab-' + id + '-moves'}
+            hidden={section !== 'moves'}
+            tabIndex={0}
+          >
             {section === 'moves' && <PokemonMoveSet moves={p.moves} onPreview={setPreviewMove} />}
           </div>
         </div>

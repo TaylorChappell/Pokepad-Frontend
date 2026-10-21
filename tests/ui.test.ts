@@ -1500,3 +1500,63 @@ test('reward indicator counts only unopened packs and eggs ready to hatch', asyn
     await empty.close();
   }
 });
+
+test('legal routes remain readable during pending trainer prompts and footer destinations are honest', async () => {
+  const app = await mountApp('/terms', (state) => {
+    state.demoPromptEpoch = 1;
+  });
+  try {
+    const footer = app.document.querySelector('footer')!;
+    assert.ok(footer);
+    assert.match(footer.textContent || '', new RegExp('© ' + new Date().getFullYear() + ' Kanto'));
+    assert.equal(footer.querySelector('a[href="#/terms"]')?.textContent, 'Terms of Service');
+    assert.equal(footer.querySelector('a[href="#/privacy"]')?.textContent, 'Privacy Policy');
+    assert.equal(footer.querySelector('a[href="https://x.com"]')?.getAttribute('target'), '_blank');
+    assert.equal(footer.querySelector('a[href^="https://pump.fun"]'), null);
+    assert.ok(footer.querySelector('[aria-label="Pump.fun main coin link coming soon"]'));
+    assert.equal(app.document.querySelector('.legal-heading h1')?.textContent, 'Terms of Service');
+    assert.equal(app.document.querySelector('.trainer-prompts'), null);
+    await app.go('/privacy');
+    assert.equal(app.document.title, 'Privacy Policy · Kanto');
+    assert.equal(app.document.querySelector('.legal-heading h1')?.textContent, 'Privacy Policy');
+    assert.match(
+      app.document.querySelector('.legal-contact')?.textContent || '',
+      /Contact email to be added/,
+    );
+    assert.equal(app.document.querySelector('.trainer-prompts'), null);
+    await app.go('/pokemon');
+    assert.ok(
+      app.document.querySelector('.trainer-prompts'),
+      'Normal prompt handling returns after leaving legal pages',
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+test('Stats and Moves have separate tab panels and support arrow-key navigation', async () => {
+  const app = await mountApp('/pokemon/dragonite');
+  try {
+    const tabs = app.document.querySelector('[role="tablist"][aria-label="Pokémon information"]')!;
+    const stats = app.button('Stats', tabs);
+    const moves = app.button('Moves', tabs);
+    assert.notEqual(stats.getAttribute('aria-controls'), moves.getAttribute('aria-controls'));
+    assert.equal(stats.getAttribute('aria-selected'), 'true');
+    assert.equal(app.document.querySelectorAll('.summary-information:not([hidden])').length, 1);
+    await act(async () => {
+      stats.focus();
+      stats.dispatchEvent(
+        new app.dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
+      );
+    });
+    assert.equal(app.document.activeElement, moves);
+    assert.equal(moves.getAttribute('aria-selected'), 'true');
+    assert.equal(app.document.querySelector('.summary-stats'), null);
+    assert.ok(app.document.querySelector('.pokemon-move-set'));
+    await app.click(stats);
+    assert.ok(app.document.querySelector('.summary-stats'));
+    assert.equal(app.document.querySelector('.pokemon-move-set'), null);
+  } finally {
+    await app.close();
+  }
+});

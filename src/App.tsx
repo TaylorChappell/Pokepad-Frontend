@@ -17,6 +17,7 @@ import {
 import { GymsPage, GymDetailPage } from './pages/Community';
 import { CreateCoinPage } from './pages/CreateCoin';
 import { GuidePage } from './pages/Guide';
+import { LegalPage } from './pages/Legal';
 import { BattlesPage } from './pages/Battles';
 import { AnalyticsPage } from './pages/Analytics';
 import { TrainerPage } from './pages/Trainer';
@@ -42,6 +43,8 @@ function Routes() {
     page = <TrainerPage wallet={path.slice('/trainer/'.length)} />;
   else if (path.startsWith('/coin/')) page = <CoinPage key={path} id={path.split('/')[2]} />;
   else if (path === '/guide') page = <GuidePage />;
+  else if (path === '/terms' || path === '/privacy')
+    page = <LegalPage kind={path === '/terms' ? 'terms' : 'privacy'} />;
   else if (path === '/create') page = <CreateCoinPage />;
   else if (path === '/portfolio') page = <PortfolioPage />;
   else if (path === '/rewards') page = <RewardsPage initialTab={params.get('tab') || 'eggs'} />;
@@ -80,10 +83,20 @@ function Routes() {
       window.location.replace('#/pokemon');
       return;
     }
-    const label = path.split('/')[1] || 'Discover';
+    const label =
+      path === '/terms'
+        ? 'Terms of Service'
+        : path === '/privacy'
+          ? 'Privacy Policy'
+          : path.split('/')[1] || 'Discover';
     document.title = label.charAt(0).toUpperCase() + label.slice(1) + ' · Kanto';
   }, [path]);
-  return <Layout path={path}>{page}</Layout>;
+  return (
+    <>
+      <Layout path={path}>{page}</Layout>
+      {!['/terms', '/privacy'].includes(path) && <TrainerPrompts />}
+    </>
+  );
 }
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: boolean }> {
   state = { error: false };
@@ -114,7 +127,6 @@ export default function App() {
       <AppProvider>
         <Routes />
         <LoadingCoordinator />
-        <TrainerPrompts />
       </AppProvider>
     </ErrorBoundary>
   );

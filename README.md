@@ -33,7 +33,7 @@ npm run build
 | Rewards            | Eggs/Packs/Opened tabs, source coins, incubation progress and synchronized hatch/pack/evolution reveals                                                            |
 | Walking            | Mobile location sessions and server-calculated egg acceleration in live mode; labelled simulation in demo mode                                                     |
 | My PC              | Actionable evolutions/moves first, then combat strength; separate SOL sorting, favourites, search, filters, HP and readiness indicators                            |
-| Pokémon summary    | Stats/Moves/Evolution/Details menu, equip, earned move learning/forgetting, mystery evolution previews and exact-value redemption                                  |
+| Pokémon summary    | Separate Stats and Moves tabs, details dialog, Use item/Teach move actions, funded evolution button and exact-value redemption                                     |
 | Pokédex            | All 151 Kanto species, separate normal/shiny discovery history and catalogue reference totals                                                                      |
 | Battles            | One-to-three Pokémon team picker, searchable roster, selected slots, HP/types/strength, favourites first, online rooms and four offline bot difficulties           |
 | Gyms               | One supported gym, coin-image badges, server-scored supporter value and trainer profiles                                                                           |
@@ -80,6 +80,23 @@ Phantom and MetaMask Solana use Wallet Standard sign-in. Secure cookies can rest
 Launch, trade and escrow operations preserve reviewed request IDs and pending transaction receipts for recovery. Unknown transaction outcomes are checked before another signature is requested. `VITE_*` values are public browser configuration: keep signing keys, session secrets and private RPC credentials on the backend.
 
 See [the frontend API contract](docs/backend-contract.md) and the [backend deployment documentation](https://github.com/TaylorChappell/kanto-backend). Mobile browser GPS remains spoofable; server plausibility checks and limits reduce abuse but do not prove walking. Live activation still needs deployed infrastructure, real-wallet transaction checks and desktop/mobile visual and audio review.
+
+## Footer and legal pages
+
+Every route has a footer in normal document flow: it sits at the viewport bottom on short pages and follows content on long pages. Battle and launch screens reserve room for it. Terms of Service (`#/terms`) and Privacy Policy (`#/privacy`) are accessible without connecting a wallet.
+
+The legal copy is explicitly a draft. Before a public launch, confirm the operator's identity/contact, applicable legal requirements, actual providers and international transfers, lawful bases and retention policy against the deployed service. The privacy draft is based on the current backend's session, walking, collection and transaction behavior; it does not certify that a deployment matches this code.
+
+Optional **public** GitHub Actions repository variables (or `.env.local` values) are passed through the Pages build:
+
+| Variable                   | Purpose                                                                                                                                                                     |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_MAIN_TOKEN_MINT`     | Real main coin's Solana mint. Otherwise live mode uses the API coin marked `main`. Demo addresses never become Pump.fun destinations; an unconfigured link displays “Soon”. |
+| `VITE_KANTO_X_URL`         | Official `https://x.com/…` profile. Until configured, the X placeholder opens `https://x.com`.                                                                              |
+| `VITE_LEGAL_OPERATOR`      | Operator's public legal name/details. Blank displays a clear placeholder.                                                                                                   |
+| `VITE_LEGAL_CONTACT_EMAIL` | Public support/privacy contact email. Blank or malformed displays a placeholder.                                                                                            |
+
+Rebuild after changing these values. No private keys, credentials or secrets belong here. The Pump.fun link is built from the mint rather than a user-supplied redirect URL. The copyright notice identifies Kanto; the terms retain third-party owners' rights.
 
 ## Project layout
 

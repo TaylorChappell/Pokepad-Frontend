@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '../state/AppContext';
 import { profileName } from '../state/model';
-import { Icon, Pokeball, Wordmark, Avatar, PokemonArt, type IconName } from './UI';
+import { Icon, Wordmark, Avatar, PokemonArt, type IconName } from './UI';
 import { asset, navigate, relativeTime } from '../utils';
 import { SidebarBuddy } from './SidebarBuddy';
 import { SearchDialog } from './SearchDialog';
 import { WalletConnection } from './WalletConnection';
 import { BackendStatus } from './BackendStatus';
+import { SiteFooter } from './SiteFooter';
 const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/discover', label: 'Discover', icon: 'Compass' },
   { path: '/create', label: 'Create Coin', icon: 'Plus' },
@@ -268,14 +269,8 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
       </aside>
       <main id="main-content" tabIndex={-1} className="main-content">
         {mode === 'live' && <BackendStatus />}
-        {children}
-        <footer className="page-footer">
-          <Pokeball size={17} />
-          <span>KANTO</span>
-          <a href="#/guide">
-            Trainer handbook <Icon name="ArrowUpRight" size={12} />
-          </a>
-        </footer>
+        <div className="page-content">{children}</div>
+        <SiteFooter />
       </main>
       {searchOpen && <SearchDialog coins={state.coins} onClose={closeSearch} />}
     </div>

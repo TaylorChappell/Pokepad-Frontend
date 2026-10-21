@@ -140,10 +140,12 @@ function DifficultyPicker({
           className={value === name ? 'selected' : ''}
           onClick={() => onChange(name)}
         >
-          <Avatar
-            profile={{ character: trainerCharacters[name], accessoryColor: trainerColors[name] }}
-            size={60}
-          />
+          <span className="difficulty-portrait">
+            <Avatar
+              profile={{ character: trainerCharacters[name], accessoryColor: trainerColors[name] }}
+              size={60}
+            />
+          </span>
           <span className="difficulty-label">
             <strong>{name}</strong>
             <small>
