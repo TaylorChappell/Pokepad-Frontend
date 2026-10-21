@@ -1,0 +1,56 @@
+.generated-wordmark.pokemon-wordmark {
+  display: block;
+  width: 158px;
+  height: auto;
+  max-width: 100%;
+  object-fit: contain;
+  transform: none;
+  filter: none;
+  padding: 0;
+  margin: 0;
+}
+.brand > .generated-wordmark.pokemon-wordmark {
+  width: 154px;
+  height: 58px;
+  flex-shrink: 0;
+}
+.boot-brand .generated-wordmark.pokemon-wordmark {
+  width: 230px;
+  height: auto;
+}
+.search-trigger .search-trigger-art {
+  display: block;
+  flex-shrink: 0;
+  width: 29px;
+  height: 29px;
+  object-fit: contain;
+  image-rendering: auto;
+  transition: transform 180ms ease;
+}
+.search-trigger:hover .search-trigger-art {
+  transform: rotate(-8deg);
+}
+@media (max-width: 760px) {
+  .brand > .generated-wordmark.pokemon-wordmark {
+    width: 118px;
+    height: 45px;
+  }
+  .search-trigger .search-trigger-art {
+    width: 27px;
+    height: 27px;
+  }
+}
+@media (max-width: 420px) {
+  .brand > .generated-wordmark.pokemon-wordmark {
+    width: 94px;
+    height: 36px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .search-trigger .search-trigger-art {
+    transition: none;
+  }
+}
+[data-motion='reduced'] .search-trigger .search-trigger-art {
+  transition: none;
+}

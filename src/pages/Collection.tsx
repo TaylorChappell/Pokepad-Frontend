@@ -68,18 +68,34 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
     species = pokemonById(pokemon.speciesId),
     equipped = state.profile.equippedId === pokemon.id,
     offer = pendingMove(pokemon),
-    evolution = getEvolutionStatus(state, pokemon);
+    evolution = getEvolutionStatus(state, pokemon),
+    canLearn = !!offer && !pokemon.listed && !pokemon.locked,
+    needsAttention = evolution.canEvolve || canLearn;
   return (
     <a
       href={'#/pokemon/' + pokemon.id}
       className={
         'pokemon-card pc-slot ' +
         (equipped ? 'equipped ' : '') +
-        (pokemon.shiny ? 'variant-glow' : '')
+        (pokemon.shiny ? 'variant-glow ' : '') +
+        (needsAttention ? 'pc-attention ' : '') +
+        (evolution.canEvolve ? 'pc-evolution-ready ' : '') +
+        (canLearn ? 'pc-move-ready' : '')
       }
       style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
       data-variant={pokemon.shiny ? 'shiny' : 'original'}
+      data-attention={needsAttention || undefined}
     >
+      {needsAttention && (
+        <span className="pc-ready-ribbon">
+          {evolution.canEvolve ? <CandySprite /> : <Icon name="BookOpen" size={13} />}
+          {evolution.canEvolve && canLearn
+            ? 'Evolve + new move'
+            : evolution.canEvolve
+              ? 'Evolution ready'
+              : 'New move ready'}
+        </span>
+      )}
       <div className="pokemon-card-image">
         <span className="pc-index">No. {String(species.id).padStart(3, '0')}</span>
         <span className="level-tag">Lv. {pokemon.level}</span>
@@ -103,9 +119,9 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
         <HealthMeter pokemon={pokemon} compact />
         <div className="pc-alerts">
           {offer && (
-            <span className="pc-move-alert">
+            <span className={'pc-move-alert' + (!canLearn ? ' pc-alert-waiting' : '')}>
               <Icon name="BookOpen" size={13} />
-              Move ready
+              {canLearn ? 'New move' : 'Move waiting'}
             </span>
           )}
           {evolution.canEvolve && (
@@ -128,8 +144,15 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
 export function InventoryPage() {
   const { state } = useApp(),
     [filter, setFilter] = useState('All'),
-    [sort, setSort] = useState('Newest'),
+    [sort, setSort] = useState('Ready first'),
     [search, setSearch] = useState('');
+  const attention = new Map(
+    state.pokemon.map((p) => [
+      p.id,
+      Number(getEvolutionStatus(state, p).canEvolve) +
+        Number(!!pendingMove(p) && !p.listed && !p.locked),
+    ]),
+  );
   const list = state.pokemon
     .filter(
       (p) =>
@@ -142,7 +165,7 @@ export function InventoryPage() {
             getPokemonHealth(p).current > 0) ||
           (filter === 'Listed' && !!p.listed) ||
           (filter === 'Can evolve' && getEvolutionStatus(state, p).canEvolve) ||
-          (filter === 'New move' && !!pendingMove(p))) &&
+          (filter === 'New move' && !!pendingMove(p) && !p.listed && !p.locked)) &&
         pokemonById(p.speciesId).name.toLowerCase().includes(search.toLowerCase()),
     )
     .sort((a, b) =>
@@ -150,7 +173,9 @@ export function InventoryPage() {
         ? b.backing - a.backing
         : sort === 'Highest level'
           ? b.level - a.level
-          : b.acquiredAt - a.acquiredAt,
+          : (sort === 'Ready first'
+              ? (attention.get(b.id) || 0) - (attention.get(a.id) || 0)
+              : 0) || b.acquiredAt - a.acquiredAt,
     );
   return (
     <>
@@ -193,7 +218,7 @@ export function InventoryPage() {
             value={sort}
             onChange={(e) => setSort(e.target.value)}
           >
-            {['Newest', 'Highest value', 'Highest level'].map((s) => (
+            {['Ready first', 'Newest', 'Highest value', 'Highest level'].map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -613,9 +638,17 @@ export function PokemonDetailPage({ id }: { id: string }) {
                         <Icon name="ArrowRight" size={18} />
                       </span>
                       {species.evolvesTo.map((next) => (
-                        <div key={next}>
-                          <PokemonArt id={next} shiny={p.shiny} animated={false} />
-                          <strong>{pokemonById(next).name}</strong>
+                        <div key={next} className="evolution-mystery">
+                          <span
+                            className="evolution-mystery-art"
+                            role="img"
+                            aria-label="Unknown evolution"
+                          >
+                            <span aria-hidden="true">
+                              <PokemonArt id={next} animated={false} />
+                            </span>
+                          </span>
+                          <strong aria-label="Unknown Pokémon">???</strong>
                           {species.evolvesTo.length > 1 && <small>33⅓%</small>}
                         </div>
                       ))}
@@ -629,14 +662,6 @@ export function PokemonDetailPage({ id }: { id: string }) {
                       <span>After evolution</span>
                       <SolValue amount={evoStatus.nextValue} />
                     </div>
-                    <p className="evolution-funding-note">
-                      {evoStatus.fundingNeeded > 0
-                        ? sol(evoStatus.fundingNeeded) +
-                          ' SOL will come from this coin’s reward pool.'
-                        : 'The ' +
-                          sol(evoStatus.valueIncrease) +
-                          ' SOL increase is already funded.'}
-                    </p>
                     <Button
                       className="full-width evolve-action"
                       disabled={!evoStatus.canEvolve || busy}
@@ -862,9 +887,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                   </p>
                   {evolution.from === 133 && (
                     <p>
-                      Vaporeon · Jolteon · Flareon
-                      <br />
-                      <strong>Equal 1-in-3 chance. The result is random.</strong>
+                      <strong>Three possible evolutions, each with an equal 1-in-3 chance.</strong>
                     </p>
                   )}
                   <div className="evolution-value-change">
@@ -872,9 +895,6 @@ export function PokemonDetailPage({ id }: { id: string }) {
                     <span>→</span>
                     <SolValue amount={evoStatus.nextValue} />
                   </div>
-                  <p className="evolution-reserve-copy">
-                    The increase is funded by this Pokémon’s reward pool.
-                  </p>
                   <Button disabled={busy || !evoStatus.canEvolve} onClick={startEvolution}>
                     Evolve
                   </Button>

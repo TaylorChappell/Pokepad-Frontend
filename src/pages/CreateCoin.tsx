@@ -31,7 +31,7 @@ export function CreateCoinPage() {
     [state.pokemon],
   );
   const [step, setStep] = useState(0);
-  const [detailsTab, setDetailsTab] = useState<'coin' | 'links'>('coin');
+  const [linksOpen, setLinksOpen] = useState(false);
   const [launchKind, setLaunchKind] = useState<'pokemon' | 'trainer'>(
     eligible.length ? 'pokemon' : 'trainer',
   );
@@ -56,6 +56,8 @@ export function CreateCoinPage() {
   const [pokemonFilter, setPokemonFilter] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const stepTitle = useRef<HTMLHeadingElement>(null);
+  const firstSocialInput = useRef<HTMLInputElement>(null);
+  const focusLinksOnReturn = useRef(false);
   const imageRequest = useRef(0);
 
   useEffect(() => {
@@ -178,7 +180,12 @@ export function CreateCoinPage() {
     canCreate,
   ];
   useEffect(() => {
-    stepTitle.current?.focus();
+    if (step === 0 && focusLinksOnReturn.current) {
+      firstSocialInput.current?.focus();
+      focusLinksOnReturn.current = false;
+    } else {
+      stepTitle.current?.focus();
+    }
   }, [step]);
   const nextLabels = ['Next: Partner', 'Next: Rewards', 'Review coin'];
   const partnerArt = selected ? (
@@ -236,150 +243,156 @@ export function CreateCoinPage() {
             </div>
             {step === 0 && (
               <>
-                <div className="creation-details-tabs" role="group" aria-label="Coin details">
-                  <button
-                    type="button"
-                    aria-pressed={detailsTab === 'coin'}
-                    onClick={() => setDetailsTab('coin')}
-                  >
-                    Coin info
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={detailsTab === 'links'}
-                    onClick={() => setDetailsTab('links')}
-                  >
-                    Links <span>Optional</span>
-                    {invalidSocial && <i aria-label="A link needs attention" />}
-                  </button>
-                </div>
-                {detailsTab === 'coin' && (
-                  <div className="creation-details-content">
-                    <div className="creation-identity-fields">
-                      <div className="coin-image-field">
-                        <label className="creation-label" htmlFor="coin-image">
-                          Coin image <small>optional</small>
-                        </label>
-                        <input
-                          ref={fileInput}
-                          id="coin-image"
-                          tabIndex={-1}
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp,image/gif"
-                          className="creation-file-input"
-                          onChange={(e) => readImage(e.target.files?.[0])}
-                          aria-describedby="coin-image-help"
-                        />
-                        <button
-                          className={'coin-image-upload ' + (coinImage ? 'has-image' : '')}
-                          type="button"
-                          onClick={() => fileInput.current?.click()}
-                          disabled={imageLoading}
-                          aria-label={coinImage ? 'Change coin image' : 'Upload coin image'}
-                        >
-                          {coinImage ? (
-                            <img src={coinImage} alt="Your coin image" />
-                          ) : (
-                            <>
-                              <Icon name="Plus" size={28} />
-                              <strong>{imageLoading ? 'Loading…' : 'Upload image'}</strong>
-                            </>
-                          )}
-                          {coinImage && <span className="image-change-label">Change image</span>}
-                        </button>
-                        <span id="coin-image-help" className="creation-field-note">
-                          PNG, JPG, WebP or GIF · up to 2 MB
-                        </span>
-                        {coinImage && (
-                          <button
-                            className="creation-text-button"
-                            type="button"
-                            onClick={() => {
-                              setCoinImage('');
-                              setImageError('');
-                            }}
-                          >
-                            Remove image
-                          </button>
+                <div className="creation-details-content">
+                  <div className="creation-identity-fields">
+                    <div className="coin-image-field">
+                      <label className="creation-label" htmlFor="coin-image">
+                        Coin image <small>optional</small>
+                      </label>
+                      <input
+                        ref={fileInput}
+                        id="coin-image"
+                        tabIndex={-1}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        className="creation-file-input"
+                        onChange={(e) => readImage(e.target.files?.[0])}
+                        aria-describedby="coin-image-help"
+                      />
+                      <button
+                        className={'coin-image-upload ' + (coinImage ? 'has-image' : '')}
+                        type="button"
+                        onClick={() => fileInput.current?.click()}
+                        disabled={imageLoading}
+                        aria-label={coinImage ? 'Change coin image' : 'Upload coin image'}
+                      >
+                        {coinImage ? (
+                          <img src={coinImage} alt="Your coin image" />
+                        ) : (
+                          <>
+                            <Icon name="Plus" size={28} />
+                            <strong>{imageLoading ? 'Loading…' : 'Upload image'}</strong>
+                          </>
                         )}
-                      </div>
-                      <div className="coin-name-fields">
-                        <label className="creation-label" htmlFor="coin-name">
-                          Coin name
-                        </label>
-                        <input
-                          id="coin-name"
-                          className="creation-input"
-                          value={name}
-                          maxLength={32}
-                          minLength={3}
-                          required
-                          placeholder="e.g. Moonstone Club"
-                          onChange={(e) => setName(e.target.value)}
-                        />
-                        <span className="creation-field-note">3–32 characters</span>
-                        <label className="creation-label" htmlFor="coin-ticker">
-                          Ticker
-                        </label>
-                        <div className="creation-ticker-field">
-                          <span aria-hidden="true">$</span>
-                          <input
-                            id="coin-ticker"
-                            value={ticker}
-                            maxLength={10}
-                            required
-                            placeholder="e.g. moon club"
-                            autoCapitalize="off"
-                            autoCorrect="off"
-                            spellCheck={false}
-                            onChange={(e) => setTicker(e.target.value)}
-                            aria-invalid={ticker.length > 0 && !isValidCoinTicker(ticker)}
-                            aria-describedby="ticker-help"
-                          />
-                        </div>
-                        <span id="ticker-help" className="creation-field-note">
-                          1–10 characters · case and spaces are kept
-                        </span>
-                      </div>
-                    </div>
-                    {imageError && (
-                      <p className="creation-error" role="alert">
-                        {imageError}{' '}
+                        {coinImage && <span className="image-change-label">Change image</span>}
+                      </button>
+                      <span id="coin-image-help" className="creation-field-note">
+                        PNG, JPG, WebP or GIF · up to 2 MB
+                      </span>
+                      {coinImage && (
                         <button
-                          type="button"
                           className="creation-text-button"
+                          type="button"
                           onClick={() => {
                             setCoinImage('');
                             setImageError('');
                           }}
                         >
-                          Continue without an image
+                          Remove image
                         </button>
-                      </p>
-                    )}
-                    <label className="creation-label" htmlFor="coin-description">
-                      Description <small>optional</small>
-                    </label>
-                    <textarea
-                      id="coin-description"
-                      className="creation-input"
-                      rows={2}
-                      maxLength={280}
-                      placeholder="What brings your community together?"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                    />
-                    <div className="creation-field-footer">
-                      <span>Your coin image is separate from your partner.</span>
-                      <span>{description.length}/280</span>
+                      )}
+                    </div>
+                    <div className="coin-name-fields">
+                      <label className="creation-label" htmlFor="coin-name">
+                        Coin name
+                      </label>
+                      <input
+                        id="coin-name"
+                        className="creation-input"
+                        value={name}
+                        maxLength={32}
+                        minLength={3}
+                        required
+                        placeholder="e.g. Moonstone Club"
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                      <span className="creation-field-note">3–32 characters</span>
+                      <label className="creation-label" htmlFor="coin-ticker">
+                        Ticker
+                      </label>
+                      <div className="creation-ticker-field">
+                        <span aria-hidden="true">$</span>
+                        <input
+                          id="coin-ticker"
+                          value={ticker}
+                          maxLength={10}
+                          required
+                          placeholder="e.g. moon club"
+                          autoCapitalize="off"
+                          autoCorrect="off"
+                          spellCheck={false}
+                          onChange={(e) => setTicker(e.target.value)}
+                          aria-invalid={ticker.length > 0 && !isValidCoinTicker(ticker)}
+                          aria-describedby="ticker-help"
+                        />
+                      </div>
+                      <span id="ticker-help" className="creation-field-note">
+                        1–10 characters · case and spaces are kept
+                      </span>
                     </div>
                   </div>
-                )}
-                {detailsTab === 'links' && (
-                  <>
-                    <p className="creation-section-note">
-                      Help holders find you. All links are optional — you can continue without them.
+                  {imageError && (
+                    <p className="creation-error" role="alert">
+                      {imageError}{' '}
+                      <button
+                        type="button"
+                        className="creation-text-button"
+                        onClick={() => {
+                          setCoinImage('');
+                          setImageError('');
+                        }}
+                      >
+                        Continue without an image
+                      </button>
                     </p>
+                  )}
+                  <label className="creation-label" htmlFor="coin-description">
+                    Description <small>optional</small>
+                  </label>
+                  <textarea
+                    id="coin-description"
+                    className="creation-input"
+                    rows={2}
+                    maxLength={280}
+                    placeholder="What brings your community together?"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                  <div className="creation-field-footer">
+                    <span>Your coin image is separate from your partner.</span>
+                    <span>{description.length}/280</span>
+                  </div>
+                </div>
+                <div
+                  className={
+                    'creation-links-disclosure' + (linksOpen || invalidSocial ? ' is-open' : '')
+                  }
+                >
+                  <button
+                    type="button"
+                    className="creation-links-toggle"
+                    aria-expanded={linksOpen || invalidSocial}
+                    aria-controls="creation-social-links"
+                    onClick={() => setLinksOpen(!linksOpen)}
+                  >
+                    <Icon name="Link" size={17} />
+                    <span>
+                      Add social links <small>(optional)</small>
+                    </span>
+                    {invalidSocial ? (
+                      <span className="creation-links-status has-error">Check your links</span>
+                    ) : Object.values(socials).some((value) => value.trim()) ? (
+                      <span className="creation-links-status">
+                        {Object.values(socials).filter((value) => value.trim()).length} added
+                      </span>
+                    ) : null}
+                    <Icon name="ChevronDown" size={14} />
+                  </button>
+                  <div
+                    id="creation-social-links"
+                    className="creation-links-panel"
+                    hidden={!linksOpen && !invalidSocial}
+                  >
                     <div className="creation-social-fields">
                       {SOCIAL_FIELDS.map(({ key, label, placeholder }) => (
                         <div key={key}>
@@ -388,6 +401,7 @@ export function CreateCoinPage() {
                           </label>
                           <input
                             id={'coin-social-' + key}
+                            ref={key === 'website' ? firstSocialInput : undefined}
                             className="creation-input"
                             type="url"
                             placeholder={placeholder}
@@ -407,8 +421,8 @@ export function CreateCoinPage() {
                         </div>
                       ))}
                     </div>
-                  </>
-                )}
+                  </div>
+                </div>
               </>
             )}
             {step === 1 && (
@@ -584,7 +598,7 @@ export function CreateCoinPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      setDetailsTab('coin');
+                      setLinksOpen(false);
                       setStep(0);
                     }}
                   >
@@ -623,7 +637,8 @@ export function CreateCoinPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setDetailsTab('links');
+                          setLinksOpen(true);
+                          focusLinksOnReturn.current = true;
                           setStep(0);
                         }}
                       >

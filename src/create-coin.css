@@ -129,37 +129,65 @@
   color: #314b63;
   outline: none;
 }
-.creation-v7 .creation-details-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 17px;
+/* Optional links live directly below the description, within the Details step. */
+.creation-v7 .creation-links-disclosure {
+  margin-top: 15px;
+  border-top: 1px solid #e6edf3;
 }
-.creation-v7 .creation-details-tabs button {
-  display: inline-flex;
+.creation-v7 .creation-links-toggle {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 7px 13px;
-  border-radius: 9px;
-  background: #f5f7fa;
-  color: #7c8ea0;
+  gap: 9px;
+  width: 100%;
+  padding: 13px 0 10px;
+  color: #6486a4;
   font-size: 11px;
   font-weight: 850;
+  text-align: left;
 }
-.creation-v7 .creation-details-tabs button[aria-pressed='true'] {
-  background: #eaf2fc;
-  color: #4b78a6;
+.creation-v7 .creation-links-toggle:hover {
+  color: #365d7d;
 }
-.creation-v7 .creation-details-tabs button span {
+.creation-v7 .creation-links-toggle:focus-visible {
+  outline: 2px solid #8fb3d3;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.creation-v7 .creation-links-toggle > svg {
+  flex-shrink: 0;
+}
+.creation-v7 .creation-links-toggle > svg:last-child {
+  margin-left: auto;
+  transition: transform 0.18s ease;
+}
+.creation-v7 .creation-links-disclosure.is-open .creation-links-toggle > svg:last-child {
+  transform: rotate(180deg);
+}
+.creation-v7 .creation-links-toggle small {
+  color: #8d9fae;
   font-size: 10px;
   font-weight: 600;
-  opacity: 0.75;
+  margin-left: 3px;
 }
-.creation-v7 .creation-details-tabs button i {
-  width: 6px;
-  height: 6px;
-  background: #e16c65;
-  border-radius: 50%;
+.creation-v7 .creation-links-status {
+  margin-left: auto;
+  color: #89a08f;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.creation-v7 .creation-links-status + svg:last-child {
+  margin-left: 2px;
+}
+.creation-v7 .creation-links-status.has-error {
+  color: #bd6b62;
+}
+.creation-v7 .creation-links-panel:not([hidden]) {
+  padding: 7px 0 2px;
+  animation: launch-step-enter 0.18s ease-out;
+}
+.creation-v7 .creation-links-panel[hidden] {
+  display: none;
 }
 .creation-v7 .creation-label {
   display: block;
@@ -1030,9 +1058,6 @@
   .creation-v7 .creation-section-label h2 {
     font-size: 18px;
   }
-  .creation-v7 .creation-details-tabs {
-    margin-bottom: 13px;
-  }
   .creation-v7 .creation-identity-fields {
     grid-template-columns: 95px minmax(0, 1fr);
     gap: 13px;
@@ -1191,6 +1216,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .creation-v7 .wizard-step,
+  .creation-v7 .creation-links-panel,
   .creation-v7 .pokemon-art.shiny-art {
     animation: none;
   }
@@ -1199,6 +1225,7 @@
   }
 }
 [data-motion='reduced'] .creation-v7 .wizard-step,
+[data-motion='reduced'] .creation-v7 .creation-links-panel,
 [data-motion='reduced'] .creation-v7 .pokemon-art.shiny-art {
   animation: none;
 }

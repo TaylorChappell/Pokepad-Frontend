@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useApp } from '../state/AppContext';
 import { profileName } from '../state/model';
 import { Icon, Pokeball, PokepadLogo, Wordmark, Avatar, PokemonArt, type IconName } from './UI';
-import { navigate, relativeTime } from '../utils';
+import { asset, navigate, relativeTime } from '../utils';
 import { SidebarBuddy } from './SidebarBuddy';
 import { SearchDialog } from './SearchDialog';
 const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
@@ -96,9 +96,14 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               setSearchOpen(true);
             }}
           >
-            <span className="search-trigger-lens" aria-hidden="true">
-              <i />
-            </span>
+            <img
+              className="search-trigger-art"
+              src={asset('brand/search.png')}
+              alt=""
+              width={29}
+              height={29}
+              aria-hidden="true"
+            />
             <span>Search Poképad</span>
             <kbd>⌘ / Ctrl K</kbd>
           </button>

@@ -50,6 +50,12 @@
         font-size: 28px;
         letter-spacing: 2px;
       }
+      .boot-brand img {
+        display: block;
+        width: 230px;
+        height: auto;
+        margin: 0 auto;
+      }
       .boot-status {
         margin: 0;
         color: #66748a;
@@ -107,7 +113,15 @@
           </svg>
           <div class="boot-shadow"></div>
         </div>
-        <h1 class="boot-brand">POKÉPAD</h1>
+        <h1 class="boot-brand">
+          <img
+            class="pokemon-wordmark generated-wordmark"
+            src="./assets/brand/pokepad-wordmark.png"
+            alt="Poképad"
+            width="2048"
+            height="768"
+          />
+        </h1>
         <p id="boot-status" class="boot-status">Loading your trainer…</p>
         <button class="boot-reload" type="button" onclick="window.location.reload()">
           Reload Poképad

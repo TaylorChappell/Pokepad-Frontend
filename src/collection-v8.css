@@ -1,0 +1,107 @@
+/* Ready Pokémon keep a clear visual priority without moving or clipping their art. */
+.pokemon-grid.pc-grid {
+  row-gap: 26px;
+  padding-top: 22px;
+}
+.pokemon-card.pc-slot.pc-attention {
+  --ready-ink: #326da5;
+  --ready-edge: #78abd4;
+  --ready-paper: #edf6ff;
+  position: relative;
+  border-color: var(--ready-edge);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--ready-edge) 48%, transparent),
+    0 5px 16px #23364d08;
+}
+.pokemon-card.pc-slot.pc-evolution-ready {
+  --ready-ink: #7751aa;
+  --ready-edge: #ac8ad2;
+  --ready-paper: #f4edff;
+}
+.pokemon-card.pc-slot.pc-attention:hover,
+.pokemon-card.pc-slot.pc-attention:focus-visible {
+  border-color: var(--ready-ink);
+  box-shadow:
+    0 0 0 2px var(--ready-edge),
+    0 10px 24px #23364d12;
+}
+.pc-ready-ribbon {
+  position: absolute;
+  z-index: 4;
+  top: -12px;
+  left: 12px;
+  max-width: calc(100% - 24px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 4px 9px 4px 7px;
+  border: 1px solid var(--ready-edge);
+  border-radius: 5px 5px 9px 5px;
+  background: var(--ready-paper);
+  color: var(--ready-ink);
+  box-shadow: 0 2px 0 #fffefa;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.pc-ready-ribbon > svg,
+.pc-ready-ribbon > .rare-candy-sprite {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+.pc-attention .pc-alerts .pc-move-alert,
+.pc-attention .pc-alerts .pc-evolve-alert {
+  border-width: 1px 1px 2px;
+  border-radius: 5px;
+  font-size: 10px;
+}
+.pc-alerts .pc-move-alert.pc-alert-waiting {
+  color: #778392;
+  background: #f0f3f5;
+  border-color: #e0e6eb;
+}
+
+/* The next form stays a silhouette until the evolution reveal. */
+.summary-v7 .evolution-mystery-art {
+  display: block;
+  width: min(84px, 100%);
+  aspect-ratio: 1;
+}
+.summary-v7 .evolution-mystery-art > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.summary-v7 .summary-candy .evolution-mystery-art .pokemon-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  filter: brightness(0) opacity(0.38);
+}
+.summary-v7 .summary-candy .evolution-mystery strong {
+  color: #7d8897;
+  letter-spacing: 2px;
+}
+.summary-v7 .summary-candy .evolve-action {
+  margin-top: 14px;
+}
+
+@media (max-width: 480px) {
+  .pc-ready-ribbon {
+    left: 8px;
+    max-width: calc(100% - 16px);
+    gap: 4px;
+    padding-inline: 6px;
+    font-size: 9px;
+  }
+  .pc-ready-ribbon > svg,
+  .pc-ready-ribbon > .rare-candy-sprite {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
+  }
+}

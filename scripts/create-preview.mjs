@@ -18,10 +18,11 @@ const mimeTypes = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
   '.eot': 'application/vnd.ms-fontobject',
+  '.mp3': 'audio/mpeg',
 };
 const imageExtensions = new Set(
   Object.entries(mimeTypes)
-    .filter(([, mime]) => mime.startsWith('image/'))
+    .filter(([, mime]) => mime.startsWith('image/') || mime.startsWith('audio/'))
     .map(([extension]) => extension),
 );
 const dataCache = new Map();
@@ -125,5 +126,5 @@ console.log(
     (Buffer.byteLength(output) / 1024 / 1024).toFixed(1) +
     ' MiB), with ' +
     Object.keys(map).length +
-    ' embedded images and all stylesheet assets.',
+    ' embedded media files and all stylesheet assets.',
 );

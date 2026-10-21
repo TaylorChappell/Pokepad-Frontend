@@ -29,6 +29,12 @@ export interface BattleEvent {
   text: string;
   side?: Side;
   kind: 'move' | 'damage' | 'status' | 'switch' | 'faint' | 'result' | 'info';
+  /** Presentation metadata is independent of translated battle messages. */
+  moveName?: string;
+  movePhase?: 'charge' | 'release';
+  targetSide?: Side;
+  outcome?: 'miss' | 'immune';
+  frame?: Pick<BattleState, 'player' | 'rival' | 'active' | 'winner'>;
 }
 export interface BattleState {
   player: Fighter[];
@@ -557,8 +563,24 @@ export function resolveTurn(
       };
     })
     .sort((a, b) => b.priority - a.priority || b.speed - a.speed || b.tie - a.tie);
-  const log = (text: string, side: Side | undefined, kind: BattleEvent['kind']) =>
-    events.push({ text, side, kind });
+  const log = (
+    text: string,
+    side: Side | undefined,
+    kind: BattleEvent['kind'],
+    detail: Pick<BattleEvent, 'moveName' | 'movePhase' | 'targetSide' | 'outcome'> = {},
+  ) =>
+    events.push({
+      text,
+      side,
+      kind,
+      ...detail,
+      frame: structuredClone({
+        player: state.player,
+        rival: state.rival,
+        active: state.active,
+        winner: state.winner,
+      }),
+    });
   const status = (target: Fighter, value: Status, side: Side, turns = 0) => {
     if (
       target.status !== 'none' ||
@@ -636,17 +658,26 @@ export function resolveTurn(
         `${actorName} ${name === 'Fly' ? 'flew high into the air' : 'is gathering sunlight'}!`,
         side,
         'move',
+        { moveName: name, movePhase: 'charge', targetSide: side },
       );
       continue;
     }
-    log(`${actorName} used ${name}!`, side, 'move');
     const selfMoves = ['Recover', 'Rest', 'Agility', 'Harden', 'Swords Dance'];
+    log(`${actorName} used ${name}!`, side, 'move', {
+      moveName: name,
+      movePhase: 'release',
+      targetSide: selfMoves.includes(name) ? side : other,
+    });
     if (
       (!selfMoves.includes(name) && target.charging === 'Fly') ||
       (move.accuracy !== null &&
         random() * 100 >= move.accuracy * accuracyMultiplier(actor.stages.accuracy))
     ) {
-      log('The attack missed.', side, 'info');
+      log('The attack missed.', side, 'info', {
+        moveName: name,
+        outcome: 'miss',
+        targetSide: other,
+      });
       continue;
     }
     if (
@@ -654,7 +685,11 @@ export function resolveTurn(
       name !== 'Struggle' &&
       effectiveness(move.type, target.speciesId) === 0
     ) {
-      log(`It does not affect ${pokemonById(target.speciesId).name}.`, side, 'info');
+      log(`It does not affect ${pokemonById(target.speciesId).name}.`, side, 'info', {
+        moveName: name,
+        outcome: 'immune',
+        targetSide: other,
+      });
       continue;
     }
     const change = (who: Fighter, key: Stage, amount: number) => {
@@ -722,7 +757,11 @@ export function resolveTurn(
       continue;
     }
     if (name === 'Dream Eater' && target.status !== 'sleep') {
-      log('Dream Eater needs a sleeping target.', side, 'info');
+      log('Dream Eater needs a sleeping target.', side, 'info', {
+        moveName: name,
+        outcome: 'immune',
+        targetSide: other,
+      });
       continue;
     }
     const fixed = ['Night Shade', 'Dragon Rage'].includes(name);
@@ -826,6 +865,9 @@ export function resolveTurn(
     }
   }
   state.turn += 1;
-  state.history = [...state.history, ...events].slice(-80);
+  // Frame snapshots are transient playback data; keep the history lightweight.
+  state.history = [...state.history, ...events.map(({ frame: _frame, ...event }) => event)].slice(
+    -80,
+  );
   return state;
 }

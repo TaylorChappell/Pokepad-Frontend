@@ -135,11 +135,14 @@ export function PokepadLogo({ size = 38 }: { size?: number }) {
 }
 export function Wordmark() {
   return (
-    <span className="pokemon-wordmark" aria-label="POKEPAD">
-      <span aria-hidden="true" className="wordmark-solid">
-        POKÉPAD
-      </span>
-    </span>
+    <img
+      className="pokemon-wordmark generated-wordmark"
+      src={asset('brand/pokepad-wordmark.png')}
+      alt="Poképad"
+      width={2048}
+      height={768}
+      decoding="async"
+    />
   );
 }
 export function RareCandyIcon({ size = 24 }: { size?: number }) {

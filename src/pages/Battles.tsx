@@ -1,25 +1,19 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
-import {
-  Avatar,
-  Button,
-  Icon,
-  Modal,
-  PageHeading,
-  PokemonArt,
-  Pokeball,
-  TypeChip,
-} from '../components/UI';
+import { Avatar, Button, Icon, PokemonArt, Pokeball, TypeChip } from '../components/UI';
 import { profileName } from '../state/model';
 import { TYPE_COLORS } from '../utils';
+import { BattleSprite } from '../battle/BattleSprite';
+import { useBattleAudio } from '../battle/audio';
+import { BattleEffects } from '../components/BattleEffects';
+import { createBattlePlayback, type BattleCue } from '../battle/presentation';
 import {
   DIFFICULTIES,
   battleMove,
   createBattle,
   createPlayerTeam,
   createSeededRandom,
-  effectiveSpeed,
   generateRivalTeam,
   getMoveHint,
   moveCategory,
@@ -39,12 +33,6 @@ const trainerColors = {
   Hard: '#4e9ee8',
   Master: '#ef5357',
 } as const;
-const challengeLabels = {
-  Easy: 'A lighter team',
-  Medium: 'An even matchup',
-  Hard: 'A stronger rival',
-  Master: 'The toughest challenge',
-};
 const statusLabels = {
   burn: 'BRN',
   poison: 'PSN',
@@ -54,94 +42,156 @@ const statusLabels = {
   none: '',
 };
 
-function Health({ fighter }: { fighter: Fighter }) {
+function Health({
+  fighter,
+  side,
+  team,
+}: {
+  fighter: Fighter;
+  side: 'player' | 'rival';
+  team: Fighter[];
+}) {
   const percent = Math.max(0, (fighter.hp / fighter.stats.hp) * 100);
   return (
-    <div className="duel-health">
-      <div>
+    <section
+      className={'classic-health classic-health-' + side}
+      aria-label={`${pokemonById(fighter.speciesId).name}, ${fighter.hp} of ${fighter.stats.hp} HP`}
+    >
+      <div className="classic-health-name">
         <strong>{pokemonById(fighter.speciesId).name}</strong>
-        <span>Lv. {fighter.level}</span>
+        <span>Lv.{fighter.level}</span>
       </div>
-      <div className="duel-health-line">
+      <div className="classic-health-bar">
         <b>HP</b>
-        <span className="duel-health-track">
+        <span>
           <i
             style={{
               width: percent + '%',
-              background: percent > 50 ? '#65b48b' : percent > 20 ? '#e7b74d' : '#df6b61',
+              background: percent > 50 ? '#43b16d' : percent > 20 ? '#efc34c' : '#e65e58',
             }}
           />
         </span>
       </div>
-      <div className="duel-health-foot">
-        <small>
-          {fighter.hp} / {fighter.stats.hp}
-        </small>
+      <div className="classic-health-bottom">
+        <span className="classic-team-balls">
+          {team.map((member) => (
+            <Pokeball key={member.id} size={12} className={member.hp <= 0 ? 'fainted' : ''} />
+          ))}
+        </span>
         {fighter.status !== 'none' && (
           <b className={'battle-condition condition-' + fighter.status}>
             {statusLabels[fighter.status]}
           </b>
         )}
+        {side === 'player' && (
+          <span>
+            {fighter.hp}/{fighter.stats.hp}
+          </span>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
+
 function DifficultyPicker({
   value,
   onChange,
-  detailed = false,
 }: {
   value: Difficulty;
   onChange: (value: Difficulty) => void;
-  detailed?: boolean;
 }) {
   return (
-    <div
-      className={'difficulty-picker' + (detailed ? ' challenge-rows' : '')}
-      aria-label="Bot difficulty"
-    >
+    <div className="classic-difficulties" aria-label="Bot difficulty">
       {difficultyNames.map((name, index) => (
         <button
           key={name}
           aria-label={name + ' difficulty'}
           aria-pressed={value === name}
-          onClick={() => onChange(name)}
           className={value === name ? 'selected' : ''}
+          onClick={() => onChange(name)}
         >
-          {detailed ? (
-            <>
-              <Avatar
-                profile={{
-                  character: trainerCharacters[name],
-                  accessoryColor: trainerColors[name],
-                }}
-                size={48}
-              />
-              <span className="challenge-row-copy">
-                <strong>
-                  {name}
-                  <em>{DIFFICULTIES[name].trainer}</em>
-                </strong>
-                <small>{challengeLabels[name]}</small>
-              </span>
-              <span className="challenge-row-check" aria-hidden="true">
-                {value === name && <Icon name="Check" size={12} />}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="difficulty-pips" aria-hidden="true">
-                {[0, 1, 2, 3].map((pip) => (
-                  <i key={pip} className={pip <= index ? 'lit' : ''} />
-                ))}
-              </span>
-              <strong>{name}</strong>
-              <small>{['Warm up', 'Matched', 'Challenge', 'Elite'][index]}</small>
-            </>
-          )}
+          <Avatar
+            profile={{ character: trainerCharacters[name], accessoryColor: trainerColors[name] }}
+            size={42}
+          />
+          <span>
+            <strong>{name}</strong>
+            <small>{DIFFICULTIES[name].trainer}</small>
+          </span>
+          <span className="classic-difficulty-stars" aria-hidden="true">
+            {[0, 1, 2, 3].map((i) => (
+              <i key={i} className={i <= index ? 'lit' : ''} />
+            ))}
+          </span>
         </button>
       ))}
     </div>
+  );
+}
+
+function FieldGround() {
+  return (
+    <svg
+      className="classic-ground"
+      viewBox="0 0 512 320"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="battle-grass" x2="0" y2="1">
+          <stop stopColor="#a3eaa0" />
+          <stop offset="1" stopColor="#56b66e" />
+        </linearGradient>
+        <pattern id="battle-grass-blades" width="28" height="14" patternUnits="userSpaceOnUse">
+          <path
+            d="M2 12 1 6 6 9 8 3 11 9 16 6 14 12M20 11l2-7 3 6"
+            stroke="#4c9c5b"
+            strokeWidth="2"
+            fill="none"
+          />
+        </pattern>
+      </defs>
+      <g className="classic-ground-rival">
+        <ellipse cx="375" cy="132" rx="112" ry="31" fill="#a3ad56" />
+        <ellipse
+          cx="375"
+          cy="127"
+          rx="112"
+          ry="29"
+          fill="url(#battle-grass)"
+          stroke="#668d4e"
+          strokeWidth="2"
+        />
+        <ellipse
+          cx="375"
+          cy="125"
+          rx="103"
+          ry="23"
+          fill="url(#battle-grass-blades)"
+          opacity=".65"
+        />
+      </g>
+      <g className="classic-ground-player">
+        <ellipse cx="121" cy="305" rx="157" ry="49" fill="#a3ad56" />
+        <ellipse
+          cx="121"
+          cy="299"
+          rx="157"
+          ry="46"
+          fill="url(#battle-grass)"
+          stroke="#668d4e"
+          strokeWidth="2"
+        />
+        <ellipse
+          cx="121"
+          cy="293"
+          rx="148"
+          ry="35"
+          fill="url(#battle-grass-blades)"
+          opacity=".65"
+        />
+      </g>
+    </svg>
   );
 }
 
@@ -153,15 +203,25 @@ export function BattlesPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [matchSeed, setMatchSeed] = useState(() => Date.now());
   const [battle, setBattle] = useState<BattleState | null>(null);
+  const [displayBattle, setDisplayBattle] = useState<BattleState | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showSwitch, setShowSwitch] = useState(false);
-  const [showRules, setShowRules] = useState(false);
+  const [command, setCommand] = useState<'root' | 'fight' | 'pokemon' | 'log'>('root');
   const [streak, setStreak] = useState(0);
-  const [effect, setEffect] = useState('');
+  const [cue, setCue] = useState<BattleCue | null>(null);
+  const [dialogue, setDialogue] = useState('');
+  const [page, setPage] = useState(0);
+  const [compactHeight, setCompactHeight] = useState(() => window.innerHeight <= 560);
+  useEffect(() => {
+    const resize = () => setCompactHeight(window.innerHeight <= 560);
+    window.addEventListener('resize', resize);
+    return () => window.removeEventListener('resize', resize);
+  }, []);
+  const [query, setQuery] = useState('');
   const [onlineFormat, setOnlineFormat] = useState('Friendly');
   const [stake, setStake] = useState('0.1');
   const [coin, setCoin] = useState('poke');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const audio = useBattleAudio(phase === 'battle');
   useEffect(() => () => clearTimeout(timer.current), []);
   const available = state.pokemon.filter((pokemon) => !pokemon.listed && !pokemon.locked);
   const chosen = useMemo(
@@ -176,710 +236,633 @@ export function BattlesPage() {
     [chosen, difficulty, matchSeed],
   );
   const ownPreview = useMemo(() => createPlayerTeam(chosen), [chosen]);
-  const lobbyParty = useMemo(
-    () =>
-      chosen.length
-        ? chosen
-        : state.pokemon
-            .filter((pokemon) => !pokemon.listed && !pokemon.locked)
-            .sort(
-              (a, b) =>
-                Number(b.id === state.profile.equippedId) -
-                Number(a.id === state.profile.equippedId),
-            )
-            .slice(0, 3),
-    [chosen, state.pokemon, state.profile.equippedId],
-  );
+  const lobbyParty = chosen.length ? chosen : available.slice(0, 3);
   const lobbyRivals = useMemo(
     () => generateRivalTeam(lobbyParty, difficulty, createSeededRandom(matchSeed)),
-    [lobbyParty, difficulty, matchSeed],
+    [chosen, state.pokemon, difficulty, matchSeed],
   );
   const relativeStrength = ownPreview.length
     ? Math.round((teamStrength(rivals) / teamStrength(ownPreview)) * 100)
     : Math.round(DIFFICULTIES[difficulty].ratio * 100);
+  const filtered = available.filter((pokemon) =>
+    pokemonById(pokemon.speciesId).name.toLowerCase().includes(query.toLowerCase()),
+  );
+  const pageSize = compactHeight ? 3 : 6;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, pageCount - 1);
   const start = (fresh = false) => {
     if (!chosen.length) return;
-    const nextRivals = fresh ? generateRivalTeam(chosen, difficulty) : rivals;
-    setBattle(createBattle(chosen, nextRivals, difficulty));
+    clearTimeout(timer.current);
+    audio.unlock();
+    const next = createBattle(
+      chosen,
+      fresh ? generateRivalTeam(chosen, difficulty) : rivals,
+      difficulty,
+    );
+    setBattle(next);
+    setDisplayBattle(next);
     setPhase('battle');
     setBusy(false);
-    setEffect('');
-    setShowSwitch(false);
+    setCue(null);
+    setCommand('root');
+    setDialogue('');
   };
   const play = (action: BattleAction) => {
     if (!battle || busy || battle.winner) return;
     const next = resolveTurn(battle, action);
     if (next === battle) return;
-    setShowSwitch(false);
+    audio.unlock();
+    setCommand('root');
     setBusy(true);
-    const openingSide = next.events.find(
-      (event) => event.kind === 'move' || event.kind === 'switch',
-    )?.side;
-    setEffect(openingSide || 'player');
-    setBattle(next);
-    if (next.winner) setStreak((value) => (next.winner === 'player' ? value + 1 : 0));
-    timer.current = setTimeout(
-      () => {
+    const frames = createBattlePlayback(battle, next);
+    let index = 0;
+    const advance = () => {
+      const frame = frames[index++];
+      if (!frame) {
+        setBattle(next);
+        setDisplayBattle(next);
         setBusy(false);
-        setEffect('');
-      },
-      state.profile.reducedMotion ? 220 : 740,
-    );
+        setCue(null);
+        setDialogue('');
+        if (next.winner) {
+          setStreak((value) => (next.winner === 'player' ? value + 1 : 0));
+          if (next.winner !== 'draw') audio.playCue(next.winner === 'player' ? 'win' : 'lose');
+        }
+        return;
+      }
+      setDisplayBattle(frame.displayState);
+      setDialogue(frame.event.text);
+      setCue(frame.cue);
+      if (frame.cue?.moveName) audio.playMove(frame.cue.moveName);
+      else if (frame.event.kind === 'switch') audio.playCue('switch');
+      else if (frame.event.kind === 'faint') audio.playCue('faint');
+      timer.current = setTimeout(
+        advance,
+        state.profile.reducedMotion ? Math.min(frame.durationMs, 450) : frame.durationMs,
+      );
+    };
+    advance();
   };
   const leave = () => {
     clearTimeout(timer.current);
     setBusy(false);
     setBattle(null);
+    setDisplayBattle(null);
+    setCue(null);
     setPhase('lobby');
   };
+  const heading = (
+    <header className="classic-page-heading battle-page-heading">
+      <div>
+        <h1>Battle arena</h1>
+        <span>
+          {phase === 'battle'
+            ? 'Offline · ' + difficulty
+            : phase === 'team'
+              ? 'Choose your party'
+              : 'Kanto practice league'}
+        </span>
+      </div>
+      {phase === 'battle' ? (
+        <div className="classic-match-tools">
+          <span>Turn {Math.max(1, (displayBattle || battle)?.turn || 1)}</span>
+          <button
+            className="classic-sound"
+            onClick={audio.toggleMuted}
+            aria-label={audio.muted ? 'Enable battle sound' : 'Mute battle sound'}
+            title={
+              audio.musicUnavailable
+                ? 'Music unavailable. Tap to retry sound.'
+                : audio.muted
+                  ? 'Sound off'
+                  : 'Sound on'
+            }
+            data-audio-unavailable={audio.musicUnavailable || undefined}
+            aria-pressed={!audio.muted}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9h4l5-4v14l-5-4H4Z" />
+              {audio.muted ? (
+                <path d="m17 9 5 6m0-6-5 6" />
+              ) : (
+                <>
+                  <path d="M16 8a6 6 0 0 1 0 8M19 5a10 10 0 0 1 0 14" />
+                </>
+              )}
+            </svg>
+          </button>
+          <button className="classic-exit" onClick={leave} aria-label="Leave practice battle">
+            <Icon name="X" size={18} />
+          </button>
+        </div>
+      ) : (
+        <div className="arena-mode-tabs">
+          <button
+            className={mode === 'offline' ? 'active' : ''}
+            aria-pressed={mode === 'offline'}
+            onClick={() => {
+              setMode('offline');
+              setPhase('lobby');
+            }}
+          >
+            Offline
+          </button>
+          <button
+            className={mode === 'online' ? 'active' : ''}
+            aria-pressed={mode === 'online'}
+            onClick={() => {
+              setMode('online');
+              setPhase('lobby');
+            }}
+          >
+            Online
+          </button>
+        </div>
+      )}
+    </header>
+  );
 
   if (phase === 'battle' && battle) {
-    const current = battle.player[battle.active.player];
-    const opponent = battle.rival[battle.active.rival];
-    const exhausted = current.pp.every((value) => value <= 0);
-    const lockedMove = current.charging;
+    const view = displayBattle || battle;
+    const current = view.player[view.active.player],
+      opponent = view.rival[view.active.rival];
+    const exhausted = current.pp.every((value) => value <= 0),
+      lockedMove = current.charging;
+    const prompt = busy
+      ? dialogue
+      : battle.winner
+        ? battle.winner === 'player'
+          ? 'You won the battle!'
+          : battle.winner === 'draw'
+            ? 'Both teams gave it everything.'
+            : 'Your team has fainted.'
+        : current.recharge
+          ? `${pokemonById(current.speciesId).name} needs to recharge.`
+          : lockedMove
+            ? `${lockedMove} is ready!`
+            : `What will ${pokemonById(current.speciesId).name} do?`;
     return (
-      <div className="battle-screen arena-v6 arena-v7">
-        <div className="battle-page-heading duel-page-heading">
-          <button className="button secondary" onClick={leave}>
-            <Icon name="ArrowLeft" size={15} />
-            Back to arena
-          </button>
-          <span className="practice-chip">Offline · {battle.difficulty}</span>
-          <strong>Turn {Math.max(1, battle.turn - (battle.winner ? 1 : 0))}</strong>
-        </div>
-        {battle.winner && !busy ? (
-          <section className="duel-result panel">
-            <span className={'duel-result-seal ' + (battle.winner === 'player' ? 'won' : '')}>
-              <Pokeball size={54} />
-            </span>
-            <p className="duel-eyebrow">{battle.difficulty} practice complete</p>
-            <h1>
-              {battle.winner === 'player'
-                ? 'Victory!'
-                : battle.winner === 'draw'
-                  ? 'An even finish.'
-                  : 'One more round?'}
-            </h1>
-            <p>
-              {battle.winner === 'player'
-                ? `You outplayed ${DIFFICULTIES[battle.difficulty].trainer}.`
-                : battle.winner === 'draw'
-                  ? 'Both teams gave it everything.'
-                  : 'A new matchup is a fresh chance to change your strategy.'}
-            </p>
-            <div className="duel-result-team">
-              {battle.player.map((fighter) => (
-                <div key={fighter.id}>
-                  <PokemonArt id={fighter.speciesId} shiny={fighter.shiny} />
-                  <strong>{pokemonById(fighter.speciesId).name}</strong>
-                  <small>{fighter.hp > 0 ? `${fighter.hp} HP remaining` : 'Fainted'}</small>
-                </div>
-              ))}
+      <div className="battle-v8 battle-screen classic-match">
+        {heading}
+        <section
+          className="classic-handheld"
+          aria-label="Pokémon battle"
+          aria-busy={busy}
+          data-state={busy ? 'playing' : battle.winner ? 'result' : command}
+        >
+          <div className="battle-field classic-field" data-effect={cue?.family || ''}>
+            <FieldGround />
+            <Health fighter={opponent} side="rival" team={view.rival} />
+            <Health fighter={current} side="player" team={view.player} />
+            <div
+              className={'classic-fighter classic-rival' + (opponent.hp <= 0 ? ' is-fainted' : '')}
+            >
+              <BattleSprite speciesId={opponent.speciesId} shiny={opponent.shiny} side="rival" />
             </div>
-            <div className="duel-result-facts">
-              <span>
-                <strong>{battle.turn - 1}</strong>turns
-              </span>
-              <span>
-                <strong>{streak}</strong>session win streak
-              </span>
-              <span>
-                <strong>
-                  {battle.player.length} v {battle.rival.length}
-                </strong>
-                team size
-              </span>
+            <div
+              className={'classic-fighter classic-player' + (current.hp <= 0 ? ' is-fainted' : '')}
+            >
+              <BattleSprite speciesId={current.speciesId} shiny={current.shiny} side="player" />
             </div>
-            <p className="practice-safety">
-              Practice only. Your Pokémon, HP, Rare Candy and balances are unchanged.
-            </p>
-            <div className="duel-result-actions">
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setPhase('team');
-                  setBattle(null);
-                  setMatchSeed((seed) => seed + 1);
-                }}
-              >
-                Change your team
-              </Button>
-              <Button onClick={() => start(true)}>
-                New opponent
-                <Icon name="RefreshCw" size={16} />
-              </Button>
-            </div>
-          </section>
-        ) : (
-          <>
-            <div className="duel-trainers">
-              <div>
-                <Avatar profile={state.profile} size={42} />
-                <span>
-                  <strong>{profileName(state)}</strong>
-                  <small>
-                    {battle.player.map((fighter) => (
-                      <Pokeball
-                        key={fighter.id}
-                        size={13}
-                        className={fighter.hp <= 0 ? 'fainted' : ''}
-                      />
-                    ))}
-                  </small>
-                </span>
-              </div>
-              <span>VS</span>
-              <div>
-                <span>
-                  <strong>{DIFFICULTIES[battle.difficulty].trainer}</strong>
-                  <small>
-                    {battle.rival.map((fighter) => (
-                      <Pokeball
-                        key={fighter.id}
-                        size={13}
-                        className={fighter.hp <= 0 ? 'fainted' : ''}
-                      />
-                    ))}
-                  </small>
-                </span>
-                <Avatar
-                  profile={{
-                    character: trainerCharacters[battle.difficulty],
-                    accessoryColor: '#65b883',
-                  }}
-                  size={42}
-                />
-              </div>
-            </div>
-            <div className={'battle-field duel-field ' + effect}>
-              <div className="duel-field-lines" aria-hidden="true" />
-              <div className="duel-fighter duel-player">
-                <Health fighter={current} />
-                <div className="duel-stage">
-                  <span className="duel-stage-shadow" />
-                  <PokemonArt id={current.speciesId} shiny={current.shiny} eager />
-                </div>
-                <div className="duel-type-row">
-                  {pokemonById(current.speciesId).types.map((type) => (
-                    <TypeChip key={type} type={type} />
-                  ))}
-                </div>
-              </div>
-              <div className="duel-center-mark" aria-hidden="true">
-                <Pokeball size={74} />
-              </div>
-              <div className="duel-fighter duel-rival">
-                <Health fighter={opponent} />
-                <div className="duel-stage">
-                  <span className="duel-stage-shadow" />
-                  <PokemonArt id={opponent.speciesId} eager />
-                </div>
-                <div className="duel-type-row">
-                  {pokemonById(opponent.speciesId).types.map((type) => (
-                    <TypeChip key={type} type={type} />
-                  ))}
-                </div>
-              </div>
-              <div className="duel-matchup">
-                {effectiveSpeed(current) === effectiveSpeed(opponent)
-                  ? 'Speed tie'
-                  : effectiveSpeed(current) > effectiveSpeed(opponent)
-                    ? `${pokemonById(current.speciesId).name} is faster`
-                    : `${pokemonById(opponent.speciesId).name} is faster`}
-                <span>Priority moves can change the order.</span>
-              </div>
-            </div>
-            <div className="duel-console">
-              <div className="duel-command-heading">
+            <BattleEffects cue={cue} reducedMotion={state.profile.reducedMotion} />
+          </div>
+          <div className={'classic-console command-' + command}>
+            {battle.winner && !busy ? (
+              <div className="classic-result">
                 <div>
-                  <h2>
-                    {busy
-                      ? 'Turn resolved'
-                      : current.recharge
-                        ? 'Time to recharge'
-                        : lockedMove
-                          ? `${lockedMove} is ready`
-                          : `What will ${pokemonById(current.speciesId).name} do?`}
-                  </h2>
-                  <p>
-                    {current.recharge
-                      ? 'Recover this turn before moving or switching again.'
-                      : lockedMove
-                        ? `Finish ${lockedMove} before choosing another action.`
-                        : current.trapped
-                          ? 'Trapped: switching is unavailable until the vortex ends.'
-                          : 'Pick a move or spend your turn switching Pokémon.'}
-                  </p>
+                  <strong>
+                    {battle.winner === 'player'
+                      ? 'Victory!'
+                      : battle.winner === 'draw'
+                        ? 'A draw!'
+                        : 'A good battle!'}
+                  </strong>
+                  <span>
+                    {battle.turn - 1} turns · {streak} wins in a row
+                  </span>
+                  <small>Your collection is unchanged.</small>
                 </div>
-                <button className="text-link" onClick={() => setShowRules(true)}>
-                  <Icon name="Info" size={16} />
-                  Battle guide
-                </button>
+                <div>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setBattle(null);
+                      setDisplayBattle(null);
+                      setPhase('team');
+                      setMatchSeed((seed) => seed + 1);
+                    }}
+                  >
+                    Change party
+                  </Button>
+                  <Button onClick={() => start(true)}>
+                    Play again
+                    <Icon name="RefreshCw" size={15} />
+                  </Button>
+                </div>
               </div>
-              <div className="battle-moves duel-moves">
-                {(lockedMove
-                  ? [lockedMove]
-                  : current.recharge
-                    ? [current.moves[0]]
-                    : exhausted
-                      ? ['Struggle']
-                      : current.moves
-                ).map((name) => {
-                  const move = battleMove(name),
-                    index = current.moves.indexOf(name),
-                    realIndex = name === 'Struggle' ? -1 : index;
-                  const disabled =
-                    busy ||
-                    !!battle.winner ||
-                    (!current.recharge && !lockedMove && current.pp[index] <= 0 && !exhausted) ||
-                    (!!lockedMove && name !== lockedMove);
-                  return (
-                    <button
-                      key={name}
-                      disabled={disabled}
-                      onClick={() => play({ kind: 'move', index: realIndex })}
-                      style={
-                        { '--move-color': TYPE_COLORS[move.type] || '#718797' } as CSSProperties
-                      }
-                    >
-                      <span className="duel-move-top">
+            ) : busy || command === 'root' ? (
+              <>
+                <div className="classic-dialogue" role="status" aria-live="polite">
+                  <p>{prompt}</p>
+                  {busy ? (
+                    <span className="classic-dialogue-cursor" aria-hidden="true" />
+                  ) : (
+                    <small>
+                      {current.trapped
+                        ? 'Trapped · switching unavailable'
+                        : lockedMove
+                          ? 'Finish the charged move'
+                          : current.recharge
+                            ? 'Take a recovery turn'
+                            : 'Choose an action'}
+                    </small>
+                  )}
+                </div>
+                <div className="classic-root-actions">
+                  <button
+                    className="classic-fight"
+                    disabled={busy}
+                    onClick={() => {
+                      audio.playCue('select');
+                      setCommand('fight');
+                    }}
+                  >
+                    <span aria-hidden="true">▶</span>Fight
+                  </button>
+                  <button
+                    className="classic-pokemon"
+                    disabled={busy || current.trapped > 0 || !!current.charging || current.recharge}
+                    onClick={() => {
+                      audio.playCue('select');
+                      setCommand('pokemon');
+                    }}
+                  >
+                    <Pokeball size={24} />
+                    Pokémon
+                  </button>
+                </div>
+              </>
+            ) : command === 'fight' ? (
+              <>
+                <div className="battle-moves classic-moves">
+                  {(lockedMove
+                    ? [lockedMove]
+                    : current.recharge
+                      ? [current.moves[0]]
+                      : exhausted
+                        ? ['Struggle']
+                        : current.moves
+                  ).map((name) => {
+                    const move = battleMove(name),
+                      index = current.moves.indexOf(name);
+                    return (
+                      <button
+                        key={name}
+                        style={
+                          { '--move-color': TYPE_COLORS[move.type] || '#718797' } as CSSProperties
+                        }
+                        disabled={
+                          busy ||
+                          (!current.recharge && !lockedMove && current.pp[index] <= 0 && !exhausted)
+                        }
+                        onClick={() =>
+                          play({ kind: 'move', index: name === 'Struggle' ? -1 : index })
+                        }
+                        title={
+                          current.recharge
+                            ? 'Recover this turn'
+                            : getMoveHint(current, opponent, name)
+                        }
+                      >
                         <strong>{current.recharge ? 'Recharge' : name}</strong>
-                        <small>{exhausted ? '—' : `${current.pp[index]}/${move.pp}`} PP</small>
-                      </span>
-                      <span className="duel-move-meta">
-                        <TypeChip type={move.type} />
-                        <small>
+                        <span>
+                          <b>{move.type}</b>
+                          <small>{exhausted ? '—' : `${current.pp[index]}/${move.pp}`} PP</small>
+                        </span>
+                        <small className="classic-move-detail">
                           {moveCategory(move)}
-                          {move.power ? ` · ${move.power} power` : ''}
+                          {move.power ? ` · ${move.power}` : ''}
                         </small>
-                      </span>
-                      <span className="duel-move-hint">
-                        {current.recharge
-                          ? 'Recover after Hyper Beam.'
-                          : getMoveHint(current, opponent, name)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button className="classic-menu-back" onClick={() => setCommand('root')}>
+                  <Icon name="ArrowLeft" size={18} />
+                  <span>Back</span>
+                </button>
+              </>
+            ) : command === 'pokemon' ? (
+              <>
+                <div className="classic-party-menu">
+                  {view.player.map((fighter, index) => (
+                    <button
+                      key={fighter.id}
+                      disabled={
+                        fighter.hp <= 0 ||
+                        index === view.active.player ||
+                        current.trapped > 0 ||
+                        !!current.charging ||
+                        current.recharge
+                      }
+                      onClick={() => play({ kind: 'switch', index })}
+                      aria-label={`Switch to ${pokemonById(fighter.speciesId).name}`}
+                    >
+                      <PokemonArt id={fighter.speciesId} shiny={fighter.shiny} animated={false} />
+                      <span>
+                        <strong>{pokemonById(fighter.speciesId).name}</strong>
+                        <small>
+                          {fighter.hp}/{fighter.stats.hp} HP
+                          {index === view.active.player ? ' · In battle' : ''}
+                        </small>
+                        <i>
+                          <b
+                            style={{
+                              width: Math.max(0, (fighter.hp / fighter.stats.hp) * 100) + '%',
+                            }}
+                          />
+                        </i>
                       </span>
                     </button>
-                  );
-                })}
+                  ))}
+                </div>
+                <button className="classic-menu-back" onClick={() => setCommand('root')}>
+                  <Icon name="ArrowLeft" size={18} />
+                  <span>Back</span>
+                </button>
+              </>
+            ) : (
+              <div className="classic-log">
+                <div>
+                  {battle.history.slice(-6).map((event, index) => (
+                    <p key={index}>{event.text}</p>
+                  ))}
+                </div>
+                <button onClick={() => setCommand('root')}>Back</button>
               </div>
-              <div className="duel-bench">
-                {battle.player.map((fighter, index) => (
-                  <button
-                    key={fighter.id}
-                    disabled={
-                      busy ||
-                      !!battle.winner ||
-                      fighter.hp <= 0 ||
-                      index === battle.active.player ||
-                      current.trapped > 0 ||
-                      !!current.charging ||
-                      current.recharge
-                    }
-                    onClick={() => setShowSwitch(true)}
-                    aria-label={`Switch to ${pokemonById(fighter.speciesId).name}`}
-                    className={index === battle.active.player ? 'active' : ''}
-                  >
-                    <PokemonArt id={fighter.speciesId} shiny={fighter.shiny} animated={false} />
-                    <span>
-                      <strong>{pokemonById(fighter.speciesId).name}</strong>
-                      <small>
-                        {fighter.hp}/{fighter.stats.hp} HP
-                        {index === battle.active.player ? ' · Active' : ''}
-                      </small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <details className="duel-history" open>
-              <summary>
-                Battle log <span>{battle.events.length} events this turn</span>
-              </summary>
-              <div className="duel-current-events" aria-live="polite">
-                {battle.events.map((event, index) => (
-                  <p className={'event-' + event.kind} key={`${battle.turn}-${index}`}>
-                    {event.text}
-                  </p>
-                ))}
-              </div>
-              {battle.history.length > battle.events.length && (
-                <details>
-                  <summary>Earlier turns</summary>
-                  <div>
-                    {battle.history.slice(0, -battle.events.length).map((event, index) => (
-                      <p key={index}>{event.text}</p>
-                    ))}
-                  </div>
-                </details>
-              )}
-            </details>
-          </>
-        )}
-        {showSwitch && (
-          <Modal title="Switch Pokémon" onClose={() => setShowSwitch(false)}>
-            <div className="modal-body">
-              <p>Switching uses this turn. Your opponent can attack the Pokémon you send in.</p>
-              <div className="duel-switch-list">
-                {battle.player.map((fighter, index) => (
-                  <button
-                    key={fighter.id}
-                    disabled={
-                      fighter.hp <= 0 ||
-                      index === battle.active.player ||
-                      current.trapped > 0 ||
-                      !!current.charging ||
-                      current.recharge
-                    }
-                    onClick={() => play({ kind: 'switch', index })}
-                  >
-                    <PokemonArt id={fighter.speciesId} shiny={fighter.shiny} animated={false} />
-                    <span>
-                      <strong>{pokemonById(fighter.speciesId).name}</strong>
-                      <small>
-                        {fighter.hp}/{fighter.stats.hp} HP
-                      </small>
-                    </span>
-                    <Icon name="ArrowRight" />
-                  </button>
-                ))}
-              </div>
-            </div>
-          </Modal>
-        )}
-        {showRules && (
-          <Modal title="Win the matchup" onClose={() => setShowRules(false)}>
-            <div className="modal-body duel-rules">
-              <p>
-                <strong>Plan around types.</strong> Your own type adds a 1.5× bonus. Dual types can
-                multiply weaknesses and resistances.
-              </p>
-              <p>
-                <strong>Control the turn.</strong> Faster Pokémon act first; Quick Attack has
-                priority. Switching takes a turn and resets stat boosts.
-              </p>
-              <p>
-                <strong>Set up a finish.</strong> Growl lowers Attack, Agility raises Speed, and
-                status moves can force your opponent to lose momentum. Recover and Rest restore
-                battle HP.
-              </p>
-              <p>
-                <strong>Watch your resources.</strong> Moves have limited PP. Fly and Solar Beam
-                take two turns; Hyper Beam needs a recharge. Struggle is available when all PP is
-                spent.
-              </p>
-              <p className="muted">
-                Practice uses a curated move set and Kanto type matchups with modern
-                physical/special stat displays. It is not an exact original-game simulator.
-              </p>
-            </div>
-          </Modal>
-        )}
+            )}
+          </div>
+        </section>
+        <footer className="classic-match-footer">
+          <span>
+            {profileName(state)} <b>vs</b> {DIFFICULTIES[difficulty].trainer}
+          </span>
+          <span>Practice · no stakes</span>
+        </footer>
       </div>
     );
   }
 
   if (phase === 'team')
     return (
-      <div className="battle-screen arena-v6 arena-v7">
-        <button className="button secondary arena-back" onClick={() => setPhase('lobby')}>
-          <Icon name="ArrowLeft" size={16} />
-          Back to arena
-        </button>
-        <PageHeading
-          title="Build your battle party"
-          description="Choose a lead, then up to two partners. Your first selection goes out first."
-        />
-        <div className="duel-team-layout">
-          <section>
-            <div className="duel-party-slots">
+      <div className="battle-v8 battle-screen classic-team-screen">
+        {heading}
+        <div className="classic-team-desk">
+          <section className="classic-team-pick">
+            <div className="classic-team-top">
+              <button className="text-link" onClick={() => setPhase('lobby')}>
+                <Icon name="ArrowLeft" size={15} />
+                Arena
+              </button>
+              <h2>Build your party</h2>
+              <span>{chosen.length}/3</span>
+            </div>
+            <div className="classic-party-slots">
               {[0, 1, 2].map((index) => (
-                <div key={index} className={chosen[index] ? 'filled' : ''}>
+                <div className={chosen[index] ? 'filled' : ''} key={index}>
                   {chosen[index] ? (
                     <>
-                      <PokemonArt id={chosen[index].speciesId} shiny={chosen[index].shiny} />
-                      <strong>{pokemonById(chosen[index].speciesId).name}</strong>
-                      <small>{index === 0 ? 'Lead Pokémon' : 'Partner'}</small>
+                      <PokemonArt
+                        id={chosen[index].speciesId}
+                        shiny={chosen[index].shiny}
+                        animated={false}
+                      />
+                      <span>
+                        <strong>{pokemonById(chosen[index].speciesId).name}</strong>
+                        <small>{index === 0 ? 'Lead Pokémon' : 'Partner'}</small>
+                      </span>
                       <button
                         aria-label={'Remove ' + pokemonById(chosen[index].speciesId).name}
                         onClick={() =>
                           setSelectedIds((ids) => ids.filter((id) => id !== chosen[index].id))
                         }
                       >
-                        <Icon name="X" size={14} />
+                        <Icon name="X" size={13} />
                       </button>
                     </>
                   ) : (
                     <>
-                      <Pokeball size={32} />
-                      <span>{index === 0 ? 'Choose your lead' : 'Add a partner'}</span>
+                      <Pokeball size={28} />
+                      <span>{index === 0 ? 'Choose a lead' : 'Add a partner'}</span>
                     </>
                   )}
                 </div>
               ))}
             </div>
-            <div className="section-heading">
-              <h2>Your Pokémon</h2>
-              <span>{chosen.length}/3 selected</span>
+            <label className="classic-party-search">
+              <Icon name="Search" size={17} />
+              <input
+                aria-label="Find a battle Pokémon"
+                placeholder="Find a Pokémon…"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  setPage(0);
+                }}
+              />
+            </label>
+            <div className="classic-selection-grid">
+              {filtered
+                .slice(currentPage * pageSize, (currentPage + 1) * pageSize)
+                .map((pokemon) => (
+                  <button
+                    className={
+                      'team-select-card classic-select-card ' +
+                      (selectedIds.includes(pokemon.id) ? 'selected' : '')
+                    }
+                    key={pokemon.id}
+                    disabled={!selectedIds.includes(pokemon.id) && chosen.length >= 3}
+                    aria-pressed={selectedIds.includes(pokemon.id)}
+                    onClick={() =>
+                      setSelectedIds((ids) =>
+                        ids.includes(pokemon.id)
+                          ? ids.filter((id) => id !== pokemon.id)
+                          : [...ids, pokemon.id],
+                      )
+                    }
+                  >
+                    <span className="classic-select-level">Lv.{pokemon.level}</span>
+                    <PokemonArt id={pokemon.speciesId} shiny={pokemon.shiny} animated={false} />
+                    <strong>{pokemonById(pokemon.speciesId).name}</strong>
+                    <div>
+                      {pokemonById(pokemon.speciesId).types.map((type) => (
+                        <TypeChip key={type} type={type} />
+                      ))}
+                    </div>
+                    {selectedIds.includes(pokemon.id) && (
+                      <span className="classic-selected-tick">
+                        <Icon name="Check" size={14} />
+                      </span>
+                    )}
+                  </button>
+                ))}
             </div>
-            <div className="duel-team-grid">
-              {available.map((pokemon) => (
-                <button
-                  className={
-                    'team-select-card duel-team-card ' +
-                    (selectedIds.includes(pokemon.id) ? 'selected' : '')
-                  }
-                  key={pokemon.id}
-                  disabled={!selectedIds.includes(pokemon.id) && chosen.length >= 3}
-                  aria-pressed={selectedIds.includes(pokemon.id)}
-                  onClick={() =>
-                    setSelectedIds((ids) =>
-                      ids.includes(pokemon.id)
-                        ? ids.filter((id) => id !== pokemon.id)
-                        : [...ids, pokemon.id],
-                    )
-                  }
-                >
-                  <span className="duel-team-level">Lv. {pokemon.level}</span>
-                  <PokemonArt id={pokemon.speciesId} shiny={pokemon.shiny} animated={false} />
-                  <strong>{pokemonById(pokemon.speciesId).name}</strong>
-                  <div>
-                    {pokemonById(pokemon.speciesId).types.map((type) => (
-                      <TypeChip key={type} type={type} />
-                    ))}
-                  </div>
-                  {selectedIds.includes(pokemon.id) && (
-                    <span className="duel-selection-check">
-                      <Icon name="Check" size={15} />
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-            {!available.length && (
-              <div className="duel-empty">
-                <Pokeball size={40} />
-                <h3>Your party is waiting.</h3>
-                <p>Choose a starter or hatch a Pokémon to begin.</p>
-                <a className="button primary" href="#/starter">
-                  Choose a starter
-                </a>
+            {!filtered.length && (
+              <div className="classic-no-pokemon">
+                <Pokeball size={34} />
+                <p>
+                  {available.length
+                    ? 'No matching Pokémon.'
+                    : 'Choose a starter or hatch a Pokémon.'}
+                </p>
+                {!available.length && (
+                  <a href="#/starter" className="button primary">
+                    Choose a starter
+                  </a>
+                )}
               </div>
             )}
+            <div className="classic-pagination">
+              <button
+                aria-label="Previous Pokémon page"
+                disabled={currentPage === 0}
+                onClick={() => setPage((page) => page - 1)}
+              >
+                <Icon name="ChevronLeft" size={16} />
+              </button>
+              <span>
+                {currentPage + 1} / {pageCount}
+              </span>
+              <button
+                aria-label="Next Pokémon page"
+                disabled={currentPage >= pageCount - 1}
+                onClick={() => setPage((page) => page + 1)}
+              >
+                <Icon name="ChevronRight" size={16} />
+              </button>
+            </div>
           </section>
-          <aside className="battle-review duel-team-review">
-            <h2>Your opponent</h2>
+          <aside className="battle-review classic-team-review">
+            <div className="classic-rival-heading">
+              <Avatar
+                profile={{
+                  character: trainerCharacters[difficulty],
+                  accessoryColor: trainerColors[difficulty],
+                }}
+                size={48}
+              />
+              <div>
+                <small>Your opponent</small>
+                <h2>{DIFFICULTIES[difficulty].trainer}</h2>
+              </div>
+            </div>
             <DifficultyPicker value={difficulty} onChange={setDifficulty} />
-            <p>{DIFFICULTIES[difficulty].detail}</p>
-            <div className="duel-rival-preview">
+            <div className="classic-rival-party">
               {rivals.length ? (
                 rivals.map((fighter) => (
                   <div key={fighter.id}>
                     <PokemonArt id={fighter.speciesId} animated={false} />
                     <strong>{pokemonById(fighter.speciesId).name}</strong>
-                    <small>
-                      Lv. {fighter.level}
-                      {fighter.trainingScale !== 1 ? ' · Practice scaling' : ''}
-                    </small>
+                    <small>Lv.{fighter.level}</small>
                   </div>
                 ))
               ) : (
-                <div className="duel-rival-placeholder">
-                  <Pokeball size={42} />
-                  <p>Select your team to meet your opponent.</p>
-                </div>
+                <p>Select your first Pokémon to meet the rival team.</p>
               )}
             </div>
-            {!!rivals.length && (
-              <>
-                <div className="duel-strength">
-                  <span>Rival stat strength</span>
-                  <strong>{relativeStrength}% of yours</strong>
-                </div>
-                <button
-                  className="text-link duel-reroll"
-                  onClick={() => setMatchSeed((seed) => seed + 1)}
-                >
-                  <Icon name="RefreshCw" size={15} />
-                  New matchup
-                </button>
-              </>
-            )}
-            <Button disabled={!chosen.length} className="full-width" onClick={() => start()}>
+            <div className="classic-rival-strength">
+              <span>
+                {rivals.length
+                  ? `Rival strength: ${relativeStrength}% of yours`
+                  : 'Your opponent scales to your party'}
+              </span>
+              <button aria-label="New matchup" onClick={() => setMatchSeed((seed) => seed + 1)}>
+                <Icon name="RefreshCw" size={16} />
+              </button>
+            </div>
+            <Button disabled={!chosen.length} onClick={() => start()}>
               Start battle
-              <Icon name="Swords" size={16} />
+              <Icon name="Swords" size={17} />
             </Button>
-            <small className="practice-safety">
-              For fun only. Everyone starts at full battle HP. Your inventory and balances stay
-              unchanged.
-            </small>
+            <small className="classic-practice-note">Full battle HP · no stakes</small>
           </aside>
         </div>
       </div>
     );
 
   return (
-    <div className="battle-screen arena-v6 arena-v7 arena-lobby">
-      <header className="arena-lobby-heading">
-        <div>
-          <h1>Battle arena</h1>
-          <p>Your team. Your next challenge.</p>
-        </div>
-        <div className="arena-mode-tabs" aria-label="Battle mode">
-          <button
-            className={mode === 'offline' ? 'active' : ''}
-            aria-pressed={mode === 'offline'}
-            onClick={() => setMode('offline')}
-          >
-            <Icon name="Swords" size={18} />
-            Offline<span>Practice</span>
-          </button>
-          <button
-            className={mode === 'online' ? 'active' : ''}
-            aria-pressed={mode === 'online'}
-            onClick={() => setMode('online')}
-          >
-            <Icon name="Users" size={18} />
-            Online<span>Trainer battles</span>
-          </button>
-        </div>
-      </header>
+    <div className="battle-v8 battle-screen arena-lobby">
+      {heading}
       {mode === 'offline' ? (
-        <div className="arena-training-layout">
-          <section className="arena-hero practice-arena-board">
-            <div className="arena-board-topline">
-              <h2>Practice arena</h2>
-              <span className="practice-chip">Just for fun</span>
+        <div className="classic-lobby-grid">
+          <section className="arena-hero classic-lobby-board">
+            <div className="classic-preview-field">
+              <FieldGround />
+              <div className="classic-preview-caption">
+                <span>OFFLINE BATTLE</span>
+                <h2>Your next challenger.</h2>
+                <p>Pick a rival. Build your party. Make your move.</p>
+              </div>
+              <div className="classic-preview-player">
+                <BattleSprite
+                  speciesId={lobbyParty[0]?.speciesId || 4}
+                  shiny={lobbyParty[0]?.shiny}
+                  side="player"
+                />
+              </div>
+              <div className="classic-preview-rival">
+                <BattleSprite speciesId={lobbyRivals[0]?.speciesId || 7} side="rival" />
+              </div>
+              <span className="classic-preview-versus">VS</span>
             </div>
-            <div
-              className="arena-preview-court"
-              aria-label="A preview of a possible practice matchup"
-            >
-              <svg
-                className="arena-court-lines"
-                viewBox="0 0 600 270"
-                preserveAspectRatio="xMidYMid slice"
-                aria-hidden="true"
-              >
-                <rect x="32" y="22" width="536" height="226" rx="100" />
-                <path d="M300 22v226" />
-                <circle cx="300" cy="135" r="62" />
-                <circle cx="300" cy="135" r="21" />
-                <path d="M32 135h206m124 0h206" />
-              </svg>
-              <div className="arena-court-side home-side">
-                <div className="arena-court-trainer">
-                  <Avatar profile={state.profile} size={32} />
-                  <span>You</span>
-                </div>
-                <div className="arena-court-sprite">
-                  <PokemonArt
-                    id={lobbyParty[0]?.speciesId || 4}
-                    shiny={lobbyParty[0]?.shiny}
-                    eager
-                  />
-                </div>
-                <strong>
-                  {lobbyParty[0] ? pokemonById(lobbyParty[0].speciesId).name : 'Your next partner'}
-                </strong>
+            <div className="classic-lobby-party">
+              <div>
+                <h3>Your party starts here</h3>
+                <span>Choose up to 3 Pokémon</span>
               </div>
-              <div className="arena-court-vs" aria-hidden="true">
-                VS
-              </div>
-              <div className="arena-court-side away-side">
-                <div className="arena-court-trainer">
-                  <Avatar
-                    profile={{
-                      character: trainerCharacters[difficulty],
-                      accessoryColor: trainerColors[difficulty],
-                    }}
-                    size={32}
-                  />
-                  <span>{DIFFICULTIES[difficulty].trainer}</span>
-                </div>
-                <div className="arena-court-sprite">
-                  <PokemonArt id={lobbyRivals[0]?.speciesId || 7} eager />
-                </div>
-                <strong>
-                  {lobbyRivals[0] ? pokemonById(lobbyRivals[0].speciesId).name : 'A new rival'}
-                </strong>
-              </div>
-              <span className="arena-court-preview-label">Matchup preview</span>
-            </div>
-            <div className="arena-party-preview">
-              <div className="arena-party-heading">
-                <strong>{chosen.length ? 'Your selected party' : 'From your collection'}</strong>
-                <span>Choose 1–3 Pokémon</span>
-              </div>
-              <div className="arena-party-lineup">
-                {[0, 1, 2].map((index) => {
-                  const pokemon = lobbyParty[index];
-                  return (
-                    <button
-                      key={index}
-                      className={'arena-party-place' + (pokemon ? ' occupied' : '')}
-                      onClick={() => setPhase('team')}
-                      aria-label={
-                        pokemon
-                          ? 'Choose your battle party, including ' +
-                            pokemonById(pokemon.speciesId).name
-                          : 'Choose a Pokémon for your party'
-                      }
-                    >
-                      {pokemon ? (
-                        <>
-                          <PokemonArt
-                            id={pokemon.speciesId}
-                            shiny={pokemon.shiny}
-                            animated={false}
-                          />
-                          <span>
-                            <strong>{pokemonById(pokemon.speciesId).name}</strong>
-                            <small>Lv. {pokemon.level}</small>
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Pokeball size={26} />
-                          <span>Add Pokémon</span>
-                        </>
-                      )}
-                    </button>
-                  );
-                })}
+              <div>
+                {[0, 1, 2].map((index) => (
+                  <button
+                    key={index}
+                    onClick={() => setPhase('team')}
+                    aria-label="Choose your battle party"
+                  >
+                    {lobbyParty[index] ? (
+                      <>
+                        <PokemonArt
+                          id={lobbyParty[index].speciesId}
+                          shiny={lobbyParty[index].shiny}
+                          animated={false}
+                        />
+                        <span>{pokemonById(lobbyParty[index].speciesId).name}</span>
+                      </>
+                    ) : (
+                      <Pokeball size={28} />
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="arena-board-footer">
+            <div className="classic-lobby-actions">
               <span>
-                <strong>Full HP for every match</strong>
-                <small>Practice leaves your collection unchanged.</small>
+                Just for fun<small>Your collection stays unchanged.</small>
               </span>
               <Button onClick={() => setPhase('team')}>
-                {chosen.length ? 'Edit your party' : 'Build your party'}
+                Build your party
                 <Icon name="ArrowRight" size={16} />
               </Button>
             </div>
           </section>
-          <aside className="arena-challenge-panel">
-            <div className="arena-challenge-heading">
-              <h2>Choose a rival</h2>
-              <span>Difficulty</span>
-            </div>
-            <DifficultyPicker value={difficulty} onChange={setDifficulty} detailed />
-            <div className="arena-rival-note">
-              <strong>{DIFFICULTIES[difficulty].trainer}’s approach</strong>
+          <aside className="classic-rival-desk">
+            <h2>Choose a rival</h2>
+            <p>How tough should the match be?</p>
+            <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+            <div className="classic-difficulty-note">
+              <strong>{difficulty} challenge</strong>
               <p>{DIFFICULTIES[difficulty].detail}</p>
-              <span>Team strength scales to your selected party.</span>
+              {streak > 0 && <span>{streak} wins in a row</span>}
             </div>
-            {streak > 0 && (
-              <div className="arena-session-streak">
-                <Pokeball size={20} />
-                <span>
-                  <strong>{streak}</strong> practice win{streak === 1 ? '' : 's'} in a row
-                </span>
-              </div>
-            )}
-            <a className="arena-guide-link" href="#/guide?topic=battles">
+            <a href="#/guide?topic=battles">
               <Icon name="BookOpen" size={16} />
               Battle guide
               <Icon name="ArrowUpRight" size={14} />
@@ -887,85 +870,72 @@ export function BattlesPage() {
           </aside>
         </div>
       ) : (
-        <section className="duel-online-card">
-          <div className="duel-online-heading">
-            <span className="online-unavailable">
+        <section className="classic-online">
+          <div>
+            <span className="classic-offline-label">
               <i />
               Server not connected
             </span>
-            <h2>Your next rival is another trainer.</h2>
+            <h2>A trainer is your next rival.</h2>
             <p>
-              Set up a friendly match or choose your stakes. Matchmaking will be available when
-              Poképad’s battle server is connected.
+              Prepare your match. Online battles become available when the battle server is
+              connected.
             </p>
-          </div>
-          <div className="duel-online-form">
-            <div>
-              <label>Match type</label>
-              <div className="online-formats">
-                {['Friendly', 'SOL', 'Token', 'Pokémon'].map((format) => (
-                  <button
-                    key={format}
-                    className={onlineFormat === format ? 'active' : ''}
-                    aria-pressed={onlineFormat === format}
-                    onClick={() => setOnlineFormat(format)}
-                  >
-                    {format === 'Friendly' ? 'Free battle' : format + ' wager'}
-                  </button>
-                ))}
-              </div>
-              {onlineFormat === 'Token' && (
-                <label>
-                  Community token
-                  <select value={coin} onChange={(event) => setCoin(event.target.value)}>
-                    {state.coins
-                      .filter((entry) => entry.active)
-                      .map((entry) => (
-                        <option key={entry.id} value={entry.id}>
-                          ${entry.ticker}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-              )}
-              {['SOL', 'Token'].includes(onlineFormat) && (
-                <label>
-                  Stake per trainer
-                  <input
-                    aria-label="Online wager amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={stake}
-                    onChange={(event) => setStake(event.target.value)}
-                  />
-                  <small>
-                    {onlineFormat === 'SOL'
-                      ? 'SOL'
-                      : '$' + state.coins.find((entry) => entry.id === coin)?.ticker}
-                  </small>
-                </label>
-              )}
-              {onlineFormat === 'Pokémon' && (
-                <div className="duel-stake-note">
-                  In a live Pokémon wager, the winner receives the loser’s entire selected team.
-                  Starter Pokémon cannot be wagered.
-                </div>
-              )}
-              <p className="duel-online-status">
-                No matchmaking request is sent and no stake is locked.
+            <label>Match type</label>
+            <div className="classic-online-formats">
+              {['Friendly', 'SOL', 'Token', 'Pokémon'].map((format) => (
+                <button
+                  key={format}
+                  className={onlineFormat === format ? 'selected' : ''}
+                  aria-pressed={onlineFormat === format}
+                  onClick={() => setOnlineFormat(format)}
+                >
+                  {format === 'Friendly' ? 'Free battle' : format + ' wager'}
+                </button>
+              ))}
+            </div>
+            {onlineFormat === 'Token' && (
+              <label>
+                Community token
+                <select value={coin} onChange={(event) => setCoin(event.target.value)}>
+                  {state.coins
+                    .filter((entry) => entry.active)
+                    .map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        ${entry.ticker}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+            {['SOL', 'Token'].includes(onlineFormat) && (
+              <label>
+                Stake per trainer
+                <input
+                  aria-label="Online wager amount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={stake}
+                  onChange={(event) => setStake(event.target.value)}
+                />
+              </label>
+            )}
+            {onlineFormat === 'Pokémon' && (
+              <p className="classic-stake-note">
+                The winner receives the loser’s selected team. Starter Pokémon cannot be wagered.
               </p>
-              <Button disabled className="full-width">
-                Find a trainer
-                <Icon name="Users" size={17} />
-              </Button>
-            </div>
-            <div className="duel-online-art">
-              <PokemonArt id={25} animated={false} />
-              <PokemonArt id={133} animated={false} />
-              <strong>1–3 Pokémon per trainer</strong>
-              <p>Live turn validation and wager settlement belong on the server.</p>
-            </div>
+            )}
+            <Button disabled>
+              Find a trainer
+              <Icon name="Users" size={17} />
+            </Button>
+            <small>No matchmaking request is sent and no stake is locked.</small>
+          </div>
+          <div className="classic-online-art">
+            <BattleSprite speciesId={25} side="player" />
+            <BattleSprite speciesId={133} side="rival" />
+            <span>1–3 Pokémon per trainer</span>
           </div>
         </section>
       )}

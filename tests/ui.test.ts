@@ -479,8 +479,24 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
     await click(document.querySelector('.team-select-card'));
     await click(document.querySelector('.battle-review>.button'));
     assert.ok(document.querySelector('.battle-field'));
+    assert.equal(document.querySelectorAll('.classic-root-actions > button').length, 2);
+    assert.equal(
+      document.querySelector('.classic-player [data-facing]')?.getAttribute('data-facing'),
+      'back',
+    );
+    assert.equal(
+      document.querySelector('.classic-rival [data-facing]')?.getAttribute('data-facing'),
+      'front',
+    );
+    await click(document.querySelector('.classic-fight'));
     await click(document.querySelector('.battle-moves>button'));
-    await app.wait(400);
+    await app.until(
+      () =>
+        /Turn 2/.test(document.querySelector('.battle-page-heading')?.textContent || '') &&
+        !document.querySelector<HTMLButtonElement>('.classic-fight')?.disabled,
+      'Turn playback completes before the next action',
+      8000,
+    );
     assert.match(document.querySelector('.battle-page-heading')?.textContent || '', /Turn 2/);
   } finally {
     await app.close();
@@ -513,11 +529,11 @@ test('earned moves can be added or replace one move, while Eevee evolves to a fu
     assert.equal(document.querySelector('.pending-move-prompt'), null);
     await go('/pokemon/eevee');
     await click(app.button('Evolution'));
-    assert.match(
-      document.querySelector('.evolution-funding-note')?.textContent || '',
-      /0.075 SOL increase is already funded/,
-    );
+    assert.equal(document.querySelector('.evolution-funding-note'), null);
+    assert.equal(document.querySelectorAll('.evolution-mystery').length, 3);
+    assert.equal(document.querySelectorAll('.evolution-mystery-art').length, 3);
     await click(app.button('Evolve Pokémon'));
+    assert.equal(document.querySelector('.evolution-reserve-copy'), null);
     assert.match(document.querySelector('[role="dialog"]')?.textContent || '', /1-in-3/);
     assert.equal(document.querySelector('[role="dialog"] select'), null);
     await click(app.button('Evolve'));
@@ -566,6 +582,31 @@ test('declined moves stay dismissed on return and evolution is unavailable witho
     assert.match(document.querySelector('.evolution-unavailable')?.textContent || '', /fund/i);
     assert.equal(document.querySelector('[role="dialog"]'), null);
     assert.equal(app.saved().pokemon.find((p) => p.id === 'bulbasaur')?.backing, 0.08);
+  } finally {
+    await app.close();
+  }
+});
+
+test('My PC prioritises actionable Pokémon and keeps explicit sorting available', async () => {
+  const app = await mountApp('/pokemon', (state) => {
+    state.pokemon.find((p) => p.id === 'gengar')!.acquiredAt = Date.now();
+    state.pokemon.find((p) => p.id === 'partner')!.listed = 0.2;
+  });
+  try {
+    const cards = [...app.document.querySelectorAll('.pc-slot')];
+    const firstPlain = cards.findIndex((card) => !card.classList.contains('pc-attention'));
+    assert.ok(firstPlain > 0, 'Ready Pokémon appear first');
+    assert.ok(cards.slice(firstPlain).every((card) => !card.classList.contains('pc-attention')));
+    const listed = app.document.querySelector('a[href="#/pokemon/partner"].pc-slot');
+    assert.equal(listed?.classList.contains('pc-attention'), false);
+    assert.match(listed?.textContent || '', /Move waiting/);
+    const sort = app.document.querySelector<HTMLSelectElement>('[aria-label="Sort Pokémon"]')!;
+    assert.equal(sort.value, 'Ready first');
+    await act(async () => {
+      sort.value = 'Newest';
+      sort.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
+    });
+    assert.equal(app.document.querySelector('.pc-slot')?.getAttribute('href'), '#/pokemon/gengar');
   } finally {
     await app.close();
   }
@@ -626,13 +667,22 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
         ?.getAttribute('src')
         ?.startsWith('data:image/png;base64,'),
     );
-    await click(document.querySelector('.creation-details-tabs button:nth-child(2)'));
+    assert.equal(document.querySelector('.creation-details-tabs'), null);
+    assert.equal(
+      document.querySelector('.creation-links-toggle')?.getAttribute('aria-expanded'),
+      'false',
+    );
+    await click(document.querySelector('.creation-links-toggle'));
+    assert.equal(
+      document.querySelector('.creation-links-toggle')?.getAttribute('aria-expanded'),
+      'true',
+    );
     await fill('#coin-social-x', 'javascript:alert(1)');
     assert.equal(app.button('Next: Partner').disabled, true);
     assert.equal(document.querySelector('#coin-social-x')?.getAttribute('aria-invalid'), 'true');
     await fill('#coin-social-x', 'https://x.com/moonstone');
     await fill('#coin-social-website', 'https://moonstone.example/');
-    await click(document.querySelector('.creation-details-tabs button:first-child'));
+    await click(document.querySelector('.creation-links-toggle'));
     await click(app.button('Next: Partner'));
     assert.equal(
       document.querySelector('#coin-name'),
@@ -671,6 +721,10 @@ test('the launch wizard validates steps and keeps the chosen Pokémon, image, an
       (row) => row.querySelector('dt')?.textContent === 'Community links',
     );
     await click(linksReview?.querySelector('button') || null);
+    assert.equal(
+      document.querySelector('.creation-links-toggle')?.getAttribute('aria-expanded'),
+      'true',
+    );
     assert.equal(
       document.querySelector<HTMLInputElement>('#coin-social-x')?.value,
       'https://x.com/moonstone',

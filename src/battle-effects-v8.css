@@ -1,0 +1,606 @@
+/* Battle effects share the battlefield's view box; sprite placement never shifts to create an effect. */
+.battle-vfx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 6;
+  pointer-events: none;
+  overflow: hidden;
+}
+.battle-vfx * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.battle-vfx-flight {
+  opacity: 0;
+  animation: battle-vfx-flight var(--duration, 620ms) cubic-bezier(0.2, 0.35, 0.55, 1)
+    var(--delay, 0s) both;
+}
+.battle-vfx-flight.reverse {
+  animation-name: battle-vfx-drain;
+}
+.battle-vfx-projectile {
+  filter: drop-shadow(2px 3px 0 #26344222);
+}
+.battle-vfx-spark {
+  opacity: 0;
+  animation: battle-vfx-spark 480ms ease-out calc(0.26s + var(--delay, 0s)) both;
+}
+.battle-vfx-ring {
+  opacity: 0;
+  animation: battle-vfx-ring 560ms ease-out var(--delay, 0s) both;
+}
+.battle-vfx-hit {
+  opacity: 0;
+  animation: battle-vfx-impact 470ms ease-out 0.24s both;
+}
+.battle-vfx-beam-aura {
+  opacity: 0;
+  stroke-dasharray: 1300;
+  stroke-dashoffset: 1300;
+  animation: battle-vfx-beam 690ms ease-out 0.09s both;
+}
+.battle-vfx-beam-core {
+  opacity: 0;
+  stroke-dasharray: 1300;
+  stroke-dashoffset: 1300;
+  animation: battle-vfx-beam 630ms ease-out 0.17s both;
+}
+.battle-vfx-slash {
+  opacity: 0;
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: battle-vfx-slash 480ms ease-out var(--delay, 0s) both;
+}
+.battle-vfx-fireblast {
+  opacity: 0;
+  animation: battle-vfx-fireblast 660ms ease-out 0.24s both;
+}
+.battle-vfx-vortex {
+  opacity: 0;
+  animation: battle-vfx-vortex 600ms ease-out var(--delay, 0s) both;
+}
+.battle-vfx-surf {
+  opacity: 0;
+  animation: battle-vfx-surf 900ms ease-in-out both;
+}
+.battle-vfx-bite {
+  opacity: 0;
+  animation: battle-vfx-bite 650ms ease both;
+}
+.battle-vfx-upper-jaw {
+  animation: battle-vfx-upper-jaw 650ms ease both;
+}
+.battle-vfx-lower-jaw {
+  animation: battle-vfx-lower-jaw 650ms ease both;
+}
+.battle-vfx-vine {
+  opacity: 0;
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: battle-vfx-vine 730ms ease-in-out both;
+}
+.battle-vfx-powder-cloud {
+  opacity: 0;
+  animation: battle-vfx-cloud 700ms ease-out 0.18s both;
+}
+.battle-vfx-dim {
+  opacity: 0;
+  animation: battle-vfx-dim 850ms ease both;
+}
+.battle-vfx-psychic-wash {
+  opacity: 0;
+  animation: battle-vfx-wash 850ms ease both;
+}
+.battle-vfx-ghost {
+  opacity: 0;
+  animation: battle-vfx-ghost 850ms ease both;
+}
+.battle-vfx-orbit {
+  opacity: 0;
+  animation: battle-vfx-orbit 850ms ease both;
+}
+.battle-vfx-electric {
+  opacity: 0;
+  animation: battle-vfx-electric 660ms ease-out var(--delay, 0s) both;
+}
+.battle-vfx-agility {
+  opacity: 0;
+  animation: battle-vfx-agility 650ms ease-out both;
+}
+.battle-vfx-heal {
+  opacity: 0;
+  animation: battle-vfx-heal 600ms ease-out var(--delay, 0s) both;
+}
+.battle-vfx-rock-fall {
+  opacity: 0;
+  animation: battle-vfx-rock-fall 620ms ease-in var(--delay, 0s) both;
+}
+.battle-vfx-rock-burst {
+  opacity: 0;
+  animation: battle-vfx-rock-burst 650ms ease-out var(--delay, 0s) both;
+}
+.battle-vfx-crack {
+  opacity: 0;
+  animation: battle-vfx-crack 800ms ease both;
+}
+.battle-vfx-shield {
+  opacity: 0;
+  animation: battle-vfx-shield 750ms ease both;
+}
+.battle-vfx-swords {
+  opacity: 0;
+  animation: battle-vfx-swords 850ms ease both;
+}
+.battle-vfx-web {
+  opacity: 0;
+  animation: battle-vfx-web 650ms ease 0.1s both;
+}
+.battle-vfx-faint {
+  opacity: 0;
+  animation: battle-vfx-faint 620ms ease both;
+}
+.battle-vfx-sendout {
+  opacity: 0;
+  animation: battle-vfx-sendout 600ms ease both;
+}
+.battle-vfx-rise {
+  opacity: 0;
+  animation: battle-vfx-rise 650ms ease both;
+}
+.battle-vfx-reduced {
+  display: none;
+}
+.battle-vfx.outcome-immune .battle-vfx-full {
+  opacity: 0.42;
+}
+@keyframes battle-vfx-flight {
+  0% {
+    transform: translate(0, var(--spread, 0px)) scale(0.45);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--flight-x), var(--flight-y)) scale(1.1);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-drain {
+  0% {
+    transform: translate(0, var(--spread, 0px)) scale(1);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-1 * var(--flight-x)), calc(-1 * var(--flight-y))) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-spark {
+  0% {
+    transform: translate(0, 0) scale(0.2);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--spark-x), var(--spark-y)) scale(0.1) rotate(70deg);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-ring {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-impact {
+  0% {
+    transform: scale(0.25) rotate(-15deg);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1.1) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5) rotate(12deg);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-beam {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 1300;
+  }
+  23% {
+    opacity: 0.9;
+    stroke-dashoffset: 0;
+  }
+  68% {
+    opacity: 0.9;
+    stroke-dashoffset: 0;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: -1300;
+  }
+}
+@keyframes battle-vfx-slash {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 300;
+  }
+  32% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: -300;
+  }
+}
+@keyframes battle-vfx-fireblast {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  35% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  65% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-vortex {
+  0% {
+    transform: scaleX(0.2) translateY(25px);
+    opacity: 0;
+  }
+  35% {
+    transform: scaleX(1) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0.7) translateY(-45px);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-surf {
+  0% {
+    transform: translate(-150px, 110px) scale(0.4);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.95;
+  }
+  58% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(150px, 70px) scale(1.2);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-bite {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 1;
+  }
+}
+@keyframes battle-vfx-upper-jaw {
+  0% {
+    transform: translateY(-50px);
+  }
+  45% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes battle-vfx-lower-jaw {
+  0% {
+    transform: translateY(50px);
+  }
+  45% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes battle-vfx-vine {
+  0% {
+    opacity: 0;
+    stroke-dashoffset: 1400;
+  }
+  25% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+  }
+  100% {
+    opacity: 0;
+    stroke-dashoffset: -1400;
+  }
+}
+@keyframes battle-vfx-cloud {
+  0% {
+    transform: translateY(-35px) scale(0.5);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(35px) scale(1.5);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-dim {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  35%,
+  65% {
+    opacity: 0.32;
+  }
+}
+@keyframes battle-vfx-wash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.13;
+  }
+}
+@keyframes battle-vfx-ghost {
+  0% {
+    transform: scale(0.6) translateY(45px);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1) translateY(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.25) translateY(-35px);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-orbit {
+  0% {
+    transform: scale(0.3) rotate(0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.25) rotate(125deg);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-electric {
+  0% {
+    transform: scaleY(0.1);
+    opacity: 0;
+  }
+  22% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-agility {
+  0% {
+    transform: scaleX(0.2);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: scaleX(2);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-heal {
+  0% {
+    transform: translateY(20px) scale(0.6);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-120px) scale(1);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-rock-fall {
+  0% {
+    transform: translateY(-160px) rotate(var(--turn));
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(30px) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-rock-burst {
+  0% {
+    transform: translateY(55px) scale(0.2);
+    opacity: 0;
+  }
+  35% {
+    transform: translateY(-65px) rotate(var(--turn));
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(25px) scale(0.5);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-crack {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  35%,
+  70% {
+    opacity: 1;
+  }
+}
+@keyframes battle-vfx-shield {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  70% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-swords {
+  0% {
+    transform: scale(0.5) rotate(-40deg);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1) rotate(100deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2) rotate(135deg);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-web {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-faint {
+  0% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(75px) scale(0.3);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-sendout {
+  0% {
+    transform: scale(0.1);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+@keyframes battle-vfx-rise {
+  0% {
+    transform: translateY(15px);
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-150px);
+    opacity: 0;
+  }
+}
+.battle-vfx.reduced .battle-vfx-full,
+[data-motion='reduced'] .battle-vfx-full {
+  display: none;
+}
+.battle-vfx.reduced .battle-vfx-reduced,
+[data-motion='reduced'] .battle-vfx-reduced {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .battle-vfx-full {
+    display: none;
+  }
+  .battle-vfx-reduced {
+    display: block;
+  }
+}
