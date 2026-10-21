@@ -38,6 +38,7 @@ import './online-battle.css';
 import './discovery-hero.css';
 import './starter-hero-art.css';
 import './trainer-prompts.css';
+import './gym-battle-update.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')!).render(<App />);

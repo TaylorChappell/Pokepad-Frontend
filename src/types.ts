@@ -1,3 +1,4 @@
+import type { PcItem, GymProgress, GymView, GymPrize } from './game/gym-policy';
 export type RewardMode = 'Eggs' | 'Packs' | 'Mixed';
 export type EggTier = 'Standard' | 'Rare' | 'Epic';
 export type TrainerCharacter = 'red' | 'leaf' | 'misty' | 'brock' | 'blue';
@@ -20,7 +21,7 @@ export interface Coin {
   /** Launching wallet and optional public trainer name, supplied by the backend. */
   creatorWallet?: string;
   creatorName?: string;
-  trainer?: Pick<Profile, 'character' | 'accessoryColor'>;
+  trainer?: Pick<Profile, 'character' | 'accessoryColor' | 'avatarImage'>;
   image?: string;
   socials?: CoinSocials;
   color: string;
@@ -68,6 +69,8 @@ export interface EvolutionPreview {
   reason?: string;
 }
 export interface OwnedPokemon {
+  baseMoves?: string[];
+  gymManual?: { wallet: string; move: string; slot: number };
   favourite?: boolean;
   evolutionPreview?: EvolutionPreview;
   id: string;
@@ -123,6 +126,9 @@ export interface Notification {
   pokemonId?: number;
 }
 export interface Profile {
+  avatarImage?: string | null;
+  bannerImage?: string | null;
+  bannerPreset?: 'meadow' | 'ocean' | 'sunset' | 'midnight';
   wallet: string;
   displayName: string;
   character: TrainerCharacter;
@@ -166,6 +172,9 @@ export interface VariantDiscoveries {
   unknown: number[];
 }
 export interface AppSnapshot {
+  demoPromptEpoch?: number;
+  demoCandyUpdatedAt?: number;
+  demoCandyRemainder?: number;
   discoveredVariants?: VariantDiscoveries;
   pokemonCatalogue?: PokemonCatalogue;
   starterEligibility?: { canChoose: boolean; canChoosePikachu: boolean; reason?: string };
@@ -177,14 +186,10 @@ export interface AppSnapshot {
     status: string;
     signature?: string;
   }[];
-  gyms?: {
-    coinId: string;
-    name: string;
-    badge: string;
-    supporters: number;
-    score: number;
-    color: string;
-  }[];
+  bag?: Record<PcItem, number>;
+  gymProgress?: GymProgress;
+  gyms?: (Pick<GymView, 'coinId' | 'name' | 'badge' | 'supporters' | 'score' | 'color'> &
+    Partial<GymView>)[];
   watchlist?: string[];
   features?: {
     launching?: boolean;
@@ -213,6 +218,9 @@ export type Action =
       patch: Partial<
         Pick<
           Profile,
+          | 'avatarImage'
+          | 'bannerImage'
+          | 'bannerPreset'
           | 'displayName'
           | 'character'
           | 'accessoryColor'
@@ -225,6 +233,16 @@ export type Action =
     }
   | { type: 'notification.read'; id?: string }
   | { type: 'reward.open'; id: string }
+  | { type: 'pokemon.item'; id: string; item: PcItem }
+  | { type: 'pokemon.manual'; id: string; move: string | null; slot?: number }
+  | {
+      type: 'gym.demo.finish';
+      id: string;
+      coinId: string;
+      prize: GymPrize;
+      winner: boolean;
+      health: { id: string; hp: number }[];
+    }
   | { type: 'pokemon.equip'; id: string }
   | { type: 'pokemon.favourite'; id: string; favourite: boolean }
   | { type: 'pokemon.evolve'; id: string }

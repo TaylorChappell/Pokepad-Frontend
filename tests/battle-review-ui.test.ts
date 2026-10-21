@@ -183,3 +183,31 @@ test('bag shows remaining supplies and permits only legal healing or revival tar
     await h.close();
   }
 });
+
+test('an empty or disabled bag always has a usable Back button', async () => {
+  const h = await harness();
+  try {
+    const team = h.snapshot.pokemon.slice(0, 3),
+      battle = createBattle(team, createPlayerTeam(team), 'Medium');
+    battle.bags!.player = { potion: 0, revive: 0, 'full-heal': 0 };
+    let left = 0;
+    await h.render(
+      React.createElement(BattleBagMenu, {
+        state: battle,
+        disabled: true,
+        onUse: () => assert.fail('No item may be used'),
+        onBack: () => left++,
+      }),
+    );
+    assert.ok(
+      [...document.querySelectorAll<HTMLButtonElement>('.battle-bag-items button')].every(
+        (b) => b.disabled,
+      ),
+    );
+    assert.equal(h.button('Back').disabled, false);
+    await h.click(h.button('Back'));
+    assert.equal(left, 1);
+  } finally {
+    await h.close();
+  }
+});

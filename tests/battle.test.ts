@@ -247,6 +247,7 @@ test('simultaneous residual faints require both choices and neither side gets a 
   for (const side of ['player', 'rival'] as const) {
     initial[side][0].hp = 1;
     initial[side][0].status = 'poison';
+    initial[side][0].trapped = 1; // Isolate residual faint handling from the tactical switch policy.
   }
   const pending = resolveTurn(initial, { kind: 'move', index: 0 }, calm);
   assert.deepEqual(pending.replacementRequired, { player: true, rival: true });
@@ -282,6 +283,7 @@ test('bot replacement considers the type matchup and cannot read a future traine
   );
   const onlyBot = match([owned(150, ['Quick Attack']), owned(7)], [owned(4, ['Growl']), owned(1)]);
   onlyBot.rival[0].hp = 1;
+  onlyBot.rival[0].trapped = 1;
   const ready = resolveTurn(onlyBot, { kind: 'move', index: 0 }, calm);
   assert.equal(ready.active.rival, 1);
   assert.equal(ready.rival[1].hp, onlyBot.rival[1].hp);

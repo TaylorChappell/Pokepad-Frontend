@@ -3,7 +3,7 @@ import type { BattleRules } from '../battle/rules';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
-import { BattleTeamPicker, battleSelection } from './BattleTeamPicker';
+import { BattleTeamPicker, battleSelection, rememberBattleTeam } from './BattleTeamPicker';
 import { WalletConnection } from './WalletConnection';
 import { BattleFundingController, type EscrowAction } from '../services/battle-funding';
 import { shortWallet } from '../state/model';
@@ -645,6 +645,13 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
     );
     if (next) setApproved(false);
   }
+  useEffect(() => {
+    if (room && ['review', 'active', 'funding'].includes(room.status))
+      rememberBattleTeam(
+        state.profile.wallet,
+        room.yourPokemonIds.map((id) => state.pokemon.find((p) => p.id === id)).filter((p) => !!p),
+      );
+  }, [room?.id, room?.status]);
   if (room?.status === 'review' && room.review)
     return <BattleRoomReview key={room.id} room={room} online={online} />;
   if (room) {

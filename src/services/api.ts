@@ -1,6 +1,12 @@
+import { promptStorageKey } from '../state/trainer-prompts';
 import type { Action, AppSnapshot, OwnedPokemon, Reward, Profile } from '../types';
 import { COINS, createInitialState } from '../data/demo';
-import { applyAction, assertSupportedAction, STORAGE_KEY } from '../state/model';
+import {
+  applyAction,
+  assertSupportedAction,
+  evolutionValueIncrease,
+  STORAGE_KEY,
+} from '../state/model';
 import { getPokemonHealth } from '../data/stats';
 import { decorateDemoCoins } from '../data/coin-presentation';
 import {
@@ -37,6 +43,8 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
     return null;
   const nonNegative = (value: unknown) =>
     typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
+  s.bag ||= { berry: 3, revive: 1, potion: 2 };
+  s.gymProgress ||= { medals: 0, points: 0, wins: 0, manuals: [], claimedToday: [] };
   s.version = 2;
   s.profile.artStyle = (s.profile as Profile).artStyle === 'drawn' ? 'drawn' : 'pixel';
   s.pokemon = s.pokemon.map((item) => {
@@ -53,6 +61,9 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
     p.shiny = p.shiny === true;
     p.favourite = p.favourite === true;
     p.rarity = '';
+    const evoCost = evolutionValueIncrease(p);
+    if (evoCost > p.evolutionReserve)
+      p.rareCandy = Math.min(p.rareCandy, Math.floor((p.evolutionReserve / evoCost) * 1000));
     p.health = getPokemonHealth(p).current;
     return p;
   });
@@ -71,6 +82,11 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
   s.pokemonCatalogue = demoPokemonCatalogue();
   s.rewards = s.rewards.map((r: Reward) => {
     const reward = { ...r, evolutionReserve: nonNegative(r.evolutionReserve) };
+    if (reward.kind === 'egg' && !reward.openedAt) {
+      const max = reward.tier === 'Epic' ? 14400000 : reward.tier === 'Rare' ? 3600000 : 1200000;
+      reward.initialDuration = Math.min(reward.initialDuration, max);
+      reward.readyAt = Math.min(reward.readyAt, reward.awardedAt + max);
+    }
     // Local demo rewards now draw on opening. Keep their exact prior allocation until then.
     if (!reward.openedAt) {
       delete reward.outcomeSpeciesId;
@@ -148,6 +164,13 @@ export const demoApi: KantoApi = {
   async dispatch(action) {
     const next = applyAction(memory || readLocal(), action);
     memory = next;
+    if (action.type === 'demo.reset') {
+      try {
+        localStorage.removeItem(promptStorageKey('', next.profile.wallet));
+      } catch {
+        /* Queue still resets in memory. */
+      }
+    }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
@@ -172,6 +195,8 @@ export function createHttpApi(base: string): KantoApi {
     load: () => request('/bootstrap'),
     dispatch: async (action) => {
       assertSupportedAction(action);
+      if (action.type === 'gym.demo.finish')
+        throw new Error('Gym victories are verified by the battle server.');
       if (action.type === 'walk.progress')
         throw new Error('Start a walking session on your phone to record progress.');
       if (action.type === 'coin.create')

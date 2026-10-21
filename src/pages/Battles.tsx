@@ -1,3 +1,8 @@
+import { BattleResult } from '../components/BattleResult';
+import { useGymChallenge } from '../services/gyms';
+import { gymRankings } from '../state/gyms';
+import { GymDefenders, GymRewards } from './Community';
+import { BattleTeamPicker, rememberBattleTeam } from '../components/BattleTeamPicker';
 import { BattleBagMenu } from '../components/BattleBagMenu';
 import {
   useEffect,
@@ -141,7 +146,6 @@ function DifficultyPicker({
           />
           <span>
             <strong>{name}</strong>
-            <small>{DIFFICULTIES[name].trainer}</small>
           </span>
           <span className="classic-difficulty-stars" aria-hidden="true">
             {[0, 1, 2, 3].map((i) => (
@@ -230,14 +234,23 @@ function useBattleBody(speciesId: number) {
 
 export function BattlesPage() {
   const { state, now, reload } = useApp();
-  const [mode, setMode] = useState<'offline' | 'online'>(() =>
-    new URLSearchParams(window.location.hash.split('?')[1]).has('room') ? 'online' : 'offline',
+  const [mode, setMode] = useState<'offline' | 'online' | 'gym'>(() =>
+    new URLSearchParams(window.location.hash.split('?')[1]).has('gym')
+      ? 'gym'
+      : new URLSearchParams(window.location.hash.split('?')[1]).has('room')
+        ? 'online'
+        : 'offline',
   );
   const online = useOnlineBattle(mode === 'online');
+  const gymId = new URLSearchParams(window.location.hash.split('?')[1]).get('gym') || '';
+  const gymBattle = useGymChallenge(mode === 'gym', gymId);
+  const gym = gymRankings(state).find((g) => g.coinId === (gymBattle.challenge?.coinId || gymId));
   const [forfeitConfirm, setForfeitConfirm] = useState(false);
   const [escrowDetails, setEscrowDetails] = useState(false);
   const settledRoom = useRef<string | null>(null);
-  const [phase, setPhase] = useState<'lobby' | 'team' | 'battle'>('lobby');
+  const [phase, setPhase] = useState<'lobby' | 'team' | 'battle'>(() =>
+    mode === 'gym' ? 'team' : 'lobby',
+  );
   useEffect(() => {
     const followInvitation = () => {
       if (phase === 'lobby' && new URLSearchParams(window.location.hash.split('?')[1]).has('room'))
@@ -261,7 +274,6 @@ export function BattlesPage() {
   const [cueStartedAt, setCueStartedAt] = useState(0);
   const [visualFaintedIds, setVisualFaintedIds] = useState<Set<string>>(() => new Set());
   const [dialogue, setDialogue] = useState('');
-  const [page, setPage] = useState(0);
   const [compactHeight, setCompactHeight] = useState(() => window.innerHeight <= 560);
   const field = useRef<HTMLDivElement>(null);
   const [fieldSize, setFieldSize] = useState({ width: 1000, height: 600 });
@@ -289,7 +301,6 @@ export function BattlesPage() {
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
-  const [query, setQuery] = useState('');
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const audio = useBattleAudio(phase === 'battle');
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -359,12 +370,6 @@ export function BattlesPage() {
   const relativeStrength = ownPreview.length
     ? Math.round((teamStrength(rivals) / teamStrength(ownPreview)) * 100)
     : Math.round(DIFFICULTIES[difficulty].ratio * 100);
-  const filtered = available.filter((pokemon) =>
-    pokemonById(pokemon.speciesId).name.toLowerCase().includes(query.toLowerCase()),
-  );
-  const pageSize = compactHeight ? 3 : 6;
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const currentPage = Math.min(page, pageCount - 1);
   const cancelLaunch = () => {
     launchAttempt.current += 1;
     setLaunching(false);
@@ -377,6 +382,12 @@ export function BattlesPage() {
     setLaunchError(null);
     clearTimeout(timer.current);
     audio.unlock();
+    if (mode === 'gym') {
+      const next = await gymBattle.start(chosen);
+      if (next) rememberBattleTeam(state.profile.wallet, chosen);
+      setLaunching(false);
+      return;
+    }
     const next = createBattle(
       chosen,
       fresh ? generateRivalTeam(chosen, difficulty) : rivals,
@@ -395,6 +406,7 @@ export function BattlesPage() {
       return;
     }
     if (launchAttempt.current !== attempt) return;
+    rememberBattleTeam(state.profile.wallet, chosen);
     setVisualFaintedIds(new Set());
     setBattle(next);
     setDisplayBattle(next);
@@ -461,8 +473,8 @@ export function BattlesPage() {
     advance();
   };
   useEffect(() => {
-    const next = online.room?.state;
-    if (mode !== 'online' || !next || busy) return;
+    const next = mode === 'gym' ? gymBattle.challenge?.state : online.room?.state;
+    if (mode === 'offline' || !next || busy) return;
     if (!battle || phase !== 'battle') {
       let cancelled = false;
       setLaunching(true);
@@ -508,6 +520,8 @@ export function BattlesPage() {
     mode,
     online.room?.id,
     online.room?.revision,
+    gymBattle.challenge?.id,
+    gymBattle.challenge?.revision,
     busy,
     phase,
     battle?.turn,
@@ -518,6 +532,14 @@ export function BattlesPage() {
   ]);
   const play = (action: BattleAction) => {
     if (!battle || busy || battle.winner) return;
+    if (mode === 'gym') {
+      if (!gymBattle.pending) {
+        setCommand('root');
+        audio.unlock();
+        void gymBattle.command(action);
+      }
+      return;
+    }
     if (mode === 'online') {
       if (online.pending || online.room?.submitted) return;
       setCommand('root');
@@ -539,8 +561,17 @@ export function BattlesPage() {
     setPhase('lobby');
   };
   const leave = () => {
-    if (battle && !battle.winner && (mode === 'offline' || online.room?.status === 'active')) {
+    if (
+      battle &&
+      !battle.winner &&
+      (mode === 'offline' || mode === 'gym' || online.room?.status === 'active')
+    ) {
       setForfeitConfirm(true);
+      return;
+    }
+    if (mode === 'gym') {
+      gymBattle.clear();
+      window.location.hash = '/gym/' + (gym?.coinId || gymId);
       return;
     }
     if (mode === 'online') online.clear();
@@ -549,12 +580,14 @@ export function BattlesPage() {
   const heading = (
     <header className="classic-page-heading battle-page-heading">
       <div>
-        <h1>Battle arena</h1>
+        <h1>{mode === 'gym' ? gym?.name || 'Gym challenge' : 'Battle arena'}</h1>
         <span>
           {phase === 'battle'
             ? mode === 'online'
               ? 'Online · ' + (online.room ? battleWagerLabel(online.room) : 'Connecting')
-              : 'Offline · ' + difficulty
+              : mode === 'gym'
+                ? 'Gym challenge · no wager'
+                : 'Offline · ' + difficulty
             : phase === 'team'
               ? 'Choose your party'
               : 'Kanto practice league'}
@@ -596,6 +629,10 @@ export function BattlesPage() {
             <Icon name="X" size={18} />
           </button>
         </div>
+      ) : mode === 'gym' ? (
+        <a className="button secondary" href={'#/gym/' + (gym?.coinId || gymId)}>
+          Back to gym
+        </a>
       ) : (
         <div className="arena-mode-tabs">
           <button
@@ -637,7 +674,10 @@ export function BattlesPage() {
     const awaitingRivalReplacement =
       !battle.winner && battlePhase(battle) === 'replacement' && !choosingReplacement;
     const waiting =
-      mode === 'online' && (online.pending || !!online.room?.submitted || awaitingRivalReplacement);
+      mode === 'gym'
+        ? gymBattle.pending
+        : mode === 'online' &&
+          (online.pending || !!online.room?.submitted || awaitingRivalReplacement);
     const partyMenu = !busy && !waiting && (choosingReplacement || command === 'pokemon');
     const controlsBusy = busy || waiting;
     const monetary =
@@ -692,6 +732,21 @@ export function BattlesPage() {
             </span>
           </div>
         )}
+        {mode === 'gym' && gymBattle.error && (
+          <p className="online-error" role="alert">
+            {gymBattle.error}
+          </p>
+        )}
+        {mode === 'gym' && gymBattle.challenge?.result?.awarded && (
+          <div className="gym-battle-reward-summary">
+            +{gymBattle.challenge.prize.points} points · +{gymBattle.challenge.prize.medals} medals
+            · {gymBattle.challenge.prize.items.berry} berries ·{' '}
+            {gymBattle.challenge.prize.items.revive} revives
+            {gymBattle.challenge.result.manuals.map((m) => (
+              <span key={m}>Unlocked: {m}</span>
+            ))}
+          </div>
+        )}
         {escrowDetails && online.room && (
           <Modal title="Battle escrow" onClose={() => setEscrowDetails(false)}>
             <div className="modal-body">
@@ -732,6 +787,8 @@ export function BattlesPage() {
                     setCue(null);
                     setCommand('root');
                     audio.playCue('lose');
+                  } else if (mode === 'gym') {
+                    if (await gymBattle.surrender()) setForfeitConfirm(false);
                   } else if (await online.leave()) {
                     setForfeitConfirm(false);
                   }
@@ -757,6 +814,13 @@ export function BattlesPage() {
         >
           <div ref={field} className="battle-field classic-field" data-effect={cue?.family || ''}>
             <FieldGround scene={scene} />
+            {battle.winner && !busy && (
+              <BattleResult
+                battle={battle}
+                gym={mode === 'gym'}
+                reducedMotion={state.profile.reducedMotion}
+              />
+            )}
             <Health fighter={opponent} side="rival" team={view.rival} />
             <Health fighter={current} side="player" team={view.player} />
             <div
@@ -849,19 +913,23 @@ export function BattlesPage() {
                     {battle.turn - 1} turns · {streak} wins in a row
                   </span>
                   <small>
-                    {mode === 'offline'
-                      ? 'Your collection is unchanged.'
-                      : monetary && online.room
-                        ? monetaryBattleResult(online.room)
-                        : online.room?.wager === 'pokemon' && battle.winner !== 'draw'
-                          ? battle.winner === 'player'
-                            ? 'The opposing team joined your PC.'
-                            : 'Your wagered team transferred to the winner.'
-                          : 'Your Pokémon stay yours. Injured Pokémon recover in 10 minutes.'}
+                    {mode === 'gym'
+                      ? gymBattle.challenge?.result?.message
+                      : mode === 'offline'
+                        ? 'Your collection is unchanged.'
+                        : monetary && online.room
+                          ? monetaryBattleResult(online.room)
+                          : online.room?.wager === 'pokemon' && battle.winner !== 'draw'
+                            ? battle.winner === 'player'
+                              ? 'The opposing team joined your PC.'
+                              : 'Your wagered team transferred to the winner.'
+                            : 'Your Pokémon stay yours. Injured Pokémon recover in 10 minutes.'}
                   </small>
                 </div>
                 <div>
-                  {mode === 'online' ? (
+                  {mode === 'gym' ? (
+                    <Button onClick={leave}>Back to gym</Button>
+                  ) : mode === 'online' ? (
                     <>
                       {monetary && (
                         <Button variant="secondary" onClick={() => setEscrowDetails(true)}>
@@ -1095,7 +1163,9 @@ export function BattlesPage() {
             {mode === 'online'
               ? online.room?.trainers.find((trainer) => trainer.wallet !== state.profile.wallet)
                   ?.displayName || 'Trainer'
-              : DIFFICULTIES[difficulty].trainer}
+              : mode === 'gym'
+                ? gym?.name
+                : difficulty}
           </span>
           <span>
             {mode === 'online'
@@ -1113,142 +1183,80 @@ export function BattlesPage() {
     );
   }
 
+  if (mode === 'gym' && phase !== 'battle')
+    return (
+      <div className="battle-v8 battle-screen classic-team-screen gym-team-screen">
+        {heading}
+        <div className="classic-team-desk">
+          <section className="classic-team-pick slot-team-pick">
+            <BattleTeamPicker
+              pokemon={state.pokemon}
+              selected={selectedIds}
+              onChange={setSelectedIds}
+              disabled={launching || gymBattle.pending}
+            />
+          </section>
+          <aside className="battle-review classic-team-review">
+            <h2>Gym defenders</h2>
+            {gym && (
+              <>
+                <GymDefenders defenders={gym.defenders} compact />
+                <GymRewards prize={gym.prize} />
+              </>
+            )}
+            <p>3 Pokémon each · original levels · equal battle bags</p>
+            <Button
+              disabled={
+                chosen.length !== 3 ||
+                !gym ||
+                gym.defenders.length !== 3 ||
+                launching ||
+                gymBattle.pending
+              }
+              onClick={() => start()}
+            >
+              {launching || gymBattle.pending ? 'Preparing challenge…' : 'Start gym challenge'}
+            </Button>
+            <p>
+              Your team’s current HP carries into this challenge. Injured Pokémon recover afterward
+              or can use items in My PC.
+            </p>
+            {(gymBattle.error || launchError) && (
+              <p role="alert" className="online-error">
+                {gymBattle.error || launchError}
+              </p>
+            )}
+            {!gym && <p>Loading this gym…</p>}
+          </aside>
+        </div>
+      </div>
+    );
+
   if (phase === 'team')
     return (
       <div className="battle-v8 battle-screen classic-team-screen">
         {heading}
         <div className="classic-team-desk">
-          <section className="classic-team-pick">
-            <div className="classic-team-top">
-              <button
-                className="text-link"
-                onClick={() => {
-                  cancelLaunch();
-                  setPhase('lobby');
-                }}
-              >
-                <Icon name="ArrowLeft" size={15} />
-                Arena
-              </button>
-              <h2>Build your party</h2>
-              <span>{chosen.length}/3</span>
-            </div>
-            <div className="classic-party-slots">
-              {[0, 1, 2].map((index) => (
-                <div className={chosen[index] ? 'filled' : ''} key={index}>
-                  {chosen[index] ? (
-                    <>
-                      <PokemonArt
-                        id={chosen[index].speciesId}
-                        shiny={chosen[index].shiny}
-                        animated={false}
-                      />
-                      <span>
-                        <strong>{pokemonById(chosen[index].speciesId).name}</strong>
-                        <small>{index === 0 ? 'Lead Pokémon' : 'Partner'}</small>
-                      </span>
-                      <button
-                        aria-label={'Remove ' + pokemonById(chosen[index].speciesId).name}
-                        onClick={() => {
-                          cancelLaunch();
-                          setSelectedIds((ids) => ids.filter((id) => id !== chosen[index].id));
-                        }}
-                      >
-                        <Icon name="X" size={13} />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Pokeball size={28} />
-                      <span>{index === 0 ? 'Choose a lead' : 'Add a partner'}</span>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-            <label className="classic-party-search">
-              <Icon name="Search" size={17} />
-              <input
-                aria-label="Find a battle Pokémon"
-                placeholder="Find a Pokémon…"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                  setPage(0);
-                }}
-              />
-            </label>
-            <div className="classic-selection-grid">
-              {filtered
-                .slice(currentPage * pageSize, (currentPage + 1) * pageSize)
-                .map((pokemon) => (
-                  <button
-                    className={
-                      'team-select-card classic-select-card ' +
-                      (selectedIds.includes(pokemon.id) ? 'selected' : '')
-                    }
-                    key={pokemon.id}
-                    disabled={!selectedIds.includes(pokemon.id) && chosen.length >= 3}
-                    aria-pressed={selectedIds.includes(pokemon.id)}
-                    onClick={() => {
-                      cancelLaunch();
-                      setSelectedIds((ids) =>
-                        ids.includes(pokemon.id)
-                          ? ids.filter((id) => id !== pokemon.id)
-                          : [...ids, pokemon.id],
-                      );
-                    }}
-                  >
-                    <span className="classic-select-level">Lv.{pokemon.level}</span>
-                    <PokemonArt id={pokemon.speciesId} shiny={pokemon.shiny} animated={false} />
-                    <strong>{pokemonById(pokemon.speciesId).name}</strong>
-                    <div>
-                      {pokemonById(pokemon.speciesId).types.map((type) => (
-                        <TypeChip key={type} type={type} />
-                      ))}
-                    </div>
-                    {selectedIds.includes(pokemon.id) && (
-                      <span className="classic-selected-tick">
-                        <Icon name="Check" size={14} />
-                      </span>
-                    )}
-                  </button>
-                ))}
-            </div>
-            {!filtered.length && (
-              <div className="classic-no-pokemon">
-                <Pokeball size={34} />
-                <p>
-                  {available.length
-                    ? 'No matching Pokémon.'
-                    : 'Choose a starter or hatch a Pokémon.'}
-                </p>
-                {!available.length && (
-                  <a href="#/starter" className="button primary">
-                    Choose a starter
-                  </a>
-                )}
-              </div>
-            )}
-            <div className="classic-pagination">
-              <button
-                aria-label="Previous Pokémon page"
-                disabled={currentPage === 0}
-                onClick={() => setPage((page) => page - 1)}
-              >
-                <Icon name="ChevronLeft" size={16} />
-              </button>
-              <span>
-                {currentPage + 1} / {pageCount}
-              </span>
-              <button
-                aria-label="Next Pokémon page"
-                disabled={currentPage >= pageCount - 1}
-                onClick={() => setPage((page) => page + 1)}
-              >
-                <Icon name="ChevronRight" size={16} />
-              </button>
-            </div>
+          <section className="classic-team-pick slot-team-pick">
+            <button
+              className="text-link"
+              onClick={() => {
+                cancelLaunch();
+                setPhase('lobby');
+              }}
+            >
+              <Icon name="ArrowLeft" size={15} />
+              Arena
+            </button>
+            <BattleTeamPicker
+              pokemon={state.pokemon}
+              selected={selectedIds}
+              onChange={(ids) => {
+                cancelLaunch();
+                setSelectedIds(ids);
+              }}
+              disabled={launching}
+            />
           </section>
           <aside className="battle-review classic-team-review">
             <div className="classic-rival-heading">
@@ -1261,7 +1269,7 @@ export function BattlesPage() {
               />
               <div>
                 <small>Your opponent</small>
-                <h2>{DIFFICULTIES[difficulty].trainer}</h2>
+                <h2>{difficulty}</h2>
               </div>
             </div>
             <DifficultyPicker
@@ -1323,6 +1331,7 @@ export function BattlesPage() {
           <section className="arena-hero classic-lobby-board">
             <div ref={field} className="classic-preview-field">
               <FieldGround scene={scene} />
+
               <div className="classic-preview-caption">
                 <span>OFFLINE BATTLE</span>
                 <h2>Your next challenger.</h2>

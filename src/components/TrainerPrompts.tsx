@@ -15,6 +15,13 @@ import { Modal } from './UI';
 
 export function TrainerPrompts() {
   const { state, session, mode } = useApp();
+  if (mode === 'demo')
+    return state.demoPromptEpoch ? (
+      <AccountPrompts
+        key={state.profile.wallet + ':' + state.demoPromptEpoch}
+        wallet={state.profile.wallet}
+      />
+    ) : null;
   // A stale snapshot from another wallet can never open a private prompt.
   if (
     mode !== 'live' ||

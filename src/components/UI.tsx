@@ -463,7 +463,7 @@ export function Avatar({
   profile,
   size = 44,
 }: {
-  profile: Pick<Profile, 'character' | 'accessoryColor'>;
+  profile: Pick<Profile, 'character' | 'accessoryColor'> & Pick<Profile, 'avatarImage'>;
   size?: number;
 }) {
   const { scale: _scale, ...pixelStyle } = trainerPortraitGeometry(profile.character, size);
@@ -474,7 +474,14 @@ export function Avatar({
         { width: size, height: size, '--trainer-accent': profile.accessoryColor } as CSSProperties
       }
     >
-      {profile.character === 'brock' || profile.character === 'blue' ? (
+      {profile.avatarImage ? (
+        <img
+          className="custom-trainer-avatar"
+          src={profile.avatarImage}
+          alt="Custom trainer avatar"
+          draggable={false}
+        />
+      ) : profile.character === 'brock' || profile.character === 'blue' ? (
         <TrainerPalettePixels
           character={profile.character}
           color={profile.accessoryColor}
@@ -636,6 +643,7 @@ export function Modal({
   wide = false,
   closeDisabled = false,
   dismissible = true,
+  className = '',
 }: {
   title: string;
   children: ReactNode;
@@ -643,6 +651,7 @@ export function Modal({
   wide?: boolean;
   closeDisabled?: boolean;
   dismissible?: boolean;
+  className?: string;
 }) {
   const id = useId(),
     panel = useRef<HTMLDivElement>(null),
@@ -698,7 +707,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={id}
-        className={'modal-panel ' + (wide ? 'wide' : '')}
+        className={'modal-panel ' + (wide ? 'wide ' : '') + className}
       >
         <div className="modal-header">
           <h2 id={id}>{title}</h2>

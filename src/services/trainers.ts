@@ -9,6 +9,9 @@ export interface PublicPokemon {
   value: number;
 }
 export interface PublicTrainer {
+  avatarImage?: string | null;
+  bannerImage?: string | null;
+  bannerPreset?: Profile['bannerPreset'];
   wallet: string;
   displayName: string;
   character: Profile['character'];
@@ -66,6 +69,9 @@ export const DEMO_TRAINERS: PublicTrainer[] = [
 export function ownTrainer(state: AppSnapshot, demo = false): PublicTrainer {
   return {
     wallet: state.profile.wallet,
+    avatarImage: state.profile.avatarImage,
+    bannerImage: state.profile.bannerImage,
+    bannerPreset: state.profile.bannerPreset,
     displayName:
       state.profile.displayName ||
       state.profile.wallet.slice(0, 4) + '…' + state.profile.wallet.slice(-4),

@@ -1,3 +1,4 @@
+import { MovePreview } from './MovePreview';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { useRevealAudio } from '../audio/sound';
@@ -171,6 +172,7 @@ export function PokemonProgressDialog({
               </>
             ) : (
               <>
+                <MovePreview name={offer.move} speciesId={p.speciesId} shiny={p.shiny} />
                 <div className="new-move-record">
                   <div>
                     <h3>{offer.move}</h3>

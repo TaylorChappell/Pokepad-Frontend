@@ -20,6 +20,10 @@ export function BattleBagMenu({
   return (
     <div className="battle-bag-menu">
       <header>
+        <button className="bag-back" onClick={() => (selected ? setSelected(null) : onBack())}>
+          <Icon name="ArrowLeft" size={16} />
+          Back
+        </button>
         <strong>{selected ? 'Use ' + BATTLE_ITEMS[selected].name : 'Battle bag'}</strong>
         <span>
           {state.rules?.items === 'none'
@@ -78,10 +82,6 @@ export function BattleBagMenu({
         </div>
       )}
       <footer>
-        <button onClick={() => (selected ? setSelected(null) : onBack())}>
-          <Icon name="ArrowLeft" size={16} />
-          Back
-        </button>
         <small>
           Rival:{' '}
           {items

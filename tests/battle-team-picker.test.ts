@@ -7,6 +7,7 @@ import {
   BattleTeamPicker,
   battleAvailability,
   battleSelection,
+  rememberBattleTeam,
 } from '../src/components/BattleTeamPicker';
 import { createInitialState } from '../src/data/demo';
 import { pokemonById } from '../src/data/pokemon';
@@ -24,7 +25,7 @@ test('battle selection removes duplicates, locked and fainted members and enforc
   pokemon[2].health = 0;
   pokemon[3].starter = true;
   assert.equal(battleAvailability(pokemon[1], false), 'Busy');
-  assert.equal(battleAvailability(pokemon[2], false), 'Recovering');
+  assert.equal(battleAvailability(pokemon[2], false), 'Needs a Revive');
   assert.match(battleAvailability(pokemon[3], true)!, /Starter/);
   assert.deepEqual(
     battleSelection(
@@ -38,13 +39,14 @@ test('battle selection removes duplicates, locked and fainted members and enforc
     pokemon[0].id,
   ]);
 });
-test('the party picker puts favourites first, keeps slots in sync, filters types and caps quick-pick', async () => {
+test('the party picker puts favourites first, keeps slots in sync, opens slots, supports PC sorting and previews previous teams', async () => {
   const dom = new JSDOM('<div id="root"></div>', { url: 'https://example.test' });
   Object.assign(globalThis, {
     window: dom.window,
     document: dom.window.document,
     HTMLElement: dom.window.HTMLElement,
     Image: dom.window.Image,
+    localStorage: dom.window.localStorage,
     IS_REACT_ACT_ENVIRONMENT: true,
   });
   const root = createRoot(document.getElementById('root')!);
@@ -65,6 +67,18 @@ test('the party picker puts favourites first, keeps slots in sync, filters types
   }
   try {
     await act(async () => root.render(React.createElement(Probe)));
+    rememberBattleTeam('demo', [pokemon[0], pokemon[1]]);
+    assert.equal(document.querySelectorAll('.battle-party-slot').length, 3);
+    assert.equal(
+      document.querySelector('.battle-picker-pokemon'),
+      null,
+      'PC stays closed until a slot is chosen',
+    );
+    await act(async () =>
+      (
+        document.querySelector('[aria-label="Choose Pokémon for slot 1"]') as HTMLButtonElement
+      ).click(),
+    );
     const first = document.querySelector('.battle-picker-pokemon') as HTMLButtonElement;
     assert.match(
       first.getAttribute('aria-label')!,
@@ -73,27 +87,26 @@ test('the party picker puts favourites first, keeps slots in sync, filters types
     await act(async () => first.click());
     assert.deepEqual(selected, [pokemon[5].id]);
     assert.equal(document.querySelectorAll('.battle-party-slot.filled').length, 1);
+    assert.equal(document.querySelectorAll('.previous-party-preview .pokemon-art').length, 2);
     await act(async () =>
       (document.querySelector('.battle-party-slot.filled') as HTMLButtonElement).click(),
     );
-    assert.deepEqual(selected, []);
-    await act(async () =>
-      (document.querySelector('.battle-party-heading>button') as HTMLButtonElement).click(),
-    );
-    assert.equal(selected.length, 2);
-    assert.equal(selected[0], pokemon[5].id);
-    assert.equal(document.querySelectorAll('.battle-party-slot.filled').length, 2);
-    const select = document.querySelector(
-      '[aria-label="Filter battle Pokémon"]',
-    ) as HTMLSelectElement;
+    assert.deepEqual(selected, [pokemon[5].id], 'Opening a filled slot does not remove its member');
+    assert.equal(document.querySelectorAll('[aria-label="Sort Pokémon"] option').length, 6);
+    const select = document.querySelector('[aria-label="Filter Pokémon"]') as HTMLSelectElement;
     await act(async () => {
-      select.value = 'favourite';
+      select.value = 'Favourites';
       select.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
     });
     assert.equal(document.querySelectorAll('.battle-picker-pokemon').length, 1);
+    await act(async () =>
+      (document.querySelector('.modal-actions>button') as HTMLButtonElement).click(),
+    );
+    assert.equal(document.querySelector('.party-picker-modal'), null);
     assert.equal(
-      document.querySelector('.battle-picker-pokemon')?.getAttribute('aria-pressed'),
-      'true',
+      (document.querySelector('[aria-label="Choose Pokémon for slot 3"]') as HTMLButtonElement)
+        .disabled,
+      true,
     );
   } finally {
     await act(async () => root.unmount());

@@ -1,28 +1,61 @@
-import { useMemo, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { OwnedPokemon } from '../types';
 import { pokemonById } from '../data/pokemon';
 import { getPokemonHealth } from '../data/stats';
-import { compareBattlePokemon, pokemonStrength } from '../state/collection';
-import { Icon, PokemonArt, TypeChip } from './UI';
-export function battleAvailability(
-  pokemon: OwnedPokemon,
-  pokemonWager: boolean,
-): string | undefined {
+import { pokemonStrength } from '../state/collection';
+import { POKEMON_SORTS, sortPokemon } from '../state/pokemon-sort';
+import { useOptionalApp } from '../state/AppContext';
+import { Icon, Modal, PokemonArt, Pokeball, TypeChip } from './UI';
+
+export function battleAvailability(pokemon: OwnedPokemon, pokemonWager = false): string | null {
   if (pokemon.locked) return 'Busy';
-  if (getPokemonHealth(pokemon).current <= 0) return 'Recovering';
-  if (pokemonWager && pokemon.starter) return 'Starter · cannot be staked';
-  return undefined;
+  if (getPokemonHealth(pokemon).current <= 0) return 'Needs a Revive';
+  if (pokemonWager && pokemon.starter) return 'Starters cannot be wagered';
+  return null;
 }
 export function battleSelection(
   pokemon: OwnedPokemon[],
   selected: string[],
-  pokemonWager: boolean,
+  pokemonWager = false,
   limit = 3,
-) {
-  const allowed = new Set(
-    pokemon.filter((item) => !battleAvailability(item, pokemonWager)).map((item) => item.id),
-  );
-  return [...new Set(selected)].filter((id) => allowed.has(id)).slice(0, limit);
+): string[] {
+  return [...new Set(selected)]
+    .filter((id) => pokemon.some((p) => p.id === id && !battleAvailability(p, pokemonWager)))
+    .slice(0, limit);
+}
+const previousKey = (wallet: string) => 'kanto:previous-team:' + wallet;
+export function rememberBattleTeam(wallet: string, pokemon: OwnedPokemon[]) {
+  try {
+    localStorage.setItem(
+      previousKey(wallet),
+      JSON.stringify(
+        pokemon.map(({ id, speciesId, shiny, level }) => ({ id, speciesId, shiny, level })),
+      ),
+    );
+  } catch {
+    /* Optional local convenience. */
+  }
+}
+function previousTeam(
+  wallet: string,
+): Pick<OwnedPokemon, 'id' | 'speciesId' | 'shiny' | 'level'>[] {
+  try {
+    const p = JSON.parse(localStorage.getItem(previousKey(wallet)) || '[]');
+    return Array.isArray(p)
+      ? p
+          .filter(
+            (x) =>
+              x &&
+              typeof x.id === 'string' &&
+              Number.isInteger(x.speciesId) &&
+              x.speciesId >= 1 &&
+              x.speciesId <= 151,
+          )
+          .slice(0, 3)
+      : [];
+  } catch {
+    return [];
+  }
 }
 export function BattleTeamPicker({
   pokemon,
@@ -39,232 +72,226 @@ export function BattleTeamPicker({
   teamSize?: number;
   disabled?: boolean;
 }) {
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState('all');
-  const search = useRef<HTMLInputElement>(null);
-  const limit = teamSize || 3;
-  const ids = battleSelection(pokemon, selected, pokemonWager, limit);
-  const sorted = useMemo(() => [...pokemon].sort(compareBattlePokemon), [pokemon]);
-  const types = [...new Set(pokemon.flatMap((item) => pokemonById(item.speciesId).types))].sort();
-  const visible = sorted.filter((item) => {
-    const species = pokemonById(item.speciesId);
-    const matches =
-      species.name.toLowerCase().includes(query.trim().toLowerCase()) ||
-      String(item.speciesId) === query.trim();
-    return (
-      matches &&
-      (filter === 'all' ||
-        (filter === 'ready' && !battleAvailability(item, pokemonWager)) ||
-        (filter === 'favourite' && item.favourite) ||
-        (filter.startsWith('type:') && species.types.includes(filter.slice(5))))
-    );
-  });
-  function toggle(id: string) {
-    if (disabled) return;
-    onChange(
-      ids.includes(id) ? ids.filter((current) => current !== id) : [...ids, id].slice(0, limit),
-    );
-  }
+  const app = useOptionalApp();
+  const [slotOrder, setSlotOrder] = useState<string[]>([]);
+  const [slot, setSlot] = useState<number | null>(null),
+    [query, setQuery] = useState(''),
+    [sort, setSort] = useState('Favourites first'),
+    [filter, setFilter] = useState('All');
+  const limit = teamSize || 3,
+    ids = battleSelection(pokemon, selected, pokemonWager, limit);
+  const slots = Array.from({ length: 3 }, (_, i) =>
+    i < limit && ids.includes(slotOrder[i]) ? slotOrder[i] : '',
+  );
+  for (const id of ids) if (!slots.includes(id)) slots[slots.indexOf('')] = id;
+  const previous = previousTeam(app?.state.profile.wallet || 'demo');
+  const previousIds = battleSelection(
+    pokemon,
+    previous.map((p) => p.id),
+    pokemonWager,
+    limit,
+  );
+  const types = [...new Set(pokemon.flatMap((p) => pokemonById(p.speciesId).types))].sort();
+  const visible = sortPokemon(pokemon, sort, app?.state).filter(
+    (p) =>
+      pokemonById(p.speciesId).name.toLowerCase().includes(query.toLowerCase()) &&
+      (filter === 'All' || filter === 'Favourites'
+        ? filter === 'All' || p.favourite
+        : filter === 'Shiny'
+          ? p.shiny
+          : pokemonById(p.speciesId).types.includes(filter)),
+  );
+  const choose = (id: string) => {
+    if (slot === null) return;
+    const next = [...slots];
+    const old = next.indexOf(id);
+    if (old >= 0) {
+      [next[old], next[slot]] = [next[slot], next[old]];
+    } else next[slot] = id;
+    setSlotOrder(next);
+    onChange(next.filter(Boolean));
+    setSlot(null);
+  };
   return (
-    <section className="battle-party-desk" aria-label="Choose your online battle team">
+    <section className="battle-party-desk slot-party-desk" aria-label="Choose your battle team">
       <header className="battle-party-heading">
         <div>
-          <span className="battle-desk-label">YOUR PARTY</span>
+          <small>Your party</small>
           <h2>
             Choose your team{' '}
-            <small>
-              {ids.length}/{teamSize || 3}
-            </small>
+            <span>
+              {ids.length}/{limit}
+            </span>
           </h2>
         </div>
-        <button
-          type="button"
-          disabled={disabled || !pokemon.length}
-          onClick={() =>
-            onChange(
-              sorted
-                .filter((item) => !battleAvailability(item, pokemonWager))
-                .slice(0, limit)
-                .map((item) => item.id),
-            )
-          }
-        >
-          Quick pick <Icon name="ArrowRight" size={14} />
-        </button>
+        <p>Select a slot to open your PC.</p>
       </header>
       <div className="battle-party-slots">
         {Array.from({ length: 3 }, (_, index) => {
-          const item = pokemon.find((value) => value.id === ids[index]);
-          const hp = item && getPokemonHealth(item);
+          const p = pokemon.find((p) => p.id === slots[index]);
           return (
             <button
               type="button"
               key={index}
-              className={
-                'battle-party-slot ' + (item ? 'filled' : '') + (index >= limit ? ' unused' : '')
-              }
+              className={'battle-party-slot ' + (p ? 'filled' : 'empty')}
               disabled={disabled || index >= limit}
-              onClick={() => (item ? toggle(item.id) : search.current?.focus())}
-              aria-label={
-                item
-                  ? 'Remove ' + pokemonById(item.speciesId).name + ' from team'
-                  : index >= limit
-                    ? 'Not used in this room'
-                    : 'Choose Pokémon for slot ' + (index + 1)
-              }
+              aria-label={'Choose Pokémon for slot ' + (index + 1)}
+              onClick={() => {
+                setQuery('');
+                setSlot(index);
+              }}
             >
-              <span className="battle-slot-label">
-                {index === 0 ? 'LEAD' : 'PARTY ' + (index + 1)}
+              <span className="party-slot-number">
+                {index === 0 ? 'Lead' : 'Partner ' + (index + 1)}
               </span>
-              {item ? (
+              {p ? (
                 <>
-                  <PokemonArt id={item.speciesId} shiny={item.shiny} animated={false} />
-                  <div>
-                    <strong>{pokemonById(item.speciesId).name}</strong>
-                    <small>
-                      Lv. {item.level} · {hp!.current}/{hp!.max} HP
-                    </small>
-                  </div>
-                  <span className="battle-slot-remove">
-                    <Icon name="X" size={11} />
-                  </span>
+                  <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                  <strong>{pokemonById(p.speciesId).name}</strong>
+                  <small>
+                    Lv. {p.level} · {getPokemonHealth(p).current}/{getPokemonHealth(p).max} HP
+                  </small>
                 </>
               ) : (
                 <>
-                  <span className="battle-slot-empty">
-                    <Icon name="Pokeball" size={28} />
-                  </span>
-                  <small>{index >= limit ? 'Not needed' : 'Add Pokémon'}</small>
+                  <Pokeball size={42} />
+                  <strong>{index >= limit ? 'Not used' : 'Choose Pokémon'}</strong>
+                  <small>{index >= limit ? 'Room limit' : 'Open My PC'}</small>
                 </>
               )}
             </button>
           );
         })}
       </div>
-      <div className="battle-picker-tools">
-        <label className="battle-picker-search">
-          <Icon name="Search" size={16} />
-          <input
-            ref={search}
-            aria-label="Search battle Pokémon"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Find a Pokémon…"
-          />
-          {query && (
-            <button type="button" aria-label="Clear Pokémon search" onClick={() => setQuery('')}>
-              <Icon name="X" size={13} />
-            </button>
-          )}
-        </label>
-        <select
-          aria-label="Filter battle Pokémon"
-          value={filter}
-          onChange={(event) => setFilter(event.target.value)}
-        >
-          <option value="all">All Pokémon</option>
-          <option value="ready">Battle ready</option>
-          <option value="favourite">Favourites</option>
-          {types.map((type) => (
-            <option key={type} value={'type:' + type}>
-              {type}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="battle-picker-grid" aria-label="Your Pokémon inventory">
-        {visible.map((item) => {
-          const species = pokemonById(item.speciesId),
-            hp = getPokemonHealth(item),
-            reason = battleAvailability(item, pokemonWager),
-            chosen = ids.includes(item.id),
-            blocked = disabled || Boolean(reason) || (!chosen && ids.length >= limit);
-          return (
-            <button
-              type="button"
-              className={
-                'battle-picker-pokemon ' +
-                (chosen ? 'is-selected ' : '') +
-                (reason ? 'is-unavailable' : '')
-              }
-              key={item.id}
-              aria-pressed={chosen}
-              disabled={blocked}
-              onClick={() => toggle(item.id)}
-              aria-label={
-                species.name +
-                ', level ' +
-                item.level +
-                (reason ? ', ' + reason : chosen ? ', selected' : ', add to team')
-              }
-            >
-              <span className="battle-picker-number">
-                {chosen ? (
-                  <Icon name="Check" size={13} />
-                ) : (
-                  '#' + String(item.speciesId).padStart(3, '0')
-                )}
+      {previous.length > 0 && (
+        <div className="previous-party">
+          <span>
+            <strong>Previous team</strong>
+            <small>
+              {previousIds.length === previous.length
+                ? 'Ready to use'
+                : previousIds.length + ' available · unavailable slots are left empty'}
+            </small>
+          </span>
+          <div className="previous-party-preview">
+            {previous.map((p) => (
+              <span
+                key={p.id}
+                title={pokemonById(p.speciesId).name}
+                className={previousIds.includes(p.id) ? '' : 'unavailable'}
+              >
+                <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                <small>{pokemonById(p.speciesId).name}</small>
               </span>
-              {item.favourite && (
-                <span className="battle-picker-favourite" aria-label="Favourite">
-                  ★
-                </span>
-              )}
-              <PokemonArt id={item.speciesId} shiny={item.shiny} animated={false} />
-              <div className="battle-picker-identity">
-                <strong>{species.name}</strong>
-                <span>Lv. {item.level}</span>
-              </div>
-              <div className="battle-picker-types">
-                {species.types.map((type) => (
-                  <TypeChip key={type} type={type} />
-                ))}
-              </div>
-              <div className="battle-picker-health">
-                <span>
-                  HP{' '}
-                  <b>
-                    {hp.current}/{hp.max}
-                  </b>
-                </span>
-                <i>
-                  <b style={{ width: hp.percent + '%' }} />
-                </i>
-              </div>
-              <span className="battle-picker-strength">
-                {reason || (
-                  <>
-                    <Icon name="Swords" size={12} />
-                    {pokemonStrength(item)} strength
-                  </>
-                )}
-              </span>
-            </button>
-          );
-        })}
-        {!visible.length && (
-          <div className="battle-picker-empty">
-            <Icon name="Pokeball" size={36} />
-            <strong>{pokemon.length ? 'No Pokémon match' : 'Your party starts in My PC'}</strong>
-            <p>
-              {pokemon.length
-                ? 'Try another name or filter.'
-                : 'Choose your starter or open a reward to meet your first partner.'}
-            </p>
-            {!pokemon.length && (
-              <a href="#/pokemon">
-                Visit My PC <Icon name="ArrowRight" size={13} />
-              </a>
-            )}
+            ))}
           </div>
-        )}
-      </div>
-      <footer className="battle-picker-footer">
-        <span>Favourites first · strongest next</span>
-        <button type="button" disabled={!ids.length || disabled} onClick={() => onChange([])}>
+          <button
+            className="button secondary"
+            disabled={disabled || !previousIds.length}
+            onClick={() => onChange(previousIds)}
+          >
+            Use previous team
+          </button>
+        </div>
+      )}
+      <footer>
+        <p>Favourites appear first. Choose your lead carefully.</p>
+        <button
+          className="text-link"
+          disabled={disabled || !ids.length}
+          onClick={() => onChange([])}
+        >
           Clear team
         </button>
       </footer>
+      {slot !== null && (
+        <Modal
+          title={'Choose ' + (slot === 0 ? 'your lead' : 'partner ' + (slot + 1))}
+          onClose={() => setSlot(null)}
+          className="party-picker-modal"
+        >
+          <div className="party-picker-tools">
+            <label className="small-search">
+              <Icon name="Search" />
+              <input
+                aria-label="Find a battle Pokémon"
+                placeholder="Find a Pokémon…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </label>
+            <select
+              aria-label="Sort Pokémon"
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+            >
+              {POKEMON_SORTS.map((s) => (
+                <option key={s}>{s}</option>
+              ))}
+            </select>
+            <select
+              aria-label="Filter Pokémon"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              {['All', 'Favourites', 'Shiny', ...types].map((t) => (
+                <option key={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          <div className="party-picker-grid">
+            {visible.map((p) => {
+              const reason = battleAvailability(p, pokemonWager),
+                hp = getPokemonHealth(p);
+              return (
+                <button
+                  className={'battle-picker-pokemon ' + (ids.includes(p.id) ? 'selected' : '')}
+                  key={p.id}
+                  disabled={disabled || !!reason}
+                  onClick={() => choose(p.id)}
+                  aria-label={
+                    'Choose ' + pokemonById(p.speciesId).name + (reason ? ', ' + reason : '')
+                  }
+                >
+                  <span className="picker-level">
+                    Lv. {p.level}
+                    {p.favourite ? ' ♥' : ''}
+                  </span>
+                  <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                  <strong>{pokemonById(p.speciesId).name}</strong>
+                  <span className="type-row">
+                    {pokemonById(p.speciesId).types.map((t) => (
+                      <TypeChip key={t} type={t} />
+                    ))}
+                  </span>
+                  <small>
+                    {reason || `${hp.current}/${hp.max} HP · ${pokemonStrength(p)} strength`}
+                  </small>
+                </button>
+              );
+            })}
+          </div>
+          {!visible.length && <p>No Pokémon match your filters.</p>}
+          <div className="modal-actions">
+            <button className="button secondary" onClick={() => setSlot(null)}>
+              Back to team
+            </button>
+            {slots[slot] && (
+              <button
+                className="button secondary"
+                onClick={() => {
+                  const next = slots.map((id, i) => (i === slot ? '' : id));
+                  setSlotOrder(next);
+                  onChange(next.filter(Boolean));
+                  setSlot(null);
+                }}
+              >
+                Clear this slot
+              </button>
+            )}
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }

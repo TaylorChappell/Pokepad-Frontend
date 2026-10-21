@@ -298,7 +298,7 @@ test('evolution waits until funded, defers without spending candy, and runs the 
     });
     assert.equal(document.querySelector('[role="dialog"]'), null);
     await h.update((s) => {
-      s.coins.find((c) => c.id === pokemon.originCoin)!.vault = 10;
+      s.pokemon[0].evolutionReserve = 0.1;
     });
     assert.match(document.querySelector('[role="dialog"]')!.textContent!, /Evolve Charmander/);
     await h.click(h.button('Later'));

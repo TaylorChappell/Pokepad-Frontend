@@ -1,3 +1,4 @@
+import { TrainerBanner } from '../components/TrainerImages';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar, EmptyState, Icon, PokemonArt, SolValue, TypeChip } from '../components/UI';
 import { GymBadge, coinForBadge } from '../components/GymBadge';
@@ -79,6 +80,7 @@ export function TrainerPage({ wallet }: { wallet: string }) {
   return (
     <div className="trainer-public-page">
       {back}
+      <TrainerBanner profile={trainer} />
       <header className="trainer-public-header">
         <div className="trainer-public-identity">
           <Avatar profile={trainer} size={112} />

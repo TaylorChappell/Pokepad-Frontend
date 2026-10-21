@@ -1,3 +1,4 @@
+import { TrainerBanner, TrainerImageEditor } from '../components/TrainerImages';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useSoundPreference } from '../audio/sound';
 import { useApp } from '../state/AppContext';
@@ -219,12 +220,7 @@ export function ProfilePage() {
     partner = state.pokemon.find((p) => p.id === state.profile.equippedId);
   return (
     <>
-      <div className="profile-cover">
-        <span className="cloud cloud-one" />
-        <span className="cloud cloud-two" />
-        <div className="profile-hills" />
-        <PokemonArt id={25} />
-      </div>
+      <TrainerBanner profile={state.profile} />
       <div className="profile-identity">
         <Avatar profile={state.profile} size={116} />
         <div>
@@ -367,6 +363,9 @@ export function ActivityPage() {
 }
 
 const editableProfile = (profile: Profile) => ({
+  avatarImage: profile.avatarImage || null,
+  bannerImage: profile.bannerImage || null,
+  bannerPreset: profile.bannerPreset || 'meadow',
   displayName: profile.displayName.trim(),
   character: profile.character,
   accessoryColor: profile.accessoryColor,
@@ -519,9 +518,9 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                     className={draft.character === character ? 'selected' : ''}
                     key={character}
                     aria-pressed={draft.character === character}
-                    onClick={() => update({ character })}
+                    onClick={() => update({ character, avatarImage: null })}
                   >
-                    <Avatar profile={{ ...draft, character }} size={76} />
+                    <Avatar profile={{ ...draft, character, avatarImage: null }} size={76} />
                     <span>{character[0].toUpperCase() + character.slice(1)}</span>
                     {draft.character === character && (
                       <span className="trainer-selected-check">
@@ -551,6 +550,7 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                   </button>
                 ))}
               </div>
+              <TrainerImageEditor profile={draft} onChange={update} />
               <div className="editor-display-name">
                 <label className="field-label" htmlFor="display-name">
                   Display name

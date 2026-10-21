@@ -8,7 +8,7 @@ export interface AnalyticsEvent {
   kind: AnalyticsEventKind;
   trainer: string;
   trainerWallet?: string;
-  avatar: Pick<Profile, 'character' | 'accessoryColor'>;
+  avatar: Pick<Profile, 'character' | 'accessoryColor' | 'avatarImage'>;
   title: string;
   detail: string;
   createdAt: number;

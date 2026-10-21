@@ -409,7 +409,8 @@ test('zero HP remains visible through real faint frames and stays hidden after t
     );
     await click('[aria-label="Master difficulty"]');
     await click('.arena-hero .button');
-    await click('.team-select-card');
+    await click('[aria-label="Choose Pokémon for slot 1"]');
+    await click('.battle-picker-pokemon:not(:disabled)');
     await click('.battle-review>.button');
     assert.ok(
       document.querySelector('.classic-match'),

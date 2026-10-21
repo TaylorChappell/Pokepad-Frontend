@@ -71,7 +71,10 @@ export interface BattleRoom extends BattleTerms {
   yourSeat: 0 | 1;
   yourPokemonIds: string[];
   opponentWallet: string | null;
-  trainers: Pick<Profile, 'wallet' | 'displayName' | 'character' | 'accessoryColor'>[];
+  trainers: Pick<
+    Profile,
+    'wallet' | 'displayName' | 'character' | 'accessoryColor' | 'avatarImage'
+  >[];
   deadlineAt: string | null;
   serverTime: string;
   inviteCode?: string;

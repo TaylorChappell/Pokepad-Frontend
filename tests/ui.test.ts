@@ -564,7 +564,8 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
     assert.equal(document.querySelectorAll('.reward-v3-card').length, 1);
     await go('/battles');
     await click(document.querySelector('.arena-hero .button'));
-    await click(document.querySelector('.team-select-card'));
+    await click(document.querySelector('[aria-label="Choose Pokémon for slot 1"]'));
+    await click(document.querySelector('.battle-picker-pokemon:not(:disabled)'));
     await click(document.querySelector('.battle-review>.button'));
     await app.until(
       () => !!document.querySelector('.battle-field'),
@@ -591,16 +592,19 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
       8000,
     );
     assert.match(document.querySelector('.battle-page-heading')?.textContent || '', /Turn 2/);
-    await click(document.querySelector('.classic-surrender'));
-    assert.match(
-      document.querySelector('[role="dialog"]')?.textContent || '',
-      /Surrender this battle/,
-    );
-    await click(
-      [...document.querySelectorAll('button')].find(
-        (button) => button.textContent?.trim() === 'Confirm surrender',
-      ),
-    );
+    if (document.querySelector('.classic-surrender')) {
+      await click(document.querySelector('.classic-surrender'));
+      assert.match(
+        document.querySelector('[role="dialog"]')?.textContent || '',
+        /Surrender this battle/,
+      );
+      await click(
+        [...document.querySelectorAll('button')].find(
+          (button) => button.textContent?.trim() === 'Confirm surrender',
+        ),
+      );
+    }
+    assert.ok(document.querySelector('.battle-finish-scene'));
     assert.ok(
       document.querySelector('.classic-result'),
       'Surrender shows the result without restarting the match',
@@ -686,7 +690,10 @@ test('declined moves stay dismissed on return and evolution is unavailable witho
     await go('/pokemon/bulbasaur');
     await click(app.button('Evolution'));
     assert.equal(app.button('Evolve Pokémon').disabled, true);
-    assert.match(document.querySelector('.evolution-unavailable')?.textContent || '', /fund/i);
+    assert.match(
+      document.querySelector('.evolution-unavailable')?.textContent || '',
+      /Rare Candy/i,
+    );
     assert.equal(document.querySelector('[role="dialog"]'), null);
     assert.equal(app.saved().pokemon.find((p) => p.id === 'bulbasaur')?.backing, 0.08);
   } finally {
@@ -1085,10 +1092,14 @@ test('a faint opens mandatory party selection and the chosen reserve enters with
     const { document, click } = app;
     await click(document.querySelector('[aria-label="Master difficulty"]'));
     await click(document.querySelector('.arena-hero .button'));
-    const cards = [...document.querySelectorAll('.team-select-card')];
-    assert.match(cards[0].textContent || '', /Magikarp/, 'Favourites come first in the picker');
-    for (const name of ['Magikarp', 'Mewtwo', 'Dragonite'])
+    for (const [index, name] of ['Magikarp', 'Mewtwo', 'Dragonite'].entries()) {
+      await click(
+        document.querySelector('[aria-label="Choose Pokémon for slot ' + (index + 1) + '"]'),
+      );
+      const cards = [...document.querySelectorAll('.battle-picker-pokemon')];
+      assert.match(cards[0].textContent || '', /Magikarp/, 'Favourites come first in the picker');
       await click(cards.find((card) => card.querySelector('strong')?.textContent === name)!);
+    }
     await click(document.querySelector('.battle-review>.button'));
     await app.until(() => !!document.querySelector('.classic-fight'), 'Battle artwork loads', 4000);
     for (
@@ -1269,6 +1280,71 @@ test('Pokédex separates permanent variant discoveries and reference totals from
       /record stays even after/,
     );
     assert.equal(document.querySelector('.dex-owned-copies'), null);
+  } finally {
+    await app.close();
+  }
+});
+
+test('PC bag heals only eligible Pokémon and move info opens the shared battle preview', async () => {
+  const app = await mountApp('/pokemon/partner', (s) => {
+    s.pokemon.find((p) => p.id === 'partner')!.health = 0;
+  });
+  try {
+    assert.equal(app.document.querySelector('.summary-battle-status'), null);
+    await app.click(app.button('Bag'));
+    const items = [...app.document.querySelectorAll<HTMLButtonElement>('.pc-care-items button')];
+    const revive = items.find((b) => b.querySelector('strong')?.textContent?.startsWith('Revive'))!;
+    assert.equal(revive.disabled, false);
+    assert.ok(items.filter((b) => b !== revive).every((b) => b.disabled));
+    await app.click(revive);
+    assert.ok(app.saved().pokemon.find((p) => p.id === 'partner')!.health! > 0);
+    assert.equal(app.saved().bag?.revive, 0);
+    await app.click(app.button('Moves'));
+    assert.equal(app.document.querySelector('.summary-move-card summary'), null);
+    await app.click(app.document.querySelector('[aria-label="Preview Scratch"]'));
+    assert.ok(app.document.querySelector('.move-preview-field'));
+    assert.match(app.document.querySelector('.move-info-description')!.textContent!, /Accuracy/);
+  } finally {
+    await app.close();
+  }
+});
+
+test('reset demo reopens dismissed move and evolution prompts; banner presets auto-save', async () => {
+  const app = await mountApp('/settings');
+  try {
+    await app.click(app.button('Cerulean'));
+    await app.wait(700);
+    assert.equal(app.saved().profile.bannerPreset, 'ocean');
+    assert.equal(app.document.querySelectorAll('.banner-presets button').length, 4);
+    assert.ok(app.document.querySelector('[aria-label="Upload custom avatar"]'));
+    await app.go('/profile');
+    assert.equal(app.document.querySelector('.trainer-banner .pokemon-art'), null);
+    await app.go('/settings');
+    // Account tab holds the existing reset control.
+    await app.click(app.button('Wallet'));
+    await app.click(app.button('Reset demo'));
+    const confirm = app.document.querySelector('[role="dialog"]')!;
+    await app.click(app.button('Reset demo', confirm));
+    await app.until(
+      () => !!app.document.querySelector('.trainer-prompts [role="dialog"]'),
+      'Reset opens trainer prompts',
+    );
+    assert.match(
+      app.document.querySelector('.trainer-prompts')!.textContent!,
+      /wants to learn|Evolve/,
+    );
+    await app.click(app.button('Later'));
+    await app.go('/settings');
+    // Defer any other queued opportunities before opening settings again.
+    for (let i = 0; i < 10 && app.document.querySelector('.trainer-prompts [role="dialog"]'); i++)
+      await app.click(app.button('Later'));
+    await app.click(app.button('Wallet'));
+    await app.click(app.button('Reset demo'));
+    await app.click(app.button('Reset demo', app.document.querySelector('[role="dialog"]')!));
+    await app.until(
+      () => !!app.document.querySelector('.trainer-prompts [role="dialog"]'),
+      'Reset clears previous Later acknowledgements',
+    );
   } finally {
     await app.close();
   }

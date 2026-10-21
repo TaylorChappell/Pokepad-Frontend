@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { grantDemoCandy } from '../src/state/model';
 import assert from 'node:assert/strict';
 import { createInitialState } from '../src/data/demo';
 import {
@@ -159,7 +160,7 @@ test('walking preview reduces timers, adds a ready notification, and rejects inv
   s = applyAction(s, { type: 'walk.progress', km: 0.5 }, now);
   assert.equal(
     s.rewards.find((r) => r.id === 'egg-standard')?.readyAt,
-    original - 0.5 * WALK_BOOST_MS_PER_KM,
+    Math.max(now, original - 0.5 * WALK_BOOST_MS_PER_KM),
   );
   s = applyAction(s, { type: 'walk.progress', km: 1 }, now);
   assert.equal(s.rewards.find((r) => r.id === 'egg-standard')?.readyAt, now);
@@ -198,10 +199,13 @@ test('evolution cannot create money when its origin vault and reserve are insuff
   const before = structuredClone(initial);
   assert.throws(
     () => applyAction(initial, { type: 'pokemon.evolve', id: p.id }, now),
-    /fund the evolution/,
+    /funding is reserved/,
   );
   assert.deepEqual(initial, before);
   coin.vault = 0.04;
+  p.rareCandy = 0;
+  grantDemoCandy(initial, p, 1000);
+  assert.equal(p.rareCandy, 1000);
   const next = applyAction(initial, { type: 'pokemon.evolve', id: p.id }, now);
   assert.equal(next.coins.find((c) => c.id === 'bulb')!.vault, 0);
   assert.equal(next.pokemon.find((p) => p.id === 'bulbasaur')!.backing, 0.12);
@@ -559,7 +563,7 @@ test('profile defaults to pixel style and legacy saves migrate without minting e
   const migrated = migrateSnapshot(old)!;
   assert.equal(migrated.version, 2);
   assert.equal(migrated.profile.artStyle, 'pixel');
-  assert.equal(migrated.pokemon[0].rareCandy, 420);
+  assert.equal(migrated.pokemon[0].rareCandy, 0);
   assert.equal(migrated.pokemon[0].evolutionReserve, 0);
   assert.deepEqual(migrated.coins, old.coins);
   assert.equal(migrateSnapshot({ version: 1 }), null);

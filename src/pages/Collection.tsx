@@ -1,3 +1,6 @@
+import { MoveInfoDialog } from '../components/MovePreview';
+import { PokemonBag } from '../components/PokemonBag';
+import { POKEMON_SORTS, sortPokemon } from '../state/pokemon-sort';
 import { useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { EvolutionValue, PokemonProgressDialog } from '../components/PokemonProgressDialog';
@@ -197,14 +200,8 @@ export function InventoryPage() {
     [filter, setFilter] = useState('All'),
     [sort, setSort] = useState('Ready first'),
     [search, setSearch] = useState('');
-  const attention = new Map(
-    state.pokemon.map((p) => [
-      p.id,
-      Number(getEvolutionStatus(state, p).canEvolve) + Number(!!pendingMove(p) && !p.locked),
-    ]),
-  );
-  const list = state.pokemon
-    .filter(
+  const list = sortPokemon(
+    state.pokemon.filter(
       (p) =>
         (filter === 'All' ||
           (filter === 'Shiny' && !!p.shiny) ||
@@ -214,18 +211,10 @@ export function InventoryPage() {
           (filter === 'Can evolve' && getEvolutionStatus(state, p).canEvolve) ||
           (filter === 'New move' && !!pendingMove(p) && !p.locked)) &&
         pokemonById(p.speciesId).name.toLowerCase().includes(search.toLowerCase()),
-    )
-    .sort((a, b) => {
-      if (sort === 'Highest value') return b.backing - a.backing || comparePokemonStrength(a, b);
-      if (sort === 'Highest level') return b.level - a.level || comparePokemonStrength(a, b);
-      if (sort === 'Newest') return b.acquiredAt - a.acquiredAt || comparePokemonStrength(a, b);
-      if (sort === 'Favourites first') return compareBattlePokemon(a, b);
-      if (sort === 'Strongest first') return comparePokemonStrength(a, b);
-      return (
-        Number((attention.get(b.id) || 0) > 0) - Number((attention.get(a.id) || 0) > 0) ||
-        comparePokemonStrength(a, b)
-      );
-    });
+    ),
+    sort,
+    state,
+  );
   return (
     <>
       <PageHeading title="My Pokémon">
@@ -267,14 +256,7 @@ export function InventoryPage() {
             value={sort}
             onChange={(e) => setSort(e.target.value)}
           >
-            {[
-              'Ready first',
-              'Strongest first',
-              'Favourites first',
-              'Highest value',
-              'Highest level',
-              'Newest',
-            ].map((s) => (
+            {POKEMON_SORTS.map((s) => (
               <option key={s}>{s}</option>
             ))}
           </select>
@@ -317,10 +299,11 @@ export function InventoryPage() {
   );
 }
 export function PokemonDetailPage({ id }: { id: string }) {
+  const [previewMove, setPreviewMove] = useState<string | null>(null);
   const { state, mode, act, busy, toast } = useApp(),
     p = state.pokemon.find((p) => p.id === id),
     [dialog, setDialog] = useState<'learn' | 'evolve' | 'sell' | null>(null),
-    [section, setSection] = useState<'stats' | 'moves' | 'evolution' | 'details'>('stats');
+    [section, setSection] = useState<'stats' | 'moves' | 'evolution' | 'details' | 'bag'>('stats');
   if (!p)
     return (
       <EmptyState
@@ -363,20 +346,20 @@ export function PokemonDetailPage({ id }: { id: string }) {
   };
   return (
     <div className="pokemon-summary-page summary-v7">
+      {previewMove && (
+        <MoveInfoDialog
+          name={previewMove}
+          speciesId={p.speciesId}
+          shiny={p.shiny}
+          onClose={() => setPreviewMove(null)}
+        />
+      )}
       <div className="summary-toolbar">
         <a href="#/pokemon" className="pokemon-back-button">
           <Icon name="ArrowLeft" size={18} />
           Back to My PC
         </a>
         <FavouriteButton pokemon={p} showLabel />
-        <span
-          className={
-            'summary-battle-status ' + (unavailable || health.current === 0 ? 'unavailable' : '')
-          }
-        >
-          <span />
-          {p.locked ? 'In battle' : health.current === 0 ? 'Needs healing' : 'Ready for battle'}
-        </span>
       </div>
       <div className="summary-workspace">
         <section
@@ -450,6 +433,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
                 { id: 'moves', label: 'Moves', icon: 'Swords' },
                 { id: 'evolution', label: 'Evolution', icon: 'Sparkles' },
                 { id: 'details', label: 'Details', icon: 'Info' },
+                { id: 'bag', label: 'Bag', icon: 'Backpack' },
               ] as const
             ).map((item) => (
               <button
@@ -492,6 +476,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
             </button>
           )}
           <div className="summary-information" id={'summary-panel-' + id}>
+            {section === 'bag' && <PokemonBag pokemon={p} />}
             {section === 'stats' && (
               <section className="summary-stats" aria-label="Battle stats">
                 <div className="summary-section-heading">
@@ -545,35 +530,38 @@ export function PokemonDetailPage({ id }: { id: string }) {
                   {p.moves.map((name, index) => {
                     const move = moveByName(name);
                     return (
-                      <details
+                      <div
                         className="summary-move-card"
                         key={name}
                         style={{ '--move-color': TYPE_COLORS[move.type] } as CSSProperties}
                       >
-                        <summary>
-                          <div className="move-card-identity">
-                            <span className="move-slot">{index + 1}</span>
-                            <strong>{name}</strong>
-                            <Icon name="ChevronDown" size={16} />
+                        <div className="move-card-identity">
+                          <span className="move-slot">{index + 1}</span>
+                          <strong>{name}</strong>
+                          <button
+                            className="move-info-button"
+                            aria-label={'Preview ' + name}
+                            onClick={() => setPreviewMove(name)}
+                          >
+                            <Icon name="Info" size={18} />
+                          </button>
+                        </div>
+                        <TypeChip type={move.type} />
+                        <dl>
+                          <div>
+                            <dt>POWER</dt>
+                            <dd>{move.power ?? '—'}</dd>
                           </div>
-                          <TypeChip type={move.type} />
-                          <dl>
-                            <div>
-                              <dt>POWER</dt>
-                              <dd>{move.power ?? '—'}</dd>
-                            </div>
-                            <div>
-                              <dt>ACCURACY</dt>
-                              <dd>{move.accuracy === null ? '—' : move.accuracy + '%'}</dd>
-                            </div>
-                            <div>
-                              <dt>PP</dt>
-                              <dd>{move.pp}</dd>
-                            </div>
-                          </dl>
-                        </summary>
-                        <p>{move.description}</p>
-                      </details>
+                          <div>
+                            <dt>ACCURACY</dt>
+                            <dd>{move.accuracy === null ? '—' : move.accuracy + '%'}</dd>
+                          </div>
+                          <div>
+                            <dt>PP</dt>
+                            <dd>{move.pp}</dd>
+                          </div>
+                        </dl>
+                      </div>
                     );
                   })}
                   {Array.from({ length: Math.max(0, 4 - p.moves.length) }, (_, index) => (
@@ -585,8 +573,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
                   ))}
                 </div>
                 <p className="moves-footnote">
-                  Select a move for its effect. New moves appear when a level-up opportunity is
-                  earned.
+                  Press ⓘ to preview a move and see its effect. New moves appear when a level-up
+                  opportunity is earned.
                 </p>
               </section>
             )}

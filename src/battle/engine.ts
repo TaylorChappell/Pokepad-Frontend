@@ -1,3 +1,5 @@
+import { chooseRivalAction, chooseRivalReplacement } from './ai';
+export { chooseRivalAction, chooseRivalReplacement } from './ai';
 import {
   BATTLE_ITEMS,
   DEFAULT_BATTLE_RULES,
@@ -5,7 +7,6 @@ import {
   prepareBattleTeam,
   legalBattleItem,
   useBattleItem,
-  chooseBattleItem,
   type BattleBag,
   type BattleRules,
   type BattleItem,
@@ -468,81 +469,6 @@ export function getMoveHint(attacker: Fighter, defender: Fighter, name: string) 
       ? `${value}× effective`
       : 'Normal effectiveness';
 }
-function moveScore(actor: Fighter, target: Fighter, name: string) {
-  const move = battleMove(name);
-  const damage = predictedDamage(actor, target, name);
-  if (damage)
-    return (
-      damage *
-        ((move.accuracy ?? 100) / 100) *
-        (name === 'Hyper Beam' ? 0.65 : ['Fly', 'Solar Beam'].includes(name) ? 0.6 : 1) +
-      (damage >= target.hp ? 45 : 0)
-    );
-  if (['Recover', 'Rest'].includes(name))
-    return actor.hp < actor.stats.hp * 0.45 ? actor.stats.hp * 0.55 : 0;
-  if (['Sleep Powder', 'Hypnosis', 'Thunder Wave', 'Poison Powder'].includes(name)) {
-    if (target.status !== 'none' || effectiveness(move.type, target.speciesId) === 0) return 0;
-    return target.hp * 0.3 * ((move.accuracy ?? 100) / 100);
-  }
-  if (name === 'Swords Dance')
-    return actor.stages.attack < 2 && actor.hp > actor.stats.hp * 0.65
-      ? actor.stats.attack * 0.45
-      : 0;
-  if (name === 'Agility')
-    return effectiveSpeed(actor) < effectiveSpeed(target) && actor.stages.speed < 2
-      ? actor.stats.speed * 0.3
-      : 0;
-  if (name === 'Growl') return target.stages.attack > -2 ? target.stats.attack * 0.2 : 0;
-  if (name === 'Harden') return actor.stages.defense < 2 ? actor.stats.defense * 0.2 : 0;
-  if (name === 'Sand Attack') return target.stages.accuracy > -2 ? 12 : 0;
-  return 8;
-}
-export function chooseRivalAction(state: BattleState, random = Math.random): BattleAction {
-  const item = chooseBattleItem(state, 'rival');
-  if (item) return item;
-  const actor = state.rival[state.active.rival];
-  const target = state.player[state.active.player];
-  const choices = actor.moves
-    .map((name, index) => ({ name, index }))
-    .filter(({ index }) => actor.pp[index] > 0);
-  if (!choices.length) return { kind: 'move', index: -1 };
-  if (
-    !actor.charging &&
-    !actor.recharge &&
-    !actor.trapped &&
-    ['Hard', 'Master'].includes(state.difficulty) &&
-    state.turn - state.lastRivalSwitch > 2
-  ) {
-    const score = (pokemon: Fighter) =>
-      Math.max(...pokemon.moves.map((name) => predictedDamage(pokemon, target, name))) /
-        pokemon.stats.hp +
-      1 /
-        Math.max(
-          0.1,
-          Math.max(...target.moves.map((name) => predictedDamage(target, pokemon, name))) /
-            pokemon.stats.hp,
-        );
-    const best = state.rival
-      .map((pokemon, index) => ({ pokemon, index }))
-      .filter(({ pokemon, index }) => pokemon.hp > 0 && index !== state.active.rival)
-      .sort((a, b) => score(b.pokemon) - score(a.pokemon))[0];
-    if (
-      best &&
-      score(best.pokemon) > score(actor) * (state.difficulty === 'Master' ? 1.35 : 1.8) &&
-      random() < (state.difficulty === 'Master' ? 0.8 : 0.35)
-    )
-      return { kind: 'switch', index: best.index };
-  }
-  if (state.difficulty === 'Easy' || (state.difficulty === 'Medium' && random() < 0.25)) {
-    const damaging = choices.filter(({ name }) => predictedDamage(actor, target, name) > 0);
-    const pool = damaging.length && random() < 0.8 ? damaging : choices;
-    return { kind: 'move', index: pool[Math.floor(random() * pool.length)].index };
-  }
-  const ranked = choices
-    .map((choice) => ({ ...choice, score: moveScore(actor, target, choice.name) }))
-    .sort((a, b) => b.score - a.score);
-  return { kind: 'move', index: ranked[0].index };
-}
 export type BattlePhase = 'turn' | 'replacement';
 export function battlePhase(state: BattleState): BattlePhase {
   return !state.winner && (state.replacementRequired?.player || state.replacementRequired?.rival)
@@ -603,33 +529,6 @@ export function resolveReplacements(
   return state;
 }
 /** The bot chooses from the current public position, never a trainer's pending replacement. */
-export function chooseRivalReplacement(state: BattleState): number {
-  const activeTarget = state.player[state.active.player];
-  const targets =
-    activeTarget.hp > 0 ? [activeTarget] : state.player.filter((pokemon) => pokemon.hp > 0);
-  const score = (candidate: Fighter) =>
-    targets.reduce((total, target) => {
-      const usable = candidate.moves.filter((_, index) => candidate.pp[index] > 0);
-      const outgoing = Math.max(
-        0,
-        ...(usable.length ? usable : ['Struggle']).map((name) =>
-          predictedDamage(candidate, target, name),
-        ),
-      );
-      const incoming = Math.max(
-        1,
-        ...target.moves.map((name) => predictedDamage(target, candidate, name)),
-      );
-      return total + outgoing / Math.max(1, target.hp) + candidate.hp / incoming;
-    }, 0) / Math.max(1, targets.length);
-  return (
-    state.rival
-      .map((pokemon, index) => ({ pokemon, index }))
-      .filter(({ pokemon, index }) => pokemon.hp > 0 && index !== state.active.rival)
-      .sort((a, b) => score(b.pokemon) - score(a.pokemon) || a.index - b.index)[0]?.index ?? -1
-  );
-}
-
 export function resolveTurn(
   previous: BattleState,
   action: BattleAction,

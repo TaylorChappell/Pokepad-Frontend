@@ -162,22 +162,22 @@ const topics: GuideTopic[] = [
     label: 'Candy, evolution & moves',
     icon: 'Flame',
     title: 'Build a partner worth keeping',
-    intro: 'Progress belongs to the Pokémon, and an evolution needs more than candy.',
+    intro: 'Train your partner, evolve, and discover new moves.',
     pokemon: 5,
     color: '#ffeadb',
     sections: [
       {
         title: 'Rare Candy and active holdings',
         text: [
-          'The intended system gives your equipped partner Rare Candy from eligible active coin holdings. A dead coin should not generate ongoing progress. This frontend displays sample candy balances; continuous holding-based accrual needs the backend.',
-          'The evolution panel tells you when that Pokémon has enough candy and whether the source coin can cover the value increase.',
+          'Your equipped partner gains Rare Candy from eligible active coin holdings. Inactive coins do not generate progress. Candy that would advance an evolution is granted only with its share of evolution funding reserved.',
+          'If the reward pool cannot reserve the next Candy increase, progress pauses. Reaching the evolution threshold means its value increase is already covered.',
         ],
       },
       {
         title: 'Evolution must be funded',
         text: [
-          'The current demo policy consumes 1,000 Rare Candy and raises value by 50%, with a minimum increase of 0.02 SOL. It uses an allocated evolution budget first, then the source coin’s available reward pool.',
-          'If funding is short, evolution waits. These amounts are provisional economy settings. Eevee randomly becomes Vaporeon, Jolteon, or Flareon, each with a one-third chance.',
+          'The current demo policy consumes 1,000 Rare Candy and raises value by 50%, with a minimum increase of 0.02 SOL. Its evolution budget is reserved as Candy is granted.',
+          'Candy pauses before the threshold if more backing is needed. These demo amounts are provisional economy settings. Eevee randomly becomes Vaporeon, Jolteon, or Flareon, each with a one-third chance.',
         ],
         note: 'You cannot choose an Eevee result. Each successful evolution updates that individual Pokémon and consumes its required candy and funding.',
       },
@@ -213,7 +213,7 @@ const topics: GuideTopic[] = [
       {
         title: 'Current value and evolution budget',
         text: [
-          'The SOL value on an owned Pokémon is its current funded amount. Future evolution money is separate; it is not added to current value or gym contribution.',
+          'The SOL value on an owned Pokémon is its current funded amount. Future evolution money is separate; it is not added to current value.',
           'Selling redeems the Pokémon for exactly its displayed value. There are no asking prices or player listings.',
         ],
       },
@@ -235,8 +235,9 @@ const topics: GuideTopic[] = [
     id: 'gyms',
     label: 'Gyms & badges',
     icon: 'Shield',
-    title: 'Put your collection behind a gym',
-    intro: 'Each coin has a team identity and a badge built around its ticker.',
+    title: 'Take on the Kanto league',
+    intro:
+      'Each coin fields its holders’ three strongest Pokémon, with its coin image as the gym badge.',
     pokemon: 68,
     color: '#e7edf9',
     sections: [
@@ -244,21 +245,21 @@ const topics: GuideTopic[] = [
         title: 'Support one gym',
         text: [
           'Choose one active coin community to support. You must hold its coin to join. Moving gyms moves your contribution rather than adding it to several teams.',
-          'Gym pages show the team, badge, supporting trainers, and collection-value ranking. Gym support is separate from offline battle difficulty.',
+          'The defence updates from eligible holders’ current Pokémon. Battle copies start at full health; owners keep their originals.',
         ],
       },
       {
-        title: 'How your collection contributes',
+        title: 'How defence and league points work',
         text: [
-          'The contribution uses the current funded value of eligible owned Pokémon. Unused evolution budgets do not inflate it.',
-          'Scores should follow confirmed ownership and eligibility. External sample scores illustrate this preview; production rankings need a complete view of all supporters.',
+          'Defence strength is the sum of each defender’s six combat stats at its current level. Shiny colour and SOL value do not make it stronger.',
+          'The first away-gym victory each UTC day gives points and supplies, up to five different gyms per day. Tougher defences award more. Weekly league points reset every Monday; your career points and medals remain.',
         ],
       },
       {
         title: 'Badges and progress',
         text: [
           'Each gym uses its coin’s image as its badge. Your profile shows the badges you have earned and the gym you support. A badge is a trainer achievement and team identity, not another tradeable Pokémon.',
-          'Featured-gym promotion has been removed from Discover. Rankings remain on the Gyms page.',
+          'Win gym battles to earn berries, revives and medals. At 1, 3 and 7 rewarded victories, unlock Thunder Wave, Rest and Swords Dance manuals. Equip one gym move per Pokémon in its PC Bag; these rewards have no SOL value.',
         ],
       },
     ],
@@ -353,7 +354,7 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
       'Review the wallet transaction before signing. Kanto saves the prepared operation for recovery and lists the coin only after its Solana transaction confirms.',
     ],
     'Open a pack or hatch an egg': [
-      'Rewards has separate Eggs and Packs tabs. A pack opens immediately; an egg opens when its timer reaches zero.',
+      'Rewards has separate Eggs and Packs tabs. Packs open immediately. Standard eggs take 20 minutes, Rare eggs 1 hour, and Epic eggs 4 hours; walking can shorten these timers.',
       'Your Pokémon and its full financial backing are sealed when the reward is awarded. Opening reveals that result without rerolling. A reveal adds the individual to My PC and its species to your Pokédex.',
     ],
     'Walking helps the timer': [
@@ -364,9 +365,9 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
       'Open an eligible Pokémon, choose Sell, and review its displayed redemption amount. A locked Pokémon or free starter cannot be redeemed.',
       'The Pokémon is locked while the payout is processed. Check Redemptions in Portfolio: pending does not mean paid. The payment is complete only after its Solana transaction confirms. Your Pokédex discovery remains.',
     ],
-    'How your collection contributes': [
-      'Gym scores use the funded current value of eligible owned Pokémon belonging to supporters who hold the coin. Future evolution reserves do not increase that score.',
-      'Scores come from the server and include each supporter once. Changing your gym moves your contribution.',
+    'How defence and league points work': [
+      'The three strongest Pokémon owned by eligible supporting holders defend each gym. Combat stats determine strength; SOL value and shiny colour do not.',
+      'The server selects each gym’s three strongest defenders and verifies victories. Weekly league points come from rewarded away-gym wins.',
     ],
     'Online and wagers': [
       'Online rooms use server-controlled teams, turns, and results. Inspect both teams, discuss changes in room chat, and accept the same team, rules and stake. Changes reset both acceptances. Reconnect to restore a running match.',
@@ -388,7 +389,7 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
     ...section,
     text: section.text.map((text) =>
       text.includes('current demo policy')
-        ? 'The evolution screen shows the server’s current Rare Candy requirement, next value, and availability. The reward pool must cover the full evolution path before it can proceed.'
+        ? 'The evolution screen shows the server’s current Rare Candy requirement, next value, and availability. Each Candy grant is covered by reserved funds for the full remaining evolution path. No extra payment is needed when you reach the threshold.'
         : text.includes('Every opening') ||
             (text.includes('at the moment') && text.includes('draw'))
           ? 'A reward is selected and fully funded when awarded. Opening reveals the sealed Pokémon; it does not reroll the outcome.'

@@ -57,6 +57,7 @@ test('potions, cures and the bot obey the same bag limits and charged turns cann
   assert.equal(cured.player[1].statusTurns, 0);
   assert.equal(cured.bags!.player['full-heal'], 0);
   current.rival[0].hp = 1;
+  current.rival[0].trapped = 1;
   assert.deepEqual(chooseRivalAction(current, calm), { kind: 'item', item: 'potion', index: 0 });
   current.rival[0].charging = 'Solar Beam';
   assert.equal(legalBattleItem(current, 'rival', 'potion', 0), false);

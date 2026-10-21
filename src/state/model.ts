@@ -1,3 +1,4 @@
+import { pcItemHealth, GYM_MANUALS } from '../game/gym-policy';
 import type { Action, AppSnapshot, Activity, OwnedPokemon, CoinSocials, Reward } from '../types';
 import { createInitialState, ACCENT_COLORS, CHARACTERS } from '../data/demo';
 import { pokemonById } from '../data/pokemon';
@@ -64,14 +65,13 @@ export function getEvolutionStatus(state: AppSnapshot, p: OwnedPokemon) {
   const valueIncrease = evolutionValueIncrease(p);
   const reserved = p.evolutionReserve;
   const fundingNeeded = fromLamports(Math.max(0, lamports(valueIncrease) - lamports(reserved)));
-  const available = state.coins.find((c) => c.id === p.originCoin)?.vault || 0;
   let reason: string | undefined;
   if (!pokemonById(p.speciesId).evolvesTo.length)
     reason = 'This Pokémon has reached its final Kanto evolution.';
   else if (p.locked) reason = 'Finish this Pokémon’s battle first.';
   else if (p.rareCandy < EVOLUTION_CANDY) reason = 'Collect more Rare Candy to evolve.';
-  else if (lamports(available) < lamports(fundingNeeded))
-    reason = 'Waiting for this coin’s reward pool to fund the evolution.';
+  else if (fundingNeeded > 0)
+    reason = 'Rare Candy is paused while its evolution funding is reserved.';
   return {
     candyRequired: EVOLUTION_CANDY,
     valueIncrease,
@@ -102,6 +102,30 @@ function reserveNextEvolution(s: AppSnapshot, p: OwnedPokemon) {
   coin.vault = fromLamports(lamports(coin.vault) - allocated);
   p.evolutionReserve = fromLamports(lamports(p.evolutionReserve) + allocated);
 }
+export function grantDemoCandy(s: AppSnapshot, p: OwnedPokemon, requested: number) {
+  if (requested <= 0 || p.locked) return;
+  const required = lamports(evolutionValueIncrease(p)),
+    coin = s.coins.find((c) => c.id === p.originCoin),
+    reserved = lamports(p.evolutionReserve),
+    free = lamports(coin?.vault || 0);
+  const affordable = required
+    ? Math.floor(((reserved + free) * EVOLUTION_CANDY) / required)
+    : Number.MAX_SAFE_INTEGER;
+  const total =
+    affordable >= EVOLUTION_CANDY
+      ? p.rareCandy + requested
+      : Math.min(p.rareCandy + requested, affordable);
+  if (total <= p.rareCandy) return;
+  const cost = Math.max(
+    0,
+    Math.ceil((required * Math.min(total, EVOLUTION_CANDY)) / EVOLUTION_CANDY) - reserved,
+  );
+  if (cost && coin) {
+    coin.vault = fromLamports(free - cost);
+    p.evolutionReserve = fromLamports(reserved + cost);
+  }
+  p.rareCandy = total;
+}
 function cleanSocials(input: CoinSocials = {}): CoinSocials {
   const result: CoinSocials = {};
   for (const key of ['website', 'x', 'telegram', 'discord'] as const) {
@@ -123,6 +147,9 @@ function cleanSocials(input: CoinSocials = {}): CoinSocials {
 /** Reject removed or unknown actions before they can alter local state or reach the live API. */
 export function assertSupportedAction(action: Action): void {
   const supported: ReadonlySet<string> = new Set<Action['type']>([
+    'pokemon.item',
+    'pokemon.manual',
+    'gym.demo.finish',
     'profile.update',
     'notification.read',
     'reward.open',
@@ -151,7 +178,7 @@ export function applyAction(
   randomIndex: (length: number) => number = secureRandomIndex,
 ): AppSnapshot {
   assertSupportedAction(action);
-  if (action.type === 'demo.reset') return createInitialState(now);
+  if (action.type === 'demo.reset') return { ...createInitialState(now), demoPromptEpoch: now };
   const s = structuredClone(original);
   s.discoveredVariants = variantDiscoveries(s);
   const activity = (entry: Omit<Activity, 'id' | 'createdAt'>) =>
@@ -161,6 +188,71 @@ export function applyAction(
     if (!p) throw new Error('This Pokémon is no longer in your inventory.');
     return p;
   };
+  s.bag ||= { berry: 3, revive: 1, potion: 2 };
+  s.gymProgress ||= { medals: 0, points: 0, wins: 0, manuals: [], claimedToday: [] };
+  if (action.type === 'pokemon.item') {
+    const p = owned(action.id),
+      hp = getPokemonHealth(p),
+      next = pcItemHealth(action.item, hp.current, hp.max);
+    if (p.locked) throw new Error('Finish its battle first.');
+    if (!s.bag[action.item] || next === null)
+      throw new Error('That item cannot be used on this Pokémon.');
+    s.bag[action.item]--;
+    p.health = next;
+  }
+  if (action.type === 'pokemon.manual') {
+    const p = owned(action.id);
+    if (p.locked) throw new Error('Finish its battle first.');
+    p.baseMoves ||= [...p.moves];
+    if (action.move === null) {
+      p.moves = [...p.baseMoves];
+      delete p.gymManual;
+    } else {
+      if (
+        !s.gymProgress.manuals.includes(action.move) ||
+        action.slot === undefined ||
+        action.slot < 0 ||
+        action.slot >= Math.min(4, p.baseMoves.length) ||
+        p.baseMoves.includes(action.move)
+      )
+        throw new Error('Choose an unlocked gym move and a valid slot.');
+      p.gymManual = { wallet: s.profile.wallet, move: action.move, slot: action.slot };
+      p.moves = [...p.baseMoves];
+      p.moves[action.slot] = action.move;
+    }
+  }
+  if (action.type === 'gym.demo.finish') {
+    for (const h of action.health) {
+      const p = s.pokemon.find((p) => p.id === h.id);
+      if (p && !p.locked) p.health = h.hp;
+    }
+    const day = new Date(now).toISOString().slice(0, 10),
+      progress = s.gymProgress as typeof s.gymProgress & { day?: string; processed?: string[] };
+    if (progress.day !== day) {
+      progress.day = day;
+      progress.claimedToday = [];
+    }
+    progress.processed ||= [];
+    if (!progress.processed.includes(action.id)) {
+      progress.processed.push(action.id);
+      progress.processed = progress.processed.slice(-100);
+      if (
+        action.winner &&
+        action.coinId !== s.profile.supportedGym &&
+        !progress.claimedToday.includes(action.coinId) &&
+        progress.claimedToday.length < 5
+      ) {
+        progress.claimedToday.push(action.coinId);
+        progress.points += action.prize.points;
+        progress.medals += action.prize.medals;
+        progress.wins++;
+        for (const key of ['berry', 'revive', 'potion'] as const)
+          s.bag[key] += action.prize.items[key];
+        progress.manuals = GYM_MANUALS.filter((m) => m.wins <= progress.wins).map((m) => m.move);
+        if (!s.badges.includes(action.coinId)) s.badges.push(action.coinId);
+      }
+    }
+  }
   if (action.type === 'profile.update') {
     if (action.patch.displayName !== undefined && action.patch.displayName.trim().length > 24)
       throw new Error('Choose a display name with 24 characters or fewer.');
@@ -261,6 +353,11 @@ export function applyAction(
     // A zero-value starter becomes an ordinary funded asset after its first funded evolution.
     if (p.starter && p.backing > 0) p.starter = false;
     reserveNextEvolution(s, p);
+    if (pokemonById(p.speciesId).evolvesTo.length && p.evolutionReserve < evolutionValueIncrease(p))
+      p.rareCandy = Math.min(
+        p.rareCandy,
+        Math.floor((p.evolutionReserve / evolutionValueIncrease(p)) * EVOLUTION_CANDY),
+      );
     recordVariantDiscovery(s, target, !!p.shiny);
     s.notifications.forEach((n) => {
       if (n.id.startsWith('evolve-' + p.id)) n.read = true;
@@ -458,6 +555,25 @@ export function applyAction(
       kind: 'coin',
       href: '/coin/' + id,
     });
+  }
+  if (action.type === 'sync') {
+    const elapsed = Math.min(300000, Math.max(0, now - (s.demoCandyUpdatedAt || now)));
+    s.demoCandyUpdatedAt = now;
+    const partner = s.pokemon.find((p) => p.id === s.profile.equippedId);
+    if (partner) {
+      const rate = s.coins
+        .filter(
+          (c) =>
+            c.active &&
+            c.holding > 0 &&
+            c.totalSupply > 0 &&
+            (!partner.starter || c.id === partner.originCoin),
+        )
+        .reduce((n, c) => n + c.holding / c.totalSupply, 0);
+      const amount = (rate * elapsed * 1000) / 86400000 + (s.demoCandyRemainder || 0);
+      s.demoCandyRemainder = amount - Math.floor(amount);
+      grantDemoCandy(s, partner, Math.floor(amount));
+    }
   }
   for (const p of s.pokemon) {
     const evolutionId = 'evolve-' + p.id + '-' + p.speciesId;

@@ -112,7 +112,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         r.readyAt <= now &&
         !state.notifications.some((n) => n.id === 'ready-' + r.id),
     );
-    if (ready && state.profile.rewardNotifications && !inFlight.current) {
+    if (
+      ((ready && state.profile.rewardNotifications) ||
+        now - (state.demoCandyUpdatedAt || now) >= 60000) &&
+      !inFlight.current
+    ) {
       void act({ type: 'sync' });
     }
   }, [now, state]);
