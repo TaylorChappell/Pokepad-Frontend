@@ -1,7 +1,6 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
-import { useRevealAudio } from '../audio/sound';
-import type { RevealFrame } from '../audio/reveal-timeline';
+import { EvolutionValue, PokemonProgressDialog } from '../components/PokemonProgressDialog';
 import { POKEMON, pokemonById } from '../data/pokemon';
 import { moveByName } from '../data/moves';
 import { getPokemonHealth, getPokemonStats } from '../data/stats';
@@ -28,25 +27,6 @@ import {
 import type { OwnedPokemon } from '../types';
 import { asset, navigate, sol, TYPE_COLORS } from '../utils';
 
-function EvolutionValue({
-  preview,
-  fallback,
-}: {
-  preview?: OwnedPokemon['evolutionPreview'];
-  fallback: number;
-}) {
-  return preview?.nextValueMin !== undefined &&
-    preview.nextValueMax !== undefined &&
-    preview.nextValueMin < preview.nextValueMax ? (
-    <span className="evolution-value-range">
-      <SolValue amount={preview.nextValueMin} />
-      <span>–</span>
-      <SolValue amount={preview.nextValueMax} />
-    </span>
-  ) : (
-    <SolValue amount={fallback} />
-  );
-}
 function CandySprite() {
   return (
     <img
@@ -336,47 +316,11 @@ export function InventoryPage() {
     </>
   );
 }
-type EvolutionScene = {
-  from: number;
-  to?: number;
-  before: number;
-  after?: number;
-  phase: 'ready' | 'evolving' | 'complete';
-};
 export function PokemonDetailPage({ id }: { id: string }) {
   const { state, mode, act, busy, toast } = useApp(),
     p = state.pokemon.find((p) => p.id === id),
     [dialog, setDialog] = useState<'learn' | 'evolve' | 'sell' | null>(null),
-    [section, setSection] = useState<'stats' | 'moves' | 'evolution' | 'details'>('stats'),
-    [replaceIndex, setReplaceIndex] = useState<number | null>(null),
-    [declining, setDeclining] = useState(false),
-    [evolution, setEvolution] = useState<EvolutionScene | null>(null),
-    [revealFrame, setRevealFrame] = useState<RevealFrame>({
-      elapsedMs: 0,
-      durationMs: 4200,
-      progress: 0,
-      revealed: false,
-    });
-  const revealAudio = useRevealAudio();
-  // This key changes only for a committed new evolution or a closed dialog. The
-  // completion phase deliberately keeps it stable so the reveal fanfare can finish.
-  useEffect(() => {
-    if (dialog !== 'evolve' || !evolution?.to || evolution.phase !== 'evolving') return;
-    const scene = evolution;
-    void revealAudio.start('evolve', {
-      reducedMotion: state.profile.reducedMotion,
-      onFrame: setRevealFrame,
-      onReveal: () => setEvolution({ ...scene, phase: 'complete' }),
-    });
-    return revealAudio.stop;
-  }, [
-    dialog,
-    evolution?.to,
-    evolution?.from,
-    revealAudio.start,
-    revealAudio.stop,
-    state.profile.reducedMotion,
-  ]);
+    [section, setSection] = useState<'stats' | 'moves' | 'evolution' | 'details'>('stats');
   if (!p)
     return (
       <EmptyState
@@ -405,51 +349,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
     { name: 'Speed', value: stats.speed, color: '#c581ac' },
   ];
   const statScale = Math.max(...statRows.map((stat) => stat.value), stats.hp) * 1.12;
-  const closeDialog = () => {
-    revealAudio.stop();
-    setDialog(null);
-    setDeclining(false);
-    setReplaceIndex(null);
-  };
-  const startEvolution = async () => {
-    if (!evolution || busy) return;
-    revealAudio.unlock('evolve');
-    const before = { ...evolution, phase: 'evolving' as const };
-    const result = await act({ type: 'pokemon.evolve', id: p.id }),
-      changed = result?.pokemon.find((x) => x.id === p.id);
-    if (!changed) {
-      revealAudio.stop();
-      setEvolution({ ...before, phase: 'ready' });
-      return;
-    }
-    const scene = { ...before, to: changed.speciesId, after: changed.backing };
-    setRevealFrame({
-      elapsedMs: 0,
-      durationMs: state.profile.reducedMotion ? 180 : 4200,
-      progress: 0,
-      revealed: false,
-    });
-    setEvolution(scene);
-  };
-  const learn = async () => {
-    if (!offer) return;
-    const result = await act({
-      type: 'pokemon.learn',
-      id: p.id,
-      offerId: offer.id,
-      ...(p.moves.length >= 4 ? { replaceIndex: replaceIndex ?? 0 } : {}),
-    });
-    if (result) {
-      toast(species.name + ' learned ' + offer.move + '.');
-      closeDialog();
-    }
-  };
-  const decline = async () => {
-    if (offer && (await act({ type: 'pokemon.declineMove', id: p.id, offerId: offer.id }))) {
-      toast(species.name + ' did not learn ' + offer.move + '.');
-      closeDialog();
-    }
-  };
+  const closeDialog = () => setDialog(null);
   const redeem = async () => {
     if (await act({ type: 'pokemon.redeem', id: p.id })) {
       toast(
@@ -575,8 +475,6 @@ export function PokemonDetailPage({ id }: { id: string }) {
               aria-label={species.name + ' can learn ' + offer.move + '. Review move'}
               disabled={unavailable || busy}
               onClick={() => {
-                setReplaceIndex(null);
-                setDeclining(false);
                 setDialog('learn');
               }}
             >
@@ -752,7 +650,6 @@ export function PokemonDetailPage({ id }: { id: string }) {
                       className="full-width evolve-action"
                       disabled={!evoStatus.canEvolve || busy}
                       onClick={() => {
-                        setEvolution({ from: p.speciesId, before: p.backing, phase: 'ready' });
                         setDialog('evolve');
                       }}
                     >
@@ -832,186 +729,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
           </div>
         </div>
       </div>
-      {dialog === 'learn' && offer && newMove && (
-        <Modal
-          title={declining ? 'Do not learn ' + offer.move + '?' : 'A new move!'}
-          onClose={closeDialog}
-        >
-          <div className="move-decision-dialog">
-            <div className="move-decision-title">
-              <PokemonArt id={p.speciesId} shiny={p.shiny} />
-              <p>
-                <strong>{species.name}</strong> wants to learn <strong>{offer.move}</strong>.
-              </p>
-            </div>
-            {declining ? (
-              <>
-                <p className="move-final-warning">
-                  This opportunity will be declined permanently. {species.name} will not be offered
-                  this move again.
-                </p>
-                <div className="modal-actions">
-                  <Button variant="secondary" disabled={busy} onClick={() => setDeclining(false)}>
-                    Go back
-                  </Button>
-                  <Button variant="danger" disabled={busy} onClick={decline}>
-                    Do not learn
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="new-move-record">
-                  <div>
-                    <h3>{offer.move}</h3>
-                    <TypeChip type={newMove.type} />
-                  </div>
-                  <p>{newMove.description}</p>
-                  <dl>
-                    <div>
-                      <dt>POWER</dt>
-                      <dd>{newMove.power ?? '—'}</dd>
-                    </div>
-                    <div>
-                      <dt>ACCURACY</dt>
-                      <dd>{newMove.accuracy === null ? '—' : newMove.accuracy + '%'}</dd>
-                    </div>
-                    <div>
-                      <dt>PP</dt>
-                      <dd>{newMove.pp}</dd>
-                    </div>
-                  </dl>
-                </div>
-                {p.moves.length >= 4 ? (
-                  <>
-                    <p className="move-forget-label">
-                      A Pokémon can only know four moves. Which should it forget?
-                    </p>
-                    <div className="move-forget-options">
-                      {p.moves.map((move, index) => (
-                        <button
-                          key={move}
-                          className={replaceIndex === index ? 'selected' : ''}
-                          onClick={() => setReplaceIndex(index)}
-                        >
-                          <span>{index + 1}</span>
-                          <strong>{move}</strong>
-                          <span>{replaceIndex === index ? '◀' : ''}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="move-forget-label">
-                    An empty move slot is available. No move needs to be forgotten.
-                  </p>
-                )}
-                <div className="modal-actions">
-                  <Button variant="secondary" disabled={busy} onClick={() => setDeclining(true)}>
-                    Do not learn
-                  </Button>
-                  <Button
-                    disabled={busy || (p.moves.length >= 4 && replaceIndex === null)}
-                    onClick={learn}
-                  >
-                    Learn {offer.move}
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </Modal>
-      )}
-      {dialog === 'evolve' && evolution && (
-        <Modal
-          title={
-            evolution.phase === 'complete'
-              ? 'Evolution complete'
-              : evolution.phase === 'evolving'
-                ? pokemonById(evolution.from).name + ' is evolving!'
-                : 'Evolve ' + pokemonById(evolution.from).name + '?'
-          }
-          onClose={closeDialog}
-          wide
-          closeDisabled={evolution.phase === 'evolving'}
-        >
-          <div
-            className={'evolution-sequence ' + evolution.phase}
-            data-reveal-synced
-            data-reveal-reduced={revealFrame.durationMs === 180 || undefined}
-            style={
-              {
-                '--reveal-elapsed': `-${revealFrame.elapsedMs}ms`,
-                '--reveal-duration': `${revealFrame.durationMs}ms`,
-              } as CSSProperties
-            }
-          >
-            <div className="evolution-stage">
-              <div className="evolution-pixel-grid" />
-              <div className="evolution-rays" />
-              <div className="evolution-ring one" />
-              <div className="evolution-ring two" />
-              <div className="evolution-orbit-stars" aria-hidden="true">
-                {Array.from({ length: 20 }, (_, i) => (
-                  <i
-                    key={i}
-                    style={{ '--star-i': i, '--star-delay': i * -0.19 + 's' } as CSSProperties}
-                  />
-                ))}
-              </div>
-              <div className="evolution-old">
-                <PokemonArt id={evolution.from} shiny={p.shiny} animated={false} />
-              </div>
-              {evolution.to && (
-                <div className="evolution-new">
-                  <PokemonArt id={evolution.to} shiny={p.shiny} animated={false} />
-                </div>
-              )}
-              <div className="evolution-flash" />
-            </div>
-            <div className="evolution-dialogue" aria-live="polite">
-              {evolution.phase === 'ready' ? (
-                <>
-                  <p>
-                    Use <strong>{evoStatus.candyRequired.toLocaleString()} Rare Candy</strong> to
-                    evolve {pokemonById(evolution.from).name}.
-                  </p>
-                  {evolution.from === 133 && (
-                    <p>
-                      <strong>Three possible evolutions, each with an equal 1-in-3 chance.</strong>
-                    </p>
-                  )}
-                  <div className="evolution-value-change">
-                    <SolValue amount={evolution.before} />
-                    <span>→</span>
-                    <EvolutionValue preview={p.evolutionPreview} fallback={evoStatus.nextValue} />
-                  </div>
-                  <Button disabled={busy || !evoStatus.canEvolve} onClick={startEvolution}>
-                    Evolve
-                  </Button>
-                </>
-              ) : evolution.phase === 'evolving' ? (
-                <p>
-                  What? <strong>{pokemonById(evolution.from).name}</strong> is evolving!
-                </p>
-              ) : (
-                <>
-                  <p>
-                    Congratulations! Your <strong>{pokemonById(evolution.from).name}</strong>
-                    <br />
-                    evolved into <strong>{pokemonById(evolution.to!).name}</strong>!
-                  </p>
-                  <div className="evolution-value-change">
-                    <SolValue amount={evolution.before} />
-                    <span>→</span>
-                    <SolValue amount={evolution.after!} />
-                  </div>
-                  <Button onClick={closeDialog}>Continue</Button>
-                </>
-              )}
-            </div>
-          </div>
-        </Modal>
+      {(dialog === 'learn' || dialog === 'evolve') && (
+        <PokemonProgressDialog id={id} kind={dialog} onClose={closeDialog} />
       )}
       {dialog === 'sell' && (
         <Modal title={'Sell ' + species.name + '?'} onClose={closeDialog} closeDisabled={busy}>

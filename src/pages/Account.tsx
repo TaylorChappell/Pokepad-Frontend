@@ -752,6 +752,14 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
 }
 
 export function StarterPage() {
+  return (
+    <>
+      <PageHeading title="Choose your starter" />
+      <StarterChoice onChosen={() => navigate('/pokemon')} />
+    </>
+  );
+}
+export function StarterChoice({ onChosen }: { onChosen?: () => void }) {
   const { state, act, busy, toast, mode } = useApp(),
     [choice, setChoice] = useState(4),
     main = state.coins.find((c) => c.main),
@@ -761,16 +769,11 @@ export function StarterPage() {
         : !!main && main.holding / main.totalSupply > 0.01;
   return (
     <>
-      <PageHeading
-        eyebrow="EVERY ADVENTURE STARTS SOMEWHERE"
-        title="Choose your starter"
-        description="A first friend. A whole world of possibilities."
-      />
       <div className="starter-intro">
         <Icon name="Heart" size={22} />
         <span>
-          Hold the main $POKE token to choose your starter. Your first partner stays with you, with
-          no redemption value.
+          Choose your first partner with your ${main?.ticker || 'KANTO'} holding. Your first partner
+          stays with you, with no redemption value.
           {mode === 'live' &&
             ' Until its first funded evolution, your starter earns Rare Candy only from your main-token holding.'}
         </span>
@@ -784,7 +787,8 @@ export function StarterPage() {
               className={
                 'starter-card ' + (choice === id ? 'selected ' : '') + (locked ? 'locked' : '')
               }
-              disabled={locked}
+              disabled={locked || busy || state.profile.starterChosen}
+              aria-pressed={choice === id}
               onClick={() => setChoice(id)}
               key={id}
             >
@@ -807,7 +811,9 @@ export function StarterPage() {
               <p>
                 {id === 1 ? 'Grass / Poison' : id === 4 ? 'Fire' : id === 7 ? 'Water' : 'Electric'}
               </p>
-              {locked && <span className="status-tag">Unlock above 1% of $POKE</span>}
+              {locked && (
+                <span className="status-tag">Unlock above 1% of ${main?.ticker || 'KANTO'}</span>
+              )}
             </button>
           );
         })}
@@ -825,12 +831,13 @@ export function StarterPage() {
           disabled={
             busy ||
             state.profile.starterChosen ||
+            (choice === 25 && !pikachu) ||
             (mode === 'live' ? !state.starterEligibility?.canChoose : !main?.holding)
           }
           onClick={async () => {
             if (await act({ type: 'starter.choose', speciesId: choice })) {
               toast(pokemonById(choice).name + ' is now in your PC.');
-              navigate('/pokemon');
+              onChosen?.();
             }
           }}
         >

@@ -635,19 +635,21 @@ export function Modal({
   onClose,
   wide = false,
   closeDisabled = false,
+  dismissible = true,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
   closeDisabled?: boolean;
+  dismissible?: boolean;
 }) {
   const id = useId(),
     panel = useRef<HTMLDivElement>(null),
     closeRef = useRef(onClose),
-    closeDisabledRef = useRef(closeDisabled);
+    closeDisabledRef = useRef(closeDisabled || !dismissible);
   closeRef.current = onClose;
-  closeDisabledRef.current = closeDisabled;
+  closeDisabledRef.current = closeDisabled || !dismissible;
   useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement;
     const unlockScroll = lockPageScroll(document);
@@ -687,7 +689,7 @@ export function Modal({
     <div
       className="modal-backdrop"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !closeDisabled) onClose();
+        if (e.target === e.currentTarget && !closeDisabled && dismissible) onClose();
       }}
     >
       <div
@@ -700,14 +702,16 @@ export function Modal({
       >
         <div className="modal-header">
           <h2 id={id}>{title}</h2>
-          <button
-            className="icon-button"
-            onClick={onClose}
-            disabled={closeDisabled}
-            aria-label="Close dialog"
-          >
-            <Icon name="X" />
-          </button>
+          {dismissible && (
+            <button
+              className="icon-button"
+              onClick={onClose}
+              disabled={closeDisabled}
+              aria-label="Close dialog"
+            >
+              <Icon name="X" />
+            </button>
+          )}
         </div>
         {children}
       </div>

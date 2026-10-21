@@ -1,0 +1,97 @@
+.starter-welcome {
+  padding: 0 24px 24px;
+}
+.starter-welcome-copy {
+  margin: 0 0 14px;
+  color: var(--ink-muted, #667379);
+  font-size: 14px;
+}
+.starter-welcome .starter-intro {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  border-radius: 12px;
+}
+.starter-welcome .starter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.starter-welcome .starter-card {
+  min-width: 0;
+  padding: 12px 8px;
+  border: 2px solid #dedfd7;
+  border-radius: 16px;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+.starter-welcome .starter-card.selected {
+  transform: none;
+  border-color: #df7464;
+  background: #fff5e8;
+  box-shadow: 0 4px 0 #ead8bc;
+}
+.starter-welcome .starter-card > .pokemon-art {
+  width: 112px;
+  height: 112px;
+  max-width: 100%;
+  margin: 4px auto;
+}
+.starter-welcome .starter-card h2 {
+  font-size: 14px;
+}
+.starter-welcome .starter-card > p {
+  display: none;
+}
+.starter-welcome .starter-card .type-row {
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.starter-welcome .starter-card .type-chip {
+  font-size: 10px;
+}
+.starter-welcome .starter-card .status-tag {
+  white-space: normal;
+  font-size: 10px;
+}
+.starter-welcome .starter-confirm {
+  margin-top: 18px;
+}
+.starter-welcome .starter-confirm > p {
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.move-decision-dialog .modal-actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.move-decision-dialog .modal-actions > .button {
+  flex: 1 1 auto;
+}
+@media (max-width: 640px) {
+  .starter-welcome {
+    padding: 0 16px 18px;
+  }
+  .starter-welcome .starter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .starter-welcome .starter-card > .pokemon-art {
+    width: 88px;
+    height: 88px;
+  }
+  .starter-welcome .starter-card {
+    padding: 8px;
+  }
+  .starter-welcome .starter-confirm .button {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .starter-welcome .starter-card {
+    transition: none;
+  }
+}

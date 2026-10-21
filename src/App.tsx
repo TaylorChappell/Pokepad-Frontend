@@ -1,6 +1,7 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
 import { AppProvider } from './state/AppContext';
 import { Layout } from './components/Layout';
+import { TrainerPrompts } from './components/TrainerPrompts';
 import { EmptyState } from './components/UI';
 import { DiscoverPage, CoinPage } from './pages/Discover';
 import { RewardsPage, WalkPage } from './pages/Rewards';
@@ -111,6 +112,7 @@ export default function App() {
     <ErrorBoundary>
       <AppProvider>
         <Routes />
+        <TrainerPrompts />
       </AppProvider>
     </ErrorBoundary>
   );

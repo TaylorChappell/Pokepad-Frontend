@@ -29,8 +29,8 @@ export function rewardBudget(s: AppSnapshot, r: Reward) {
   const vault = s.coins.find((coin) => coin.id === r.originCoin)?.vault || 0;
   return fromLamports(lamports(r.backing) + lamports(r.evolutionReserve) + lamports(vault));
 }
-export function pendingMove(p: OwnedPokemon) {
-  return p.moveOffers.find(
+export function availableMoveOffers(p: OwnedPokemon) {
+  return p.moveOffers.filter(
     (offer) =>
       offer.status === 'pending' &&
       offer.level <= p.level &&
@@ -39,6 +39,9 @@ export function pendingMove(p: OwnedPokemon) {
         (previous) => previous.move === offer.move && previous.status === 'declined',
       ),
   );
+}
+export function pendingMove(p: OwnedPokemon) {
+  return availableMoveOffers(p)[0];
 }
 /** Demo funding policy: every evolution raises value by 50%, with a 0.02 SOL minimum. */
 export function evolutionValueIncrease(p: Pick<OwnedPokemon, 'speciesId' | 'backing'>) {
@@ -274,9 +277,8 @@ export function applyAction(
   if (action.type === 'pokemon.learn' || action.type === 'pokemon.declineMove') {
     const p = owned(action.id);
     if (p.locked) throw new Error('This Pokémon is currently unavailable.');
-    const offer = pendingMove(p);
-    if (!offer || offer.id !== action.offerId)
-      throw new Error('This move-learning opportunity is no longer available.');
+    const offer = availableMoveOffers(p).find((offer) => offer.id === action.offerId);
+    if (!offer) throw new Error('This move-learning opportunity is no longer available.');
     if (action.type === 'pokemon.declineMove') {
       offer.status = 'declined';
       activity({

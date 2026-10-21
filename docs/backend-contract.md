@@ -1,4 +1,4 @@
-# Kanto frontend API contract · interface v14
+# Kanto frontend API contract · interface v15
 
 The server lives in [TaylorChappell/kanto-backend](https://github.com/TaylorChappell/kanto-backend). Its [API documentation](https://github.com/TaylorChappell/kanto-backend/blob/main/docs/api.md), migrations and tests define authoritative behavior. This document records what the frontend consumes.
 
@@ -103,3 +103,11 @@ Live creator fees split 30% creator / 20% platform / 50% rewards, with isolated 
 Legacy local storage is a demo-only compatibility path, never authoritative live inventory. Demo reward selection and its provisional 1,000-candy/+50% (minimum 0.02 SOL) evolution formula remain separate from server policy. Unknown historical variants are preserved, and old marketplace remnants migrate without inventing backing.
 
 Before enabling live flows, follow backend deployment instructions for RPC/indexing, fee recipients, token configuration, treasury/escrow workers, backups, flags and readiness. Complete real-wallet funding, confirmation, settlement and recovery acceptance. The current combat rules cover 48 attacks and 151 species, not every cartridge mechanic; reward randomness is server CSPRNG, not a VRF.
+
+## Automatic trainer prompts
+
+The frontend opens mandatory starter selection only for an authenticated wallet whose snapshot matches that wallet and whose server `starterEligibility.canChoose` is true. Once opened it stays required until `profile.starterChosen` is true; temporarily syncing holdings keep the chooser open with its action disabled. The existing atomic `starter.choose` action remains authoritative.
+
+Pending earned move offers and server-funded `evolutionPreview.canEvolve` opportunities queue individual dialogs. Evolution prompts respect the account’s evolution notification preference. Later does not dispatch a decline or spend Rare Candy; it records a browser-local acknowledgement scoped to API origin, wallet and offer/evolution stage. Manual My PC actions remain available. No new backend endpoint or schema is required.
+
+Visible authenticated accounts poll bootstrap every 10 seconds and refresh on window focus/visibility. Background reads are single-flight and are discarded after another action, reload, disconnect or wallet change. Failures preserve the current screen and retry later. Live egg notification updates use this read flow rather than the demo’s timer-triggered sync action.

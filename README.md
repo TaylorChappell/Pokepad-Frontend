@@ -1,4 +1,4 @@
-# Kanto frontend · interface v14
+# Kanto frontend · interface v15
 
 A Pokémon launchpad built with React, TypeScript and Vite. This repository contains the frontend; the matching API and workers live in [TaylorChappell/kanto-backend](https://github.com/TaylorChappell/kanto-backend).
 
@@ -41,6 +41,8 @@ npm run build
 | Account and How-to | Autosaving appearance/name/art/sound preferences, wallet controls and categorized instructions                                                                     |
 
 The trainer portrait contains only the trainer. Pixel artwork is the default, with drawn artwork available in settings. The loader shows only the Kanto emblem and wordmark. Search preserves the page width when opening or closing, and the sidebar becomes a drawer on mobile.
+
+Eligible authenticated main-token holders automatically receive a mandatory starter choice. The server’s saved `starterChosen` flag prevents repeat selections. New earned moves and funded evolutions open the same decision dialogs used in My PC, queued behind other dialogs and battles. **Later** preserves the opportunity in My PC and remembers that prompt per wallet/API in this browser; a different move offer or evolution stage can still prompt. Connected accounts refresh in the background every 10 seconds while visible and on returning to the tab, without replacing newer actions with stale reads.
 
 Favourites improve collection and team selection without changing Pokémon stats or SOL value. Pokédex discoveries remain after ownership ends. Its normal/shiny catalogue totals describe the full reference catalogue; they are **not owned inventory value or redeemable backing**. Older discovery records with no known variant remain unknown rather than being assigned a colour.
 

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../services/api';
+import { createAccountUpdates } from '../services/account-updates';
 import type { Action, AppSnapshot } from '../types';
 import { dismissBootScreen } from '../components/BootScreen';
 import {
@@ -23,7 +24,7 @@ interface ContextValue {
   disconnectWallet: () => Promise<void>;
   reload: () => Promise<AppSnapshot | null>;
 }
-const Context = createContext<ContextValue | null>(null);
+export const AppContext = createContext<ContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppSnapshot | null>(null),
     [error, setError] = useState(''),
@@ -41,7 +42,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     pendingActions = useRef(0);
   const sessionEpoch = useRef(0),
     loadId = useRef(0),
-    initialized = useRef(false);
+    initialized = useRef(false),
+    foregroundLoads = useRef(0);
   const toast = (text: string) => {
     setMessage(text);
     clearTimeout(timer.current);
@@ -49,6 +51,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const load = async (): Promise<AppSnapshot | null> => {
     const requestId = ++loadId.current;
+    foregroundLoads.current++;
     setError('');
     try {
       const next = await api.load();
@@ -58,6 +61,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (requestId === loadId.current)
         setError(e instanceof Error ? e.message : 'The backend is unavailable.');
       return null;
+    } finally {
+      foregroundLoads.current--;
     }
   };
   useEffect(() => {
@@ -99,7 +104,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (state || error) dismissBootScreen({ immediate: Boolean(error) });
   }, [state, error]);
   useEffect(() => {
-    if (!state) return;
+    if (!state || api.mode !== 'demo') return;
     const ready = state.rewards.some(
       (r) =>
         r.kind === 'egg' &&
@@ -111,12 +116,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       void act({ type: 'sync' });
     }
   }, [now, state]);
+  useEffect(() => {
+    if (api.mode !== 'live' || session.status !== 'authenticated' || !session.wallet) return;
+    const updates = createAccountUpdates({
+      wallet: session.wallet,
+      load: () => api.load(),
+      canRefresh: () =>
+        initialized.current &&
+        !inFlight.current &&
+        foregroundLoads.current === 0 &&
+        document.visibilityState !== 'hidden',
+      revision: () => loadId.current,
+      apply: (snapshot) => {
+        setState(snapshot);
+        setError('');
+      },
+    });
+    const refresh = () => void updates.refresh();
+    const interval = setInterval(refresh, 10000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      updates.stop();
+      clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [session.status, session.wallet]);
   const act = (action: Action): Promise<AppSnapshot | null> => {
     if (api.mode === 'live' && session.status !== 'authenticated') {
       if (action.type !== 'sync') toast('Connect your wallet to continue.');
       return Promise.resolve(null);
     }
     const epoch = sessionEpoch.current;
+    loadId.current += 1;
     inFlight.current = true;
     pendingActions.current += 1;
     setBusy(true);
@@ -158,7 +191,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       </div>
     );
   return (
-    <Context.Provider
+    <AppContext.Provider
       value={{
         state,
         mode: api.mode,
@@ -181,15 +214,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           </button>
         </div>
       )}
-    </Context.Provider>
+    </AppContext.Provider>
   );
 }
 export function useApp() {
-  const ctx = useContext(Context);
+  const ctx = useContext(AppContext);
   if (!ctx) throw new Error('AppProvider is required');
   return ctx;
 }
 
 export function useOptionalApp() {
-  return useContext(Context);
+  return useContext(AppContext);
 }
