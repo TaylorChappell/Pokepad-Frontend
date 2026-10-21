@@ -206,6 +206,22 @@ export function PokemonProgressDialog({
                     Use <strong>{evoStatus.candyRequired.toLocaleString()} Rare Candy</strong> to
                     evolve {pokemonById(evolution.from).name}.
                   </p>
+                  <div className="evolution-ready-outcomes" aria-label="Possible evolutions">
+                    {pokemonById(evolution.from).evolvesTo.map((next) => (
+                      <div className="evolution-mystery" key={next}>
+                        <span
+                          className="evolution-mystery-art"
+                          role="img"
+                          aria-label="Unknown evolution"
+                        >
+                          <span aria-hidden="true">
+                            <PokemonArt id={next} animated={false} />
+                          </span>
+                        </span>
+                        <strong>???</strong>
+                      </div>
+                    ))}
+                  </div>
                   {evolution.from === 133 && (
                     <p>
                       <strong>Three possible evolutions, each with an equal 1-in-3 chance.</strong>

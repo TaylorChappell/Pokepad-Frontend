@@ -30,7 +30,7 @@
 }
 body {
   margin: 0;
-  min-width: 340px;
+  min-width: 0;
 }
 button,
 input,

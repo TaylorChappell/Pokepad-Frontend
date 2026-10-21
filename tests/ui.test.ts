@@ -640,11 +640,11 @@ test('earned moves can be added or replace one move, while Eevee evolves to a fu
     assert.equal(learned.moveOffers[0].status, 'learned');
     assert.equal(document.querySelector('.pending-move-prompt'), null);
     await go('/pokemon/eevee');
-    await click(app.button('Evolution'));
+    assert.equal(document.querySelectorAll('.summary-menu button').length, 2);
+    await click(document.querySelector('.summary-evolve-button'));
     assert.equal(document.querySelector('.evolution-funding-note'), null);
     assert.equal(document.querySelectorAll('.evolution-mystery').length, 3);
     assert.equal(document.querySelectorAll('.evolution-mystery-art').length, 3);
-    await click(app.button('Evolve Pokémon'));
     assert.equal(document.querySelector('.evolution-reserve-copy'), null);
     assert.match(document.querySelector('[role="dialog"]')?.textContent || '', /1-in-3/);
     assert.equal(document.querySelector('[role="dialog"] select'), null);
@@ -689,12 +689,8 @@ test('declined moves stay dismissed on return and evolution is unavailable witho
       'Growl',
     ]);
     await go('/pokemon/bulbasaur');
-    await click(app.button('Evolution'));
-    assert.equal(app.button('Evolve Pokémon').disabled, true);
-    assert.match(
-      document.querySelector('.evolution-unavailable')?.textContent || '',
-      /Rare Candy/i,
-    );
+    assert.equal(document.querySelector('.summary-evolve-button'), null);
+    assert.ok(document.querySelector('.summary-candy-meter'));
     assert.equal(document.querySelector('[role="dialog"]'), null);
     assert.equal(app.saved().pokemon.find((p) => p.id === 'bulbasaur')?.backing, 0.08);
   } finally {
@@ -965,8 +961,16 @@ test('Pokémon summary exposes current HP and stats without individual reward-ti
     );
     assert.ok(app.document.querySelector('.summary-main-actions'));
     assert.ok(app.document.querySelector('.pending-move-prompt'));
-    await app.click(app.button('Details'));
+    assert.deepEqual(
+      [...app.document.querySelectorAll('.summary-menu button')].map((b) => b.textContent?.trim()),
+      ['Stats', 'Moves'],
+    );
+    await app.click(app.document.querySelector('[aria-label="Pokémon details"]'));
+    assert.ok(app.document.querySelector('.pokemon-record-modal'));
     assert.ok(app.document.querySelector('.summary-main-actions'));
+    await app.click(
+      app.document.querySelector('.pokemon-record-modal [aria-label="Close dialog"]'),
+    );
     await app.click(app.button('Stats'));
     assert.ok(app.document.querySelector('.summary-stats'));
   } finally {
@@ -1299,7 +1303,7 @@ test('PC bag heals only eligible Pokémon and move info opens the shared battle 
   });
   try {
     assert.equal(app.document.querySelector('.summary-battle-status'), null);
-    await app.click(app.button('Bag'));
+    await app.click(app.button('Use item'));
     const items = [...app.document.querySelectorAll<HTMLButtonElement>('.pc-care-items button')];
     const revive = items.find((b) => b.querySelector('strong')?.textContent?.startsWith('Revive'))!;
     assert.equal(revive.disabled, false);
@@ -1307,6 +1311,7 @@ test('PC bag heals only eligible Pokémon and move info opens the shared battle 
     await app.click(revive);
     assert.ok(app.saved().pokemon.find((p) => p.id === 'partner')!.health! > 0);
     assert.equal(app.saved().bag?.revive, 0);
+    await app.click(app.document.querySelector('[role="dialog"] [aria-label="Close dialog"]'));
     await app.click(app.button('Moves'));
     assert.equal(app.document.querySelector('.summary-move-card summary'), null);
     await app.click(app.document.querySelector('[aria-label="Preview Scratch"]'));
