@@ -142,10 +142,13 @@ function DifficultyPicker({
         >
           <Avatar
             profile={{ character: trainerCharacters[name], accessoryColor: trainerColors[name] }}
-            size={42}
+            size={60}
           />
-          <span>
+          <span className="difficulty-label">
             <strong>{name}</strong>
+            <small>
+              {trainerCharacters[name][0].toUpperCase() + trainerCharacters[name].slice(1)}
+            </small>
           </span>
           <span className="classic-difficulty-stars" aria-hidden="true">
             {[0, 1, 2, 3].map((i) => (
@@ -581,17 +584,6 @@ export function BattlesPage() {
     <header className="classic-page-heading battle-page-heading">
       <div>
         <h1>{mode === 'gym' ? gym?.name || 'Gym challenge' : 'Battle arena'}</h1>
-        <span>
-          {phase === 'battle'
-            ? mode === 'online'
-              ? 'Online · ' + (online.room ? battleWagerLabel(online.room) : 'Connecting')
-              : mode === 'gym'
-                ? 'Gym challenge · no wager'
-                : 'Offline · ' + difficulty
-            : phase === 'team'
-              ? 'Choose your party'
-              : 'Kanto practice league'}
-        </span>
       </div>
       {phase === 'battle' ? (
         <div className="classic-match-tools">
@@ -739,11 +731,11 @@ export function BattlesPage() {
         )}
         {mode === 'gym' && gymBattle.challenge?.result?.awarded && (
           <div className="gym-battle-reward-summary">
-            +{gymBattle.challenge.prize.points} points · +{gymBattle.challenge.prize.medals} medals
-            · {gymBattle.challenge.prize.items.berry} berries ·{' '}
+            +{gymBattle.challenge.prize.points} points · 1 badge ·{' '}
+            {gymBattle.challenge.prize.items.berry} berries ·{' '}
             {gymBattle.challenge.prize.items.revive} revives
             {gymBattle.challenge.result.manuals.map((m) => (
-              <span key={m}>Unlocked: {m}</span>
+              <span key={m}>Manual received: {m}</span>
             ))}
           </div>
         )}
@@ -946,7 +938,7 @@ export function BattlesPage() {
                           cancelLaunch();
                           setBattle(null);
                           setDisplayBattle(null);
-                          setPhase('team');
+                          setPhase('lobby');
                           setMatchSeed((seed) => seed + 1);
                         }}
                       >
@@ -983,7 +975,7 @@ export function BattlesPage() {
                           ? 'Finish the charged move'
                           : current.recharge
                             ? 'Take a recovery turn'
-                            : 'Choose an action'}
+                            : ''}
                     </small>
                   )}
                 </div>
@@ -1176,7 +1168,7 @@ export function BattlesPage() {
                     ? 'Friendly · no stakes'
                     : battleWagerLabel(online.room) + ' per trainer'
                 : 'Connecting'
-              : 'Practice · no stakes'}
+              : null}
           </span>
         </footer>
       </div>
@@ -1232,97 +1224,6 @@ export function BattlesPage() {
       </div>
     );
 
-  if (phase === 'team')
-    return (
-      <div className="battle-v8 battle-screen classic-team-screen">
-        {heading}
-        <div className="classic-team-desk">
-          <section className="classic-team-pick slot-team-pick">
-            <button
-              className="text-link"
-              onClick={() => {
-                cancelLaunch();
-                setPhase('lobby');
-              }}
-            >
-              <Icon name="ArrowLeft" size={15} />
-              Arena
-            </button>
-            <BattleTeamPicker
-              pokemon={state.pokemon}
-              selected={selectedIds}
-              onChange={(ids) => {
-                cancelLaunch();
-                setSelectedIds(ids);
-              }}
-              disabled={launching}
-            />
-          </section>
-          <aside className="battle-review classic-team-review">
-            <div className="classic-rival-heading">
-              <Avatar
-                profile={{
-                  character: trainerCharacters[difficulty],
-                  accessoryColor: trainerColors[difficulty],
-                }}
-                size={48}
-              />
-              <div>
-                <small>Your opponent</small>
-                <h2>{difficulty}</h2>
-              </div>
-            </div>
-            <DifficultyPicker
-              value={difficulty}
-              onChange={(value) => {
-                cancelLaunch();
-                setDifficulty(value);
-              }}
-            />
-            <div className="classic-rival-party">
-              {rivals.length ? (
-                rivals.map((fighter) => (
-                  <div key={fighter.id}>
-                    <PokemonArt id={fighter.speciesId} animated={false} />
-                    <strong>{pokemonById(fighter.speciesId).name}</strong>
-                    <small>Lv.{fighter.level}</small>
-                  </div>
-                ))
-              ) : (
-                <p>Select your first Pokémon to meet the rival team.</p>
-              )}
-            </div>
-            <div className="classic-rival-strength">
-              <span>
-                {rivals.length
-                  ? `Rival strength: ${relativeStrength}% of yours`
-                  : 'Your opponent scales to your party'}
-              </span>
-              <button
-                aria-label="New matchup"
-                onClick={() => {
-                  cancelLaunch();
-                  setMatchSeed((seed) => seed + 1);
-                }}
-              >
-                <Icon name="RefreshCw" size={16} />
-              </button>
-            </div>
-            <Button disabled={!chosen.length || launching} onClick={() => start()}>
-              {launching ? 'Preparing battle…' : launchError ? 'Retry battle' : 'Start battle'}
-              <Icon name="Swords" size={17} />
-            </Button>
-            {launchError && (
-              <p className="battle-load-error" role="alert">
-                {launchError}
-              </p>
-            )}
-            <small className="classic-practice-note">Full battle HP · no stakes</small>
-          </aside>
-        </div>
-      </div>
-    );
-
   return (
     <div className="battle-v8 battle-screen arena-lobby">
       {heading}
@@ -1333,9 +1234,8 @@ export function BattlesPage() {
               <FieldGround scene={scene} />
 
               <div className="classic-preview-caption">
-                <span>OFFLINE BATTLE</span>
                 <h2>Your next challenger.</h2>
-                <p>Pick a rival. Build your party. Make your move.</p>
+                <p>Choose your rival and your team.</p>
               </div>
               <div
                 className="classic-preview-player battle-placed-actor"
@@ -1364,43 +1264,27 @@ export function BattlesPage() {
               </div>
               <span className="classic-preview-versus">VS</span>
             </div>
-            <div className="classic-lobby-party">
-              <div>
-                <h3>Your party starts here</h3>
-                <span>Choose up to 3 Pokémon</span>
-              </div>
-              <div>
-                {[0, 1, 2].map((index) => (
-                  <button
-                    key={index}
-                    onClick={() => setPhase('team')}
-                    aria-label="Choose your battle party"
-                  >
-                    {lobbyParty[index] ? (
-                      <>
-                        <PokemonArt
-                          id={lobbyParty[index].speciesId}
-                          shiny={lobbyParty[index].shiny}
-                          animated={false}
-                        />
-                        <span>{pokemonById(lobbyParty[index].speciesId).name}</span>
-                      </>
-                    ) : (
-                      <Pokeball size={28} />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <BattleTeamPicker
+              pokemon={state.pokemon}
+              selected={selectedIds}
+              onChange={(ids) => {
+                cancelLaunch();
+                setSelectedIds(ids);
+              }}
+              disabled={launching}
+            />
             <div className="classic-lobby-actions">
-              <span>
-                Just for fun<small>Your collection stays unchanged.</small>
-              </span>
-              <Button onClick={() => setPhase('team')}>
-                Build your party
-                <Icon name="ArrowRight" size={16} />
+              <span>{chosen.length ? chosen.length + ' Pokémon selected' : ''}</span>
+              <Button disabled={!chosen.length || launching} onClick={() => start()}>
+                {launching ? 'Preparing battle…' : 'Start battle'}
+                <Icon name="Swords" size={17} />
               </Button>
             </div>
+            {launchError && (
+              <p className="battle-load-error" role="alert">
+                {launchError}
+              </p>
+            )}
           </section>
           <aside className="classic-rival-desk">
             <h2>Choose a rival</h2>

@@ -2,8 +2,8 @@ import type { AppSnapshot, OwnedPokemon } from '../types';
 import { compareBattlePokemon, comparePokemonStrength } from './collection';
 import { getEvolutionStatus, pendingMove } from './model';
 export const POKEMON_SORTS = [
-  'Ready first',
   'Strongest first',
+  'Ready first',
   'Favourites first',
   'Highest value',
   'Highest level',
@@ -17,6 +17,11 @@ export function sortPokemon(
   const ready = (p: OwnedPokemon) =>
     !p.locked && (!!pendingMove(p) || !!(state && getEvolutionStatus(state, p).canEvolve));
   return [...list].sort((a, b) => {
+    if (sort === 'Strongest first')
+      return (
+        Number(b.id === state?.profile.equippedId) - Number(a.id === state?.profile.equippedId) ||
+        compareBattlePokemon(a, b)
+      );
     if (sort === 'Highest value') return b.backing - a.backing || comparePokemonStrength(a, b);
     if (sort === 'Highest level') return b.level - a.level || comparePokemonStrength(a, b);
     if (sort === 'Newest') return b.acquiredAt - a.acquiredAt || comparePokemonStrength(a, b);

@@ -1,3 +1,4 @@
+import { ContentSkeleton } from './Loading';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { Coin } from '../types';
@@ -381,7 +382,10 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
                 {trainerError}
               </p>
             )}
-            {!results.length && (
+            {trainerLoading && !results.length && (
+              <ContentSkeleton kind="rows" label="Looking for a trainer" />
+            )}
+            {!results.length && !trainerLoading && (
               <div className="coin-search-empty" role="status">
                 <Pokeball size={48} />
                 <h3>{trainerLoading ? 'Looking for a trainer…' : 'No matches found'}</h3>

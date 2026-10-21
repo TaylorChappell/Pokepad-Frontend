@@ -1,4 +1,4 @@
-import { MovePreview } from './MovePreview';
+import { MoveLearningPanel } from './MoveLearning';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { useRevealAudio } from '../audio/sound';
@@ -49,8 +49,6 @@ export function PokemonProgressDialog({
 }) {
   const { state, act, busy, toast } = useApp();
   const p = state.pokemon.find((pokemon) => pokemon.id === id);
-  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
-  const [declining, setDeclining] = useState(false);
   const [evolution, setEvolution] = useState<EvolutionScene | null>(() =>
     p && dialog === 'evolve' ? { from: p.speciesId, before: p.backing, phase: 'ready' } : null,
   );
@@ -116,8 +114,8 @@ export function PokemonProgressDialog({
     });
     setEvolution(scene);
   };
-  const learn = async () => {
-    if (!offer || busy || p.locked || (p.moves.length >= 4 && replaceIndex === null)) return;
+  const learn = async (replaceIndex?: number) => {
+    if (!offer || busy || p.locked || (p.moves.length >= 4 && replaceIndex === undefined)) return;
     const result = await act({
       type: 'pokemon.learn',
       id: p.id,
@@ -143,103 +141,15 @@ export function PokemonProgressDialog({
   return (
     <>
       {dialog === 'learn' && offer && newMove && (
-        <Modal
-          title={declining ? 'Do not learn ' + offer.move + '?' : 'A new move!'}
-          onClose={closeDialog}
-          closeDisabled={busy}
-        >
-          <div className="move-decision-dialog">
-            <div className="move-decision-title">
-              <PokemonArt id={p.speciesId} shiny={p.shiny} />
-              <p>
-                <strong>{species.name}</strong> wants to learn <strong>{offer.move}</strong>.
-              </p>
-            </div>
-            {declining ? (
-              <>
-                <p className="move-final-warning">
-                  This opportunity will be declined permanently. {species.name} will not be offered
-                  this move again.
-                </p>
-                <div className="modal-actions">
-                  <Button variant="secondary" disabled={busy} onClick={() => setDeclining(false)}>
-                    Go back
-                  </Button>
-                  <Button variant="danger" disabled={busy || p.locked} onClick={decline}>
-                    Do not learn
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <MovePreview name={offer.move} speciesId={p.speciesId} shiny={p.shiny} />
-                <div className="new-move-record">
-                  <div>
-                    <h3>{offer.move}</h3>
-                    <TypeChip type={newMove.type} />
-                  </div>
-                  <p>{newMove.description}</p>
-                  <dl>
-                    <div>
-                      <dt>POWER</dt>
-                      <dd>{newMove.power ?? '—'}</dd>
-                    </div>
-                    <div>
-                      <dt>ACCURACY</dt>
-                      <dd>{newMove.accuracy === null ? '—' : newMove.accuracy + '%'}</dd>
-                    </div>
-                    <div>
-                      <dt>PP</dt>
-                      <dd>{newMove.pp}</dd>
-                    </div>
-                  </dl>
-                </div>
-                {p.moves.length >= 4 ? (
-                  <>
-                    <p className="move-forget-label">
-                      A Pokémon can only know four moves. Which should it forget?
-                    </p>
-                    <div className="move-forget-options">
-                      {p.moves.map((move, index) => (
-                        <button
-                          key={move}
-                          disabled={busy || p.locked}
-                          className={replaceIndex === index ? 'selected' : ''}
-                          onClick={() => setReplaceIndex(index)}
-                        >
-                          <span>{index + 1}</span>
-                          <strong>{move}</strong>
-                          <span>{replaceIndex === index ? '◀' : ''}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="move-forget-label">
-                    An empty move slot is available. No move needs to be forgotten.
-                  </p>
-                )}
-                <div className="modal-actions">
-                  <Button variant="secondary" disabled={busy} onClick={closeDialog}>
-                    Later
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    disabled={busy || p.locked}
-                    onClick={() => setDeclining(true)}
-                  >
-                    Do not learn
-                  </Button>
-                  <Button
-                    disabled={busy || p.locked || (p.moves.length >= 4 && replaceIndex === null)}
-                    onClick={learn}
-                  >
-                    Learn {offer.move}
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
+        <Modal title="A new move!" onClose={closeDialog} closeDisabled={busy}>
+          <MoveLearningPanel
+            pokemon={p}
+            move={offer.move}
+            busy={busy}
+            onLearn={learn}
+            onDecline={decline}
+            onLater={closeDialog}
+          />
         </Modal>
       )}
       {dialog === 'evolve' && evolution && (

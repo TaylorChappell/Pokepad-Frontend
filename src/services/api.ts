@@ -44,7 +44,12 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
   const nonNegative = (value: unknown) =>
     typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : 0;
   s.bag ||= { berry: 3, revive: 1, potion: 2 };
-  s.gymProgress ||= { medals: 0, points: 0, wins: 0, manuals: [], claimedToday: [] };
+  s.gymProgress ||= { badges: 0, points: 0, wins: 0, manuals: {}, claimedToday: [] };
+  if (Array.isArray(s.gymProgress.manuals)) {
+    s.gymProgress.manuals = Object.fromEntries(s.gymProgress.manuals.map((m: string) => [m, 1]));
+    s.gymProgress.badges = s.gymProgress.wins;
+  }
+  s.gymProgress.badges ??= s.gymProgress.wins;
   s.version = 2;
   s.profile.artStyle = (s.profile as Profile).artStyle === 'drawn' ? 'drawn' : 'pixel';
   s.pokemon = s.pokemon.map((item) => {
@@ -64,6 +69,8 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
     const evoCost = evolutionValueIncrease(p);
     if (evoCost > p.evolutionReserve)
       p.rareCandy = Math.min(p.rareCandy, Math.floor((p.evolutionReserve / evoCost) * 1000));
+    delete p.baseMoves;
+    delete p.gymManual;
     p.health = getPokemonHealth(p).current;
     return p;
   });

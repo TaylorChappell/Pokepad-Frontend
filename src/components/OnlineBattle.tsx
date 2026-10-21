@@ -1,3 +1,4 @@
+import { ContentSkeleton } from './Loading';
 import { BattleRoomReview } from './BattleRoomReview';
 import type { BattleRules } from '../battle/rules';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -801,19 +802,6 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
             <span className="battle-desk-label">LINK ARENA</span>
             <h2>Find your rival</h2>
           </div>
-          <span
-            className={'online-link-status ' + (online.connected ? 'connected' : '')}
-            title={
-              eligible
-                ? online.connected
-                  ? 'Connected to the battle server'
-                  : 'Connecting to the battle server'
-                : 'Sign in to play online'
-            }
-          >
-            <i />
-            {eligible ? (online.connected ? 'Online' : 'Connecting') : 'Offline'}
-          </span>
         </header>
         <div className="online-desk-tabs" role="tablist" aria-label="Room action">
           <button
@@ -897,13 +885,11 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                   );
                 })}
               </div>
-              {(caps?.sol !== true || caps?.token !== true) && (
+              {mode !== 'demo' && (caps?.sol !== true || caps?.token !== true) && (
                 <p className="online-escrow-note">
-                  {mode === 'demo'
-                    ? 'SOL and token stakes require the live escrow service.'
-                    : caps?.monetaryWagerReason ||
-                      online.capabilitiesError ||
-                      'Checking on-chain wager availability…'}
+                  {caps?.monetaryWagerReason ||
+                    online.capabilitiesError ||
+                    'Checking on-chain wager availability…'}
                 </p>
               )}
               {(wager === 'sol' || wager === 'token') && (
@@ -1035,7 +1021,7 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                   />
                 </label>
               </details>
-              {loadingPreview && <p role="status">Checking the room’s terms…</p>}
+              {loadingPreview && <ContentSkeleton kind="rows" label="Loading room details" />}
               {previewError && (
                 <p className="online-error" role="alert">
                   {previewError}

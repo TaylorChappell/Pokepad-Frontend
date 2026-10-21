@@ -268,6 +268,8 @@ test('move popups support Later without declining, survive refresh, and learn a 
       s.pokemon[0].moveOffers.push({ id: 'offer-2', move: 'Slash', level: 30, status: 'pending' });
     });
     assert.match(document.querySelector('[role="dialog"]')!.textContent!, /wants to learn Slash/);
+    assert.equal(document.querySelector('.move-forget-options'), null);
+    await h.click(h.button('Learn Slash'));
     assert.ok(h.button('Learn Slash').disabled);
     await h.click(document.querySelector('.move-forget-options button')!);
     await h.click(h.button('Learn Slash'));

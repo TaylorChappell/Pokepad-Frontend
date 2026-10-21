@@ -1,3 +1,4 @@
+import { ContentSkeleton } from '../components/Loading';
 import { TrainerBanner } from '../components/TrainerImages';
 import { useEffect, useMemo, useState } from 'react';
 import { Avatar, EmptyState, Icon, PokemonArt, SolValue, TypeChip } from '../components/UI';
@@ -56,9 +57,7 @@ export function TrainerPage({ wallet }: { wallet: string }) {
     return (
       <div className="trainer-public-page">
         {back}
-        <div className="trainer-profile-loading" role="status">
-          Loading trainer profile…
-        </div>
+        <ContentSkeleton kind="profile" label="Loading trainer profile" />
       </div>
     );
   if (trainer === null)

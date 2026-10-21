@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PokemonBattleInfo } from './PokemonBattleInfo';
 import type { OwnedPokemon } from '../types';
 import { pokemonById } from '../data/pokemon';
 import { getPokemonHealth } from '../data/stats';
@@ -73,6 +74,7 @@ export function BattleTeamPicker({
   disabled?: boolean;
 }) {
   const app = useOptionalApp();
+  const [infoId, setInfoId] = useState<string | null>(null);
   const [slotOrder, setSlotOrder] = useState<string[]>([]);
   const [slot, setSlot] = useState<number | null>(null),
     [query, setQuery] = useState(''),
@@ -124,7 +126,6 @@ export function BattleTeamPicker({
             </span>
           </h2>
         </div>
-        <p>Select a slot to open your PC.</p>
       </header>
       <div className="battle-party-slots">
         {Array.from({ length: 3 }, (_, index) => {
@@ -244,30 +245,38 @@ export function BattleTeamPicker({
               const reason = battleAvailability(p, pokemonWager),
                 hp = getPokemonHealth(p);
               return (
-                <button
-                  className={'battle-picker-pokemon ' + (ids.includes(p.id) ? 'selected' : '')}
-                  key={p.id}
-                  disabled={disabled || !!reason}
-                  onClick={() => choose(p.id)}
-                  aria-label={
-                    'Choose ' + pokemonById(p.speciesId).name + (reason ? ', ' + reason : '')
-                  }
-                >
-                  <span className="picker-level">
-                    Lv. {p.level}
-                    {p.favourite ? ' ♥' : ''}
-                  </span>
-                  <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
-                  <strong>{pokemonById(p.speciesId).name}</strong>
-                  <span className="type-row">
-                    {pokemonById(p.speciesId).types.map((t) => (
-                      <TypeChip key={t} type={t} />
-                    ))}
-                  </span>
-                  <small>
-                    {reason || `${hp.current}/${hp.max} HP · ${pokemonStrength(p)} strength`}
-                  </small>
-                </button>
+                <article className="party-picker-entry" key={p.id}>
+                  <button
+                    className={'battle-picker-pokemon ' + (ids.includes(p.id) ? 'selected' : '')}
+                    disabled={disabled || !!reason}
+                    onClick={() => choose(p.id)}
+                    aria-label={
+                      'Choose ' + pokemonById(p.speciesId).name + (reason ? ', ' + reason : '')
+                    }
+                  >
+                    <span className="picker-level">
+                      Lv. {p.level}
+                      {p.favourite ? ' ♥' : ''}
+                    </span>
+                    <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                    <strong>{pokemonById(p.speciesId).name}</strong>
+                    <span className="type-row">
+                      {pokemonById(p.speciesId).types.map((t) => (
+                        <TypeChip key={t} type={t} />
+                      ))}
+                    </span>
+                    <small>
+                      {reason || `${hp.current}/${hp.max} HP · ${pokemonStrength(p)} strength`}
+                    </small>
+                  </button>
+                  <button
+                    className="picker-info move-info-button"
+                    aria-label={'View ' + pokemonById(p.speciesId).name + ' battle info'}
+                    onClick={() => setInfoId(p.id)}
+                  >
+                    <Icon name="Info" size={16} />
+                  </button>
+                </article>
               );
             })}
           </div>
@@ -291,6 +300,12 @@ export function BattleTeamPicker({
             )}
           </div>
         </Modal>
+      )}
+      {infoId && pokemon.find((p) => p.id === infoId) && (
+        <PokemonBattleInfo
+          pokemon={pokemon.find((p) => p.id === infoId)!}
+          onClose={() => setInfoId(null)}
+        />
       )}
     </section>
   );

@@ -22,21 +22,67 @@ export const PC_ITEMS: Record<
     fainted: true,
   },
 };
+/** Every manual is a consumable item, usable on any Pokémon that does not know it. */
 export const GYM_MANUALS = [
-  { move: 'Thunder Wave', wins: 1 },
-  { move: 'Rest', wins: 3 },
-  { move: 'Swords Dance', wins: 7 },
-] as const;
+  ...[
+    'Swift',
+    'Rest',
+    'Thunder Wave',
+    'Swords Dance',
+    'Agility',
+    'Confusion',
+    'Harden',
+    'Leech Life',
+    'Low Kick',
+    'Sleep Powder',
+  ].map((move) => ({ move, minStrength: 1200 })),
+  ...[
+    'Body Slam',
+    'Rock Slide',
+    'Double-Edge',
+    'Slash',
+    'Fly',
+    'Dream Eater',
+    'Razor Leaf',
+    'Flamethrower',
+    'Thunderbolt',
+    'Ice Beam',
+  ].map((move) => ({ move, minStrength: 1800 })),
+  ...[
+    'Earthquake',
+    'Psychic',
+    'Surf',
+    'Fire Blast',
+    'Hydro Pump',
+    'Solar Beam',
+    'Hyper Beam',
+    'Dragon Rage',
+    'Recover',
+    'Fire Spin',
+  ].map((move) => ({ move, minStrength: 2400 })),
+];
+export const manualPool = (strength: number) =>
+  GYM_MANUALS.filter((m) => m.minStrength <= strength);
+export function manualDropChance(strength: number) {
+  return strength < 1200 ? 0 : strength < 1800 ? 0.25 : strength < 2400 ? 0.4 : 0.6;
+}
+export function drawGymManual(strength: number, random: () => number): string | null {
+  const pool = manualPool(strength);
+  if (!pool.length || random() >= manualDropChance(strength)) return null;
+  return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))].move;
+}
 export interface GymPrize {
   points: number;
-  medals: number;
+  badges: number;
+  manualChance: number;
   items: Record<PcItem, number>;
 }
 export function gymPrize(strength: number): GymPrize {
   const s = Math.max(0, Math.floor(strength));
   return {
     points: Math.max(30, Math.floor(s / 10)),
-    medals: Math.max(1, Math.floor(s / 400)),
+    badges: 1,
+    manualChance: manualDropChance(s),
     items: { berry: 1 + Math.floor(s / 1800), revive: 1 + Math.floor(s / 3000), potion: 0 },
   };
 }
@@ -63,10 +109,10 @@ export interface GymView {
   prize: GymPrize;
 }
 export interface GymProgress {
-  medals: number;
+  badges: number;
   points: number;
   wins: number;
-  manuals: string[];
+  manuals: Record<string, number>;
   claimedToday: string[];
   activeChallengeId?: string;
 }

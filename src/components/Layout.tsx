@@ -20,7 +20,7 @@ const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/guide', label: 'How-to', icon: 'BookOpen' },
 ];
 export function Layout({ path, children }: { path: string; children: ReactNode }) {
-  const { state, act, mode, session } = useApp(),
+  const { state, now, act, mode, session } = useApp(),
     [panel, setPanel] = useState<'notifications' | 'account' | null>(null),
     [mobile, setMobile] = useState(false),
     [searchOpen, setSearchOpen] = useState(false);
@@ -246,11 +246,18 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               >
                 <Icon name={item.icon} size={19} />
                 <span>{item.label}</span>
-                {item.path === '/rewards' && (
-                  <span className="nav-count">
-                    {state.rewards.filter((r) => !r.openedAt).length}
-                  </span>
-                )}
+                {item.path === '/rewards' &&
+                  state.rewards.some(
+                    (r) => !r.openedAt && (r.kind === 'pack' || r.readyAt <= now),
+                  ) && (
+                    <span className="nav-count" aria-label="Claimable rewards">
+                      {
+                        state.rewards.filter(
+                          (r) => !r.openedAt && (r.kind === 'pack' || r.readyAt <= now),
+                        ).length
+                      }
+                    </span>
+                  )}
               </a>
             </div>
           ))}

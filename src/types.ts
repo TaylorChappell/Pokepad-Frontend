@@ -234,9 +234,10 @@ export type Action =
   | { type: 'notification.read'; id?: string }
   | { type: 'reward.open'; id: string }
   | { type: 'pokemon.item'; id: string; item: PcItem }
-  | { type: 'pokemon.manual'; id: string; move: string | null; slot?: number }
+  | { type: 'pokemon.manual'; id: string; move: string; slot?: number }
   | {
       type: 'gym.demo.finish';
+      strength: number;
       id: string;
       coinId: string;
       prize: GymPrize;

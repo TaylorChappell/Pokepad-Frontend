@@ -144,3 +144,5 @@ export const BATTLE_PRELOAD = [
   ...Object.values(MOVE_SOUNDS),
   ...Object.values(BATTLE_SOUNDS),
 ].flat();
+
+export const MOVE_LEARN_SOUND: readonly SoundLayer[] = [sample('LevelUp', 1.81, 0, 0.65)];

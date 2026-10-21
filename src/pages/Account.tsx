@@ -111,7 +111,7 @@ export function PortfolioPage() {
           <Icon name="ArrowRight" size={15} />
         </a>
       </div>
-      <div className="panel table-wrap">
+      <div className="panel table-wrap portfolio-holdings">
         <table>
           <thead>
             <tr>
@@ -135,25 +135,25 @@ export function PortfolioPage() {
                     </span>
                   </a>
                 </td>
-                <td>
+                <td data-label="Holdings">
                   <strong>{compact(c.holding)}</strong>
                   <small>{c.ticker}</small>
                 </td>
-                <td>{sol(c.holding * c.price)} SOL</td>
-                <td>
+                <td data-label="Est. value">{sol(c.holding * c.price)} SOL</td>
+                <td data-label="Hold streak">
                   <span className="streak-chip">
                     <Icon name="Flame" size={14} />
                     {c.holdingDays} days
                   </span>
                 </td>
-                <td>
+                <td data-label="Rewards">
                   {c.active ? (
                     <ModeBadge mode={c.mode} />
                   ) : (
                     <span className="status-tag">Paused · inactive</span>
                   )}
                 </td>
-                <td className={c.change >= 0 ? 'positive' : 'negative'}>
+                <td data-label="Last 24h" className={c.change >= 0 ? 'positive' : 'negative'}>
                   {c.change > 0 ? '+' : ''}
                   {c.change}%<Sparkline seed={c.pokemonId} negative={c.change < 0} />
                 </td>
@@ -497,6 +497,7 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                     className="button secondary randomise-trainer"
                     onClick={() =>
                       update({
+                        avatarImage: null,
                         character: CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)],
                         accessoryColor:
                           ACCENT_COLORS[Math.floor(Math.random() * ACCENT_COLORS.length)],
@@ -530,6 +531,7 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                   </button>
                 ))}
               </div>
+              <TrainerImageEditor section="avatar" profile={draft} onChange={update} />
               <div className="editor-label-row">
                 <h3>Accessory colour</h3>
               </div>
@@ -550,7 +552,7 @@ export function SettingsPage({ tab: initial = 'profile' }: { tab?: string }) {
                   </button>
                 ))}
               </div>
-              <TrainerImageEditor profile={draft} onChange={update} />
+              <TrainerImageEditor section="banner" profile={draft} onChange={update} />
               <div className="editor-display-name">
                 <label className="field-label" htmlFor="display-name">
                   Display name

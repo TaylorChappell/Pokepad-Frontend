@@ -1,10 +1,13 @@
+import { ItemSprite } from '../components/ItemSprite';
 import { useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { gymRankings } from '../state/gyms';
 import { pokemonById } from '../data/pokemon';
-import { GymBadge } from '../components/GymBadge';
+import { GymBadge, coinForBadge } from '../components/GymBadge';
 import { Button, EmptyState, Icon, Modal, PokemonArt, TypeChip } from '../components/UI';
-import { GYM_MANUALS, type GymDefender, type GymPrize } from '../game/gym-policy';
+import { ManualCatalogue } from '../components/MoveManuals';
+import { MoveInfoDialog } from '../components/MovePreview';
+import { type GymDefender, type GymPrize } from '../game/gym-policy';
 
 export function GymDefenders({
   defenders,
@@ -13,63 +16,87 @@ export function GymDefenders({
   defenders: GymDefender[];
   compact?: boolean;
 }) {
+  const [preview, setPreview] = useState<{ move: string; pokemon: GymDefender } | null>(null);
   return (
-    <div className={'gym-defenders ' + (compact ? 'compact' : '')}>
-      {[0, 1, 2].map((index) => {
-        const p = defenders[index];
-        return (
-          <div className={'gym-defender ' + (!p ? 'empty' : '')} key={p?.id || index}>
-            {p ? (
-              <>
-                <span className="gym-defender-level">Lv. {p.level}</span>
-                <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
-                <strong>{pokemonById(p.speciesId).name}</strong>
-                {!compact && (
-                  <>
-                    <div className="type-row">
-                      {pokemonById(p.speciesId).types.map((t) => (
-                        <TypeChip key={t} type={t} />
-                      ))}
-                    </div>
-                    <small>{p.strength.toLocaleString()} strength</small>
-                    <a href={'#/trainer/' + p.trainerWallet}>{p.trainerName}</a>
-                    <p>{p.moves.join(' · ')}</p>
-                  </>
-                )}
-              </>
-            ) : (
-              <>
-                <Icon name="Pokeball" size={35} />
-                <strong>Open defender slot</strong>
-                <small>Supporters’ Pokémon fill this automatically.</small>
-              </>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <>
+      <div className={'gym-defenders ' + (compact ? 'compact' : '')}>
+        {[0, 1, 2].map((index) => {
+          const p = defenders[index];
+          return (
+            <div className={'gym-defender ' + (!p ? 'empty' : '')} key={p?.id || index}>
+              {p ? (
+                <>
+                  <span className="gym-defender-level">Lv. {p.level}</span>
+                  <div className="gym-sprite-stage">
+                    <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                  </div>
+                  <strong>{pokemonById(p.speciesId).name}</strong>
+                  {!compact && (
+                    <>
+                      <div className="type-row">
+                        {pokemonById(p.speciesId).types.map((t) => (
+                          <TypeChip key={t} type={t} />
+                        ))}
+                      </div>
+                      <small>{p.strength.toLocaleString()} strength</small>
+                      <a href={'#/trainer/' + p.trainerWallet}>{p.trainerName}</a>
+                      <div className="gym-defender-moves">
+                        {p.moves.map((move) => (
+                          <button
+                            key={move}
+                            onClick={() => setPreview({ move, pokemon: p })}
+                            aria-label={'Preview ' + move}
+                          >
+                            <span>{move}</span>
+                            <Icon name="Info" size={14} />
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Icon name="Pokeball" size={28} />
+                  <strong>Open slot</strong>
+                  {!compact && <small>Filled by supporters’ Pokémon.</small>}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {preview && (
+        <MoveInfoDialog
+          name={preview.move}
+          speciesId={preview.pokemon.speciesId}
+          shiny={preview.pokemon.shiny}
+          onClose={() => setPreview(null)}
+        />
+      )}
+    </>
   );
 }
 export function GymRewards({ prize }: { prize: GymPrize }) {
   return (
     <div className="gym-prizes">
       <span>
+        <Icon name="Gym" />
+        <strong>1</strong>
+        <small>Gym badge</small>
+      </span>
+      <span>
         <Icon name="Trophy" />
         <strong>{prize.points}</strong>
         <small>League points</small>
       </span>
       <span>
-        <Icon name="Trophy" />
-        <strong>{prize.medals}</strong>
-        <small>Gym medals</small>
-      </span>
-      <span>
-        <i className="battle-item-art item-berry" />
+        <ItemSprite item="berry" size={32} />
         <strong>×{prize.items.berry}</strong>
         <small>Sitrus Berries</small>
       </span>
       <span>
-        <i className="battle-item-art item-revive" />
+        <ItemSprite item="revive" size={32} />
         <strong>×{prize.items.revive}</strong>
         <small>Revives</small>
       </span>
@@ -77,9 +104,10 @@ export function GymRewards({ prize }: { prize: GymPrize }) {
   );
 }
 export function GymsPage() {
-  const { state, mode } = useApp(),
-    gyms = gymRankings(state);
-  const [filter, setFilter] = useState('All gyms');
+  const { state } = useApp(),
+    gyms = gymRankings(state),
+    [filter, setFilter] = useState('All gyms'),
+    [catalogue, setCatalogue] = useState(false);
   const visible = gyms.filter(
     (g) =>
       filter === 'All gyms' ||
@@ -87,77 +115,97 @@ export function GymsPage() {
       (filter === 'My gym' && g.coinId === state.profile.supportedGym),
   );
   return (
-    <div className="gym-league-page">
-      <header className="gym-league-heading">
+    <div className="gyms-refresh">
+      <header className="gyms-heading">
         <div>
-          <span className="gym-eyebrow">KANTO LEAGUE</span>
-          <h1>Take on the gyms.</h1>
-          <p>
-            Every community fields its three strongest Pokémon. Beat tougher defenders to earn more
-            points, supplies and medals.
-          </p>
+          <h1>Gyms</h1>
+          <p>Three defenders. One badge. A new challenge in every community.</p>
         </div>
-        <div className="trainer-league-total">
-          <Icon name="Trophy" size={28} />
-          <strong>{state.gymProgress?.medals || 0}</strong>
-          <span>your medals</span>
-        </div>
+        <button className="button secondary" onClick={() => setCatalogue(true)}>
+          <Icon name="BookOpen" />
+          Move manuals
+        </button>
       </header>
-      <div className="gym-season-strip">
-        <span>
-          <Icon name="Trophy" />
-          Weekly league · resets Monday UTC
-        </span>
-        <span>
-          {state.gymProgress?.points || 0} career points · {state.gymProgress?.wins || 0} rewarded
-          wins
-        </span>
-        {state.gymProgress?.activeChallengeId && (
-          <a
-            className="button secondary"
-            href={'#/battles?gym=resume&challenge=' + state.gymProgress.activeChallengeId}
-          >
-            Resume challenge
-          </a>
-        )}
-        {mode === 'demo' && <small>Demo league</small>}
+      <section className="gym-passport">
+        <div className="gym-passport-total">
+          <Icon name="Gym" size={32} />
+          <strong>
+            {state.gymProgress?.badges || 0}
+            <small>Badges earned</small>
+          </strong>
+        </div>
+        <div className="gym-passport-collection">
+          <span>Your badge case</span>
+          <div>
+            {state.badges.map((id) => {
+              const coin = coinForBadge(state.coins, id);
+              return coin ? (
+                <a key={id} href={'#/gym/' + coin.id} title={coin.name}>
+                  <GymBadge coin={coin} size={42} />
+                </a>
+              ) : null;
+            })}
+            {!state.badges.length && <p>Defeat your first away gym to start collecting.</p>}
+          </div>
+        </div>
+        <div className="gym-passport-points">
+          <strong>{(state.gymProgress?.points || 0).toLocaleString()}</strong>
+          <span>Career points</span>
+          <small>{state.gymProgress?.claimedToday.length || 0}/5 rewards today</small>
+        </div>
+      </section>
+      {state.gymProgress?.activeChallengeId && (
+        <a
+          className="button secondary"
+          href={'#/battles?gym=resume&challenge=' + state.gymProgress.activeChallengeId}
+        >
+          Resume challenge
+        </a>
+      )}
+      <div className="gym-directory-toolbar">
+        <div className="gym-filter-row">
+          {['All gyms', 'Ready to challenge', 'My gym'].map((f) => (
+            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+              {f}
+            </button>
+          ))}
+        </div>
+        <span>Weekly league · resets Monday UTC</span>
       </div>
-      <div className="gym-filter-row">
-        {['All gyms', 'Ready to challenge', 'My gym'].map((f) => (
-          <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
-            {f}
-          </button>
-        ))}
-      </div>
-      <div className="gym-league-cards">
+      <div className="gym-directory">
         {visible.map((g) => (
           <a
             href={'#/gym/' + g.coinId}
-            className="gym-league-card"
+            className="gym-directory-row"
             key={g.coinId}
             style={{ '--gym-color': g.color } as CSSProperties}
           >
-            <header>
+            <div className="gym-directory-identity">
+              <span className="gym-directory-rank">{gyms.indexOf(g) + 1}</span>
               <GymBadge coin={g.coin} size={52} />
               <div>
                 <h2>{g.name}</h2>
                 <p>
-                  {g.supporters.toLocaleString()} supporting trainers
+                  {g.supporters.toLocaleString()} supporters
                   {g.coinId === state.profile.supportedGym ? ' · Your gym' : ''}
                 </p>
               </div>
-              <span className="gym-league-rank">#{gyms.indexOf(g) + 1}</span>
-            </header>
+            </div>
             <GymDefenders defenders={g.defenders} compact />
-            <footer>
-              <span>
-                <strong>{g.weeklyPoints.toLocaleString()}</strong> league points
-              </span>
-              <span>
-                <strong>{g.strength.toLocaleString()}</strong> defence strength
-              </span>
-              <Icon name="ArrowRight" />
-            </footer>
+            <div className="gym-directory-stat">
+              <strong>{g.strength.toLocaleString()}</strong>
+              <span>Team strength</span>
+              <small>
+                {g.prize.manualChance
+                  ? Math.round(g.prize.manualChance * 100) + '% manual chance'
+                  : 'No manual drops'}
+              </small>
+            </div>
+            <div className="gym-directory-stat">
+              <strong>{g.weeklyPoints.toLocaleString()}</strong>
+              <span>Weekly points</span>
+            </div>
+            <Icon name="ChevronRight" size={22} />
           </a>
         ))}
       </div>
@@ -167,32 +215,20 @@ export function GymsPage() {
           description="Choose another filter, or support an active coin to build its gym."
         />
       )}
-      <section className="gym-badge-case">
-        <header>
-          <h2>Your badge case</h2>
-          <p>Defeat an away gym to earn its coin badge.</p>
-        </header>
-        <div>
-          {state.badges.map((id) => {
-            const coin = state.coins.find((c) => c.id === id || c.ticker === id);
-            return coin ? (
-              <a key={id} href={'#/gym/' + coin.id} title={coin.name}>
-                <GymBadge coin={coin} size={54} />
-                <span>{coin.ticker}</span>
-              </a>
-            ) : null;
-          })}
-          {!state.badges.length && <p>Your first gym victory starts your collection.</p>}
-        </div>
-      </section>
+      <p className="gym-directory-note">
+        Each rewarded win earns one badge. Tougher gyms award more points and supplies, with a
+        chance of a move manual.
+      </p>
+      {catalogue && <ManualCatalogue onClose={() => setCatalogue(false)} />}
     </div>
   );
 }
 export function GymDetailPage({ id }: { id: string }) {
-  const { state, act, busy, toast, mode } = useApp(),
-    gym = gymRankings(state).find((g) => g.coinId === id);
-  const [confirm, setConfirm] = useState(false),
-    [tab, setTab] = useState('Defenders');
+  const { state, act, busy, toast } = useApp(),
+    gym = gymRankings(state).find((g) => g.coinId === id),
+    [confirm, setConfirm] = useState(false),
+    [rules, setRules] = useState(false),
+    [catalogue, setCatalogue] = useState(false);
   if (!gym)
     return (
       <EmptyState
@@ -201,107 +237,101 @@ export function GymDetailPage({ id }: { id: string }) {
       />
     );
   const own = state.profile.supportedGym === id,
-    ready = gym.defenders.length === 3;
-  const claimed = state.gymProgress?.claimedToday.includes(id),
+    ready = gym.defenders.length === 3,
+    claimed = state.gymProgress?.claimedToday.includes(id),
     cap = (state.gymProgress?.claimedToday.length || 0) >= 5;
   return (
-    <div className="gym-detail-v2" style={{ '--gym-color': gym.color } as CSSProperties}>
+    <div className="gym-detail-refresh" style={{ '--gym-color': gym.color } as CSSProperties}>
       <a className="pokemon-back-button" href="#/gyms">
         <Icon name="ArrowLeft" />
         Back to gyms
       </a>
-      <header className="gym-detail-title">
-        <GymBadge coin={gym.coin} size={82} />
+      <header className="gym-detail-header">
+        <GymBadge coin={gym.coin} size={72} />
         <div>
-          <span className="gym-eyebrow">{own ? 'YOUR COMMUNITY' : 'KANTO GYM'}</span>
           <h1>{gym.name}</h1>
           <p>
-            {gym.supporters} supporters · {gym.weeklyPoints.toLocaleString()} weekly league points
+            {gym.supporters} supporters · {gym.weeklyPoints.toLocaleString()} weekly points
+            {own ? ' · Your gym' : ''}
           </p>
         </div>
         <a className="button secondary" href={'#/coin/' + id}>
           View coin
         </a>
       </header>
-      <div className="gym-detail-layout">
-        <section className="gym-defence-desk">
-          <div className="gym-panel-heading">
-            <h2>Gym defence</h2>
-            <span>{gym.strength.toLocaleString()} strength</span>
-          </div>
-          <div className="gym-detail-tabs">
-            {['Defenders', 'How it works', 'Move rewards'].map((t) => (
-              <button key={t} onClick={() => setTab(t)} className={tab === t ? 'active' : ''}>
-                {t}
-              </button>
-            ))}
-          </div>
-          {tab === 'Defenders' ? (
-            <>
-              <GymDefenders defenders={gym.defenders} />
-              <p className="gym-footnote">
-                The three strongest Pokémon across eligible supporting holders. They defend as
-                full-health copies; the originals stay with their trainers.
-              </p>
-            </>
-          ) : tab === 'How it works' ? (
+      <div className="gym-challenge-layout">
+        <section className="gym-defence-panel">
+          <header>
+            <div>
+              <h2>The defending team</h2>
+              <p>The three strongest Pokémon from this gym’s supporters.</p>
+            </div>
+            <span className="gym-strength-pill">{gym.strength.toLocaleString()} strength</span>
+          </header>
+          <GymDefenders defenders={gym.defenders} />
+          <button
+            className="gym-rules-toggle"
+            aria-expanded={rules}
+            onClick={() => setRules(!rules)}
+          >
+            <Icon name="Info" size={17} />
+            Battle rules
+            <Icon name={rules ? 'ChevronUp' : 'ChevronDown'} size={16} />
+          </button>
+          {rules && (
             <div className="gym-rules-copy">
-              <h3>A community’s best three</h3>
               <p>
-                Strength is the total of HP, Attack, Defense, Special Attack, Special Defense and
-                Speed at each Pokémon’s current level. SOL value and shiny colour do not increase
-                strength.
+                Defenders are full-health copies. Your team uses its current HP and stays locked
+                during the challenge. Injured Pokémon recover afterward or can use items in My PC.
               </p>
-              <h3>One fair battle bag</h3>
               <p>
                 Both teams receive 2 Potions, 1 Revive and 1 Full Heal. An item uses a turn. Extra
-                items from your PC cannot be brought into the fight.
-              </p>
-              <h3>Earn your place in the league</h3>
-              <p>
-                The first away-gym win each UTC day earns its badge and rewards, up to five
-                different gyms per day. Points also help the gym you supported when the challenge
-                began. Home-gym battles are practice.
+                PC items cannot be brought into the fight.
               </p>
               <p>
-                Your team is locked during a challenge. Injured Pokémon recover after 10 minutes, or
-                you can use supplies in My PC. No Pokémon transfer or SOL wager.
+                Your first win against each away gym per UTC day earns one badge and rewards, up to
+                five different gyms per day. Home-gym battles and repeat wins are practice. Points
+                contribute to the gym you supported when the challenge began.
               </p>
-            </div>
-          ) : (
-            <div className="gym-manual-rewards">
-              {GYM_MANUALS.map((m) => (
-                <article key={m.move}>
-                  <Icon name="BookOpen" size={28} />
-                  <h3>{m.move}</h3>
-                  <p>{m.wins} rewarded victories</p>
-                  <span>
-                    {state.gymProgress?.manuals.includes(m.move)
-                      ? 'Unlocked'
-                      : 'Keep challenging gyms'}
-                  </span>
-                </article>
-              ))}
               <p>
-                Unlocks belong to your trainer. Equip one manual on any Pokémon through its PC Bag,
-                using one of its four move slots. Its original move returns when the manual is
-                removed.
+                Team strength comes from combat stats at each Pokémon’s level. SOL value and shiny
+                colour do not increase strength.
               </p>
             </div>
           )}
         </section>
-        <aside className="gym-challenge-desk">
-          <span className="gym-eyebrow">VICTORY REWARDS</span>
-          <h2>Take the challenge</h2>
+        <aside className="gym-reward-panel">
+          <h2>Victory rewards</h2>
           <GymRewards prize={gym.prize} />
-          <p>
+          <div className={'gym-manual-drop ' + (!gym.prize.manualChance ? 'no-drop' : '')}>
+            <Icon name="BookOpen" size={26} />
+            <div>
+              <strong>
+                {gym.prize.manualChance
+                  ? Math.round(gym.prize.manualChance * 100) + '% chance of a manual'
+                  : 'No move manual drops'}
+              </strong>
+              <p>
+                {gym.prize.manualChance
+                  ? 'One random move from this gym’s pool. Use it once on any Pokémon.'
+                  : 'Challenge a gym with at least 1,200 strength for a chance to earn manuals.'}
+              </p>
+              {gym.prize.manualChance > 0 && (
+                <button className="text-link" onClick={() => setCatalogue(true)}>
+                  View possible moves
+                  <Icon name="ArrowRight" size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="gym-reward-eligibility">
             {own
               ? 'Your home gym is practice only.'
               : claimed
-                ? 'You already earned this gym’s rewards today. You can still practice.'
+                ? 'Rewards already claimed here today. You can still practice.'
                 : cap
                   ? 'Daily rewards complete. You can still practice.'
-                  : 'Win to add these supplies to your PC bag and claim the gym badge.'}
+                  : 'Win to claim one badge, points and supplies.'}
           </p>
           <a
             aria-disabled={!ready}
@@ -315,7 +345,7 @@ export function GymDetailPage({ id }: { id: string }) {
               : 'Waiting for 3 defenders'}
             <Icon name="Swords" />
           </a>
-          <small>{mode === 'demo' ? 'Local demo · ' : ' '}No SOL rewards · no entry fee</small>
+          <small>No entry fee · no SOL rewards</small>
           <hr />
           <Button
             variant="secondary"
@@ -328,17 +358,18 @@ export function GymDetailPage({ id }: { id: string }) {
                 ? 'Support this gym'
                 : 'Hold this coin to support'}
           </Button>
-          <p className="gym-footnote">
+          <p className="gym-support-note">
             Support one gym at a time. Your strongest Pokémon can join its defence automatically.
           </p>
         </aside>
       </div>
+      {catalogue && <ManualCatalogue strength={gym.strength} onClose={() => setCatalogue(false)} />}
       {confirm && (
         <Modal title={'Support ' + gym.name + '?'} onClose={() => setConfirm(false)}>
           <div className="modal-body">
             <p>
-              Your Pokémon can represent this gym, and future challenge points will count toward its
-              weekly league total. You can change gyms once every 24 hours.
+              Your Pokémon can represent this gym, and future challenge points count toward its
+              weekly total. You can change gyms once every 24 hours.
             </p>
             <Button
               disabled={busy}

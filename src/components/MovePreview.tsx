@@ -15,7 +15,7 @@ import { getBodyPreviewManifest } from '../battle/body-animation';
 import { preloadEffectSprites } from '../battle/effect-sprites';
 import { useOptionalApp } from '../state/AppContext';
 import { moveByName } from '../data/moves';
-import { Modal, TypeChip, Icon } from './UI';
+import { Modal, TypeChip } from './UI';
 function useBody(id: number) {
   const value = useSyncExternalStore(
     (cb) => subscribeBodyAsset(id, cb),
@@ -38,8 +38,8 @@ export function MovePreview({
 }) {
   const app = useOptionalApp(),
     reduced = app?.state.profile.reducedMotion || false;
-  const [paused, setPaused] = useState(reduced),
-    [clock, setClock] = useState({ epoch: 0, active: false }),
+  const paused = reduced;
+  const [clock, setClock] = useState({ epoch: 0, active: false }),
     [size, setSize] = useState({ width: 540, height: 210 });
   const field = useRef<HTMLDivElement>(null),
     player = useBody(speciesId),
@@ -157,19 +157,6 @@ export function MovePreview({
         />
         <span className="move-preview-label">{clock.active ? name : 'Move preview'}</span>
       </div>
-      <footer>
-        <small>
-          {reduced ? 'Reduced motion is on' : 'Looping battle preview · no items or PP used'}
-        </small>
-        <button
-          aria-label={paused ? 'Play move preview' : 'Pause move preview'}
-          disabled={reduced}
-          onClick={() => setPaused((p) => !p)}
-        >
-          <Icon name={paused ? 'Play' : 'Pause'} size={13} />
-          {paused ? 'Play' : 'Pause'}
-        </button>
-      </footer>
     </section>
   );
 }

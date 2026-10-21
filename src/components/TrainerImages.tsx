@@ -62,8 +62,10 @@ async function prepareImage(file: File, kind: 'avatar' | 'banner'): Promise<stri
 export function TrainerImageEditor({
   profile,
   onChange,
+  section = 'banner',
 }: {
   profile: Profile;
+  section?: 'avatar' | 'banner';
   onChange: (patch: Partial<Profile>) => void;
 }) {
   const { mode, toast } = useApp(),
@@ -101,12 +103,12 @@ export function TrainerImageEditor({
   return (
     <section className="trainer-image-editor">
       <div className="editor-label-row">
-        <h3>Profile images</h3>
+        <h3>{section === 'avatar' ? 'Custom picture' : 'Banner'}</h3>
         <span>Auto saved</span>
       </div>
-      <TrainerBanner profile={profile} compact />
+      {section === 'banner' && <TrainerBanner profile={profile} compact />}
       <div className="trainer-upload-actions">
-        {(['avatar', 'banner'] as const).map((kind) => (
+        {[section].map((kind) => (
           <label className={'button secondary ' + (uploading ? 'disabled' : '')} key={kind}>
             <Icon name="Plus" size={15} />
             {uploading === kind
@@ -126,29 +128,33 @@ export function TrainerImageEditor({
             />
           </label>
         ))}
-        {profile.avatarImage && (
+        {section === 'avatar' && profile.avatarImage && (
           <button className="text-link" onClick={() => onChange({ avatarImage: null })}>
             Use trainer avatar
           </button>
         )}
       </div>
       <p className="field-help">PNG, JPEG or WebP · up to 2 MB · centred crop</p>
-      <div className="banner-presets" aria-label="Preset banners">
-        {TRAINER_BANNERS.map((b) => (
-          <button
-            type="button"
-            key={b.id}
-            className={
-              !profile.bannerImage && (profile.bannerPreset || 'meadow') === b.id ? 'selected' : ''
-            }
-            aria-pressed={!profile.bannerImage && (profile.bannerPreset || 'meadow') === b.id}
-            onClick={() => onChange({ bannerImage: null, bannerPreset: b.id })}
-          >
-            <TrainerBanner compact profile={{ bannerPreset: b.id }} />
-            <span>{b.name}</span>
-          </button>
-        ))}
-      </div>
+      {section === 'banner' && (
+        <div className="banner-presets" aria-label="Preset banners">
+          {TRAINER_BANNERS.map((b) => (
+            <button
+              type="button"
+              key={b.id}
+              className={
+                !profile.bannerImage && (profile.bannerPreset || 'meadow') === b.id
+                  ? 'selected'
+                  : ''
+              }
+              aria-pressed={!profile.bannerImage && (profile.bannerPreset || 'meadow') === b.id}
+              onClick={() => onChange({ bannerImage: null, bannerPreset: b.id })}
+            >
+              <TrainerBanner compact profile={{ bannerPreset: b.id }} />
+              <span>{b.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

@@ -563,10 +563,9 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
     await click(document.querySelector('button[aria-label="Close dialog"]'));
     assert.equal(document.querySelectorAll('.reward-v3-card').length, 1);
     await go('/battles');
-    await click(document.querySelector('.arena-hero .button'));
     await click(document.querySelector('[aria-label="Choose Pokémon for slot 1"]'));
     await click(document.querySelector('.battle-picker-pokemon:not(:disabled)'));
-    await click(document.querySelector('.battle-review>.button'));
+    await click(document.querySelector('.classic-lobby-actions>.button'));
     await app.until(
       () => !!document.querySelector('.battle-field'),
       'Battle artwork finishes loading before the commands appear',
@@ -630,8 +629,10 @@ test('earned moves can be added or replace one move, while Eevee evolves to a fu
     assert.equal(document.querySelector('.pending-move-prompt'), null);
     await go('/pokemon/bulbasaur');
     await click(document.querySelector('.pending-move-prompt'));
+    assert.equal(document.querySelector('.move-forget-options'), null);
+    await click(app.button('Learn Razor Leaf'));
     assert.equal(app.button('Learn Razor Leaf').disabled, true);
-    assert.equal(document.querySelectorAll('.move-forget-options button').length, 4);
+    assert.equal(document.querySelectorAll('.forget-move-row').length, 4);
     await click(document.querySelector('.move-forget-options button:first-child'));
     await click(app.button('Learn Razor Leaf'));
     const learned = app.saved().pokemon.find((p) => p.id === 'bulbasaur')!;
@@ -701,12 +702,20 @@ test('declined moves stay dismissed on return and evolution is unavailable witho
   }
 });
 
-test('My PC prioritises actionable Pokémon and keeps explicit sorting available', async () => {
+test('My PC pins the partner by default and keeps actionable sorting available', async () => {
   const app = await mountApp('/pokemon', (state) => {
     state.pokemon.find((p) => p.id === 'gengar')!.acquiredAt = Date.now();
     state.pokemon.find((p) => p.id === 'partner')!.locked = true;
   });
   try {
+    const sort = app.document.querySelector<HTMLSelectElement>('[aria-label="Sort Pokémon"]')!;
+    assert.equal(sort.value, 'Strongest first');
+    assert.equal(app.document.querySelector('.pc-slot')?.getAttribute('href'), '#/pokemon/partner');
+    assert.equal(app.document.querySelector('.pc-screen-light'), null);
+    await act(async () => {
+      sort.value = 'Ready first';
+      sort.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
+    });
     const cards = [...app.document.querySelectorAll('.pc-slot')];
     const firstPlain = cards.findIndex((card) => !card.classList.contains('pc-attention'));
     assert.ok(firstPlain > 0, 'Ready Pokémon appear first');
@@ -714,8 +723,6 @@ test('My PC prioritises actionable Pokémon and keeps explicit sorting available
     const locked = app.document.querySelector('a[href="#/pokemon/partner"].pc-slot');
     assert.equal(locked?.classList.contains('pc-attention'), false);
     assert.match(locked?.textContent || '', /Move waiting/);
-    const sort = app.document.querySelector<HTMLSelectElement>('[aria-label="Sort Pokémon"]')!;
-    assert.equal(sort.value, 'Ready first');
     await act(async () => {
       sort.value = 'Newest';
       sort.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
@@ -1091,7 +1098,6 @@ test('a faint opens mandatory party selection and the chosen reserve enters with
   try {
     const { document, click } = app;
     await click(document.querySelector('[aria-label="Master difficulty"]'));
-    await click(document.querySelector('.arena-hero .button'));
     for (const [index, name] of ['Magikarp', 'Mewtwo', 'Dragonite'].entries()) {
       await click(
         document.querySelector('[aria-label="Choose Pokémon for slot ' + (index + 1) + '"]'),
@@ -1100,7 +1106,7 @@ test('a faint opens mandatory party selection and the chosen reserve enters with
       assert.match(cards[0].textContent || '', /Magikarp/, 'Favourites come first in the picker');
       await click(cards.find((card) => card.querySelector('strong')?.textContent === name)!);
     }
-    await click(document.querySelector('.battle-review>.button'));
+    await click(document.querySelector('.classic-lobby-actions>.button'));
     await app.until(() => !!document.querySelector('.classic-fight'), 'Battle artwork loads', 4000);
     for (
       let attempt = 0;
@@ -1151,9 +1157,10 @@ test('a faint opens mandatory party selection and the chosen reserve enters with
   }
 });
 
-test('PC favourites persist, ready Pokémon lead by strength, and SOL sorting remains independent', async () => {
+test('PC defaults to partner, favourites, then strength; explicit SOL sorting remains independent', async () => {
   const app = await mountApp('/pokemon', (state) => {
     const base = state.pokemon[0];
+    state.profile.equippedId = 'ready';
     state.pokemon = [
       {
         ...base,
@@ -1205,8 +1212,9 @@ test('PC favourites persist, ready Pokémon lead by strength, and SOL sorting re
         select.value = value;
         select.dispatchEvent(new app.dom.window.Event('change', { bubbles: true }));
       });
+    assert.deepEqual(order(), ['#/pokemon/ready', '#/pokemon/middle', '#/pokemon/strong']);
     await sort('Strongest first');
-    assert.deepEqual(order(), ['#/pokemon/strong', '#/pokemon/middle', '#/pokemon/ready']);
+    assert.deepEqual(order(), ['#/pokemon/ready', '#/pokemon/middle', '#/pokemon/strong']);
     await sort('Highest value');
     assert.deepEqual(order(), ['#/pokemon/ready', '#/pokemon/middle', '#/pokemon/strong']);
     await sort('Favourites first');
@@ -1326,26 +1334,164 @@ test('reset demo reopens dismissed move and evolution prompts; banner presets au
     const confirm = app.document.querySelector('[role="dialog"]')!;
     await app.click(app.button('Reset demo', confirm));
     await app.until(
-      () => !!app.document.querySelector('.trainer-prompts [role="dialog"]'),
+      () => !!app.document.querySelector('[role="dialog"][data-modal-owner]'),
       'Reset opens trainer prompts',
     );
     assert.match(
-      app.document.querySelector('.trainer-prompts')!.textContent!,
+      app.document.querySelector('[role="dialog"][data-modal-owner]')!.textContent!,
       /wants to learn|Evolve/,
     );
     await app.click(app.button('Later'));
     await app.go('/settings');
     // Defer any other queued opportunities before opening settings again.
-    for (let i = 0; i < 10 && app.document.querySelector('.trainer-prompts [role="dialog"]'); i++)
+    for (let i = 0; i < 10 && app.document.querySelector('[role="dialog"][data-modal-owner]'); i++)
       await app.click(app.button('Later'));
     await app.click(app.button('Wallet'));
     await app.click(app.button('Reset demo'));
     await app.click(app.button('Reset demo', app.document.querySelector('[role="dialog"]')!));
     await app.until(
-      () => !!app.document.querySelector('.trainer-prompts [role="dialog"]'),
+      () => !!app.document.querySelector('[role="dialog"][data-modal-owner]'),
       'Reset clears previous Later acknowledgements',
     );
   } finally {
     await app.close();
+  }
+});
+
+test('PC actions show owned manuals, teach in two steps and consume only on confirmation', async () => {
+  const app = await mountApp('/pokemon', (s) => {
+    s.profile.starterClaimed = true;
+    s.pokemon.forEach((p) => {
+      p.moveOffers = [];
+      p.rareCandy = 0;
+    });
+    const p = s.pokemon[0];
+    p.locked = false;
+    p.moves = ['Tackle', 'Growl', 'Ember', 'Scratch'];
+    s.gymProgress!.manuals = { Rest: 1 };
+  });
+  try {
+    const { document, click } = app;
+    await click(
+      document.querySelector(
+        '[aria-label="More actions for ' +
+          pokemonById(app.initial.pokemon[0].speciesId).name +
+          '"]',
+      ),
+    );
+    await click(
+      [...document.querySelectorAll('[role=menuitem]')].find(
+        (e) => e.textContent === 'Teach move',
+      )!,
+    );
+    assert.match(document.querySelector('.owned-manuals')?.textContent || '', /Rest.*×1/);
+    await click(app.button('Teach'));
+    assert.equal(document.querySelector('.move-forget-options'), null);
+    assert.equal(document.querySelector('.move-preview-controls'), null);
+    assert.equal(
+      document.querySelector('.move-decision-dialog')?.closest('.modal-backdrop')?.parentElement,
+      document.body,
+      'Learning dialogs escape animated card bounds',
+    );
+    await click(app.button('Learn Rest'));
+    assert.equal(document.querySelectorAll('.forget-move-row').length, 4);
+    assert.equal(app.saved().gymProgress!.manuals.Rest, 1);
+    await click(app.button('Do not learn'));
+    assert.equal(app.saved().gymProgress!.manuals.Rest, 1);
+    await click(app.button('Teach'));
+    await click(app.button('Learn Rest'));
+    await click(document.querySelector('.forget-move-row > button'));
+    await click(app.button('Learn Rest'));
+    assert.equal(app.saved().gymProgress!.manuals.Rest, 0);
+    assert.match(
+      document.querySelector('.gym-manual-panel')?.textContent || '',
+      /You don’t have any move manuals/,
+    );
+  } finally {
+    await app.close();
+  }
+});
+test('offline team slots open a compact picker with nested Pokémon and move information', async () => {
+  const app = await mountApp('/battles');
+  try {
+    const { document, click } = app;
+    assert.equal(document.querySelectorAll('.battle-party-slot').length, 3);
+    assert.doesNotMatch(app.text(), /Build your party|Kanto practice league/);
+    await click(document.querySelector('[aria-label="Choose Pokémon for slot 1"]'));
+    await click(document.querySelector('.picker-info'));
+    assert.ok(document.querySelector('.party-info-stats'));
+    assert.ok(document.querySelector('.party-info-moves'));
+    await click(document.querySelector('.party-info-moves .move-info-button'));
+    assert.ok(document.querySelector('.move-preview-field'));
+    assert.doesNotMatch(app.text(), /Looping battle preview|no items or PP used/);
+    assert.equal(document.querySelector('button[aria-label="Pause preview"]'), null);
+    await act(async () =>
+      document.dispatchEvent(
+        new app.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      ),
+    );
+    assert.equal(document.querySelector('.move-info-dialog'), null);
+    assert.ok(document.querySelector('.pokemon-battle-info'));
+    await act(async () =>
+      document.dispatchEvent(
+        new app.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+      ),
+    );
+    assert.equal(document.querySelector('.pokemon-battle-info'), null);
+    assert.ok(document.querySelector('.party-picker-modal'));
+  } finally {
+    await app.close();
+  }
+});
+test('gym directory displays one-badge rewards and the complete inspectable manual catalogue', async () => {
+  const app = await mountApp('/gyms');
+  try {
+    assert.doesNotMatch(app.text(), /KANTO LEAGUE|medals/);
+    assert.ok(app.document.querySelector('.gym-directory-row'));
+    await app.click(app.button('Move manuals'));
+    assert.equal(app.document.querySelectorAll('.manual-catalogue-entry').length, 30);
+    await app.click(app.document.querySelector('.manual-catalogue-entry .move-info-button'));
+    assert.ok(app.document.querySelector('.move-preview-field'));
+  } finally {
+    await app.close();
+  }
+});
+
+test('reward indicator counts only unopened packs and eggs ready to hatch', async () => {
+  const app = await mountApp('/pokemon', (state) => {
+    const reward = { ...state.rewards[0], awardedAt: Date.now(), initialDuration: 3600000 };
+    state.rewards = [
+      { ...reward, id: 'ready', kind: 'egg', readyAt: Date.now() - 1000, openedAt: undefined },
+      {
+        ...reward,
+        id: 'incubating',
+        kind: 'egg',
+        readyAt: Date.now() + 3600000,
+        openedAt: undefined,
+      },
+      { ...reward, id: 'pack', kind: 'pack', readyAt: Date.now() + 3600000, openedAt: undefined },
+      { ...reward, id: 'opened', kind: 'pack', openedAt: Date.now() - 1000 },
+    ];
+  });
+  try {
+    assert.equal(app.document.querySelector('.nav-count')?.textContent, '2');
+    assert.equal(pokemonById(83).name, 'Farfetch’d');
+  } finally {
+    await app.close();
+  }
+  const empty = await mountApp('/pokemon', (state) => {
+    state.rewards = state.rewards.map((r) => ({
+      ...r,
+      kind: 'egg',
+      awardedAt: Date.now(),
+      initialDuration: 3600000,
+      readyAt: Date.now() + 3600000,
+      openedAt: undefined,
+    }));
+  });
+  try {
+    assert.equal(empty.document.querySelector('.nav-count'), null);
+  } finally {
+    await empty.close();
   }
 });

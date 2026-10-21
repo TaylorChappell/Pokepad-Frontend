@@ -430,7 +430,7 @@ export function createInitialState(now = Date.now()): AppSnapshot {
     version: 2,
     demoCandyUpdatedAt: now,
     bag: { berry: 3, revive: 1, potion: 2 },
-    gymProgress: { medals: 0, points: 0, wins: 0, manuals: [], claimedToday: [] },
+    gymProgress: { badges: 0, points: 0, wins: 0, manuals: {}, claimedToday: [] },
     profile,
     coins: decorateDemoCoins(structuredClone(COINS), now),
     pokemon,

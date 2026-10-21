@@ -1,3 +1,4 @@
+import { ContentSkeleton } from '../components/Loading';
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../state/AppContext';
 import { Avatar, Icon, PokemonArt, Pokeball } from '../components/UI';
@@ -164,6 +165,7 @@ export function AnalyticsPage() {
     .filter((event) => filter === 'all' || event.kind === filter)
     .slice(0, 100);
   const metrics = snapshot?.metrics;
+  const initialLoading = mode === 'live' && !snapshot && connection === 'connecting';
   const connectionLabel: Record<Connection, string> = {
     demo: 'Demo account',
     connecting: 'Connecting',
@@ -186,53 +188,59 @@ export function AnalyticsPage() {
       </header>
 
       <section className="analytics-metrics" aria-label="Platform totals">
-        <div className="analytics-metric rewards">
-          <span className="analytics-metric-icon">
-            <Icon name="Candy" size={24} />
-          </span>
-          <div className="analytics-metric-copy">
-            <span>Total rewards</span>
-            <strong aria-label={metrics ? undefined : 'Total rewards unavailable'}>
-              {metrics ? sol(metrics.totalRewardsSol) : '—'}
-              <em>
-                <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
-                SOL
-              </em>
-            </strong>
-            <small>Distributed to trainers · all time</small>
-          </div>
-        </div>
-        <div className="analytics-metric volume">
-          <span className="analytics-metric-icon">
-            <Icon name="TrendingUp" size={24} />
-          </span>
-          <div className="analytics-metric-copy">
-            <span>Platform trading volume</span>
-            <strong
-              aria-label={metrics ? undefined : 'Platform trading volume unavailable'}
-              title={metrics ? sol(metrics.platformTradingVolumeSol) + ' SOL' : undefined}
-            >
-              {metrics ? compact(metrics.platformTradingVolumeSol) : '—'}
-              <em>
-                <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
-                SOL
-              </em>
-            </strong>
-            <small>Across all Kanto coins · all time</small>
-          </div>
-        </div>
-        <div className="analytics-metric trainers">
-          <span className="analytics-metric-icon">
-            <Icon name="Users" size={24} />
-          </span>
-          <div className="analytics-metric-copy">
-            <span>Active users</span>
-            <strong aria-label={metrics ? undefined : 'Active users unavailable'}>
-              {metrics ? metrics.activeUsers24h.toLocaleString('en-US') : '—'}
-            </strong>
-            <small>Unique active trainers · past 24 hours</small>
-          </div>
-        </div>
+        {initialLoading ? (
+          <ContentSkeleton label="Loading platform totals" />
+        ) : (
+          <>
+            <div className="analytics-metric rewards">
+              <span className="analytics-metric-icon">
+                <Icon name="Candy" size={24} />
+              </span>
+              <div className="analytics-metric-copy">
+                <span>Total rewards</span>
+                <strong aria-label={metrics ? undefined : 'Total rewards unavailable'}>
+                  {metrics ? sol(metrics.totalRewardsSol) : '—'}
+                  <em>
+                    <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
+                    SOL
+                  </em>
+                </strong>
+                <small>Distributed to trainers · all time</small>
+              </div>
+            </div>
+            <div className="analytics-metric volume">
+              <span className="analytics-metric-icon">
+                <Icon name="TrendingUp" size={24} />
+              </span>
+              <div className="analytics-metric-copy">
+                <span>Platform trading volume</span>
+                <strong
+                  aria-label={metrics ? undefined : 'Platform trading volume unavailable'}
+                  title={metrics ? sol(metrics.platformTradingVolumeSol) + ' SOL' : undefined}
+                >
+                  {metrics ? compact(metrics.platformTradingVolumeSol) : '—'}
+                  <em>
+                    <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
+                    SOL
+                  </em>
+                </strong>
+                <small>Across all Kanto coins · all time</small>
+              </div>
+            </div>
+            <div className="analytics-metric trainers">
+              <span className="analytics-metric-icon">
+                <Icon name="Users" size={24} />
+              </span>
+              <div className="analytics-metric-copy">
+                <span>Active users</span>
+                <strong aria-label={metrics ? undefined : 'Active users unavailable'}>
+                  {metrics ? metrics.activeUsers24h.toLocaleString('en-US') : '—'}
+                </strong>
+                <small>Unique active trainers · past 24 hours</small>
+              </div>
+            </div>
+          </>
+        )}
       </section>
       <div className="analytics-data-caption">
         <p>

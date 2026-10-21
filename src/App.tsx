@@ -1,4 +1,5 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
+import { LoadingCoordinator } from './components/Loading';
 import { AppProvider } from './state/AppContext';
 import { Layout } from './components/Layout';
 import { TrainerPrompts } from './components/TrainerPrompts';
@@ -112,6 +113,7 @@ export default function App() {
     <ErrorBoundary>
       <AppProvider>
         <Routes />
+        <LoadingCoordinator />
         <TrainerPrompts />
       </AppProvider>
     </ErrorBoundary>

@@ -408,10 +408,9 @@ test('zero HP remains visible through real faint frames and stays hidden after t
       root.render(React.createElement(AppProvider, null, React.createElement(BattlesPage))),
     );
     await click('[aria-label="Master difficulty"]');
-    await click('.arena-hero .button');
     await click('[aria-label="Choose Pokémon for slot 1"]');
     await click('.battle-picker-pokemon:not(:disabled)');
-    await click('.battle-review>.button');
+    await click('.classic-lobby-actions>.button');
     assert.ok(
       document.querySelector('.classic-match'),
       'Decoded body art permits battle start: ' +

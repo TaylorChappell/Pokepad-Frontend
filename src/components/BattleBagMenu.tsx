@@ -1,3 +1,4 @@
+import { ItemSprite } from './ItemSprite';
 import { useState } from 'react';
 import { BATTLE_ITEMS, legalBattleItem, type BattleItem } from '../battle/rules';
 import type { BattleAction, BattleState } from '../battle/engine';
@@ -70,7 +71,7 @@ export function BattleBagMenu({
               }
               onClick={() => setSelected(item)}
             >
-              <span className={'battle-item-art item-' + item} aria-hidden="true" />
+              <ItemSprite item={item} />
               <span>
                 <strong>
                   {BATTLE_ITEMS[item].name} <b>×{state.bags?.player[item] ?? 0}</b>

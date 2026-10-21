@@ -1,3 +1,6 @@
+import { PageSkeleton } from '../components/Loading';
+import { useSoundEffects } from '../audio/sound';
+import { MOVE_LEARN_SOUND } from '../audio/catalog';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../services/api';
 import { createAccountUpdates } from '../services/account-updates';
@@ -36,6 +39,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         : currentWalletSession(),
     ),
     [now, setNow] = useState(Date.now());
+  const learningAudio = useSoundEffects();
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined),
     inFlight = useRef(false),
     actionQueue = useRef<Promise<unknown>>(Promise.resolve()),
@@ -101,7 +105,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.motion = state.profile.reducedMotion ? 'reduced' : 'normal';
   }, [state?.profile.reducedMotion]);
   useEffect(() => {
-    if (state || error) dismissBootScreen({ immediate: Boolean(error) });
+    if (error) dismissBootScreen({ immediate: true });
   }, [state, error]);
   useEffect(() => {
     if (!state || api.mode !== 'demo') return;
@@ -152,6 +156,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (action.type !== 'sync') toast('Connect your wallet to continue.');
       return Promise.resolve(null);
     }
+    if (action.type === 'pokemon.learn' || action.type === 'pokemon.manual')
+      learningAudio.unlock(MOVE_LEARN_SOUND);
     const epoch = sessionEpoch.current;
     loadId.current += 1;
     inFlight.current = true;
@@ -163,6 +169,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const s = await api.dispatch(action);
         if (epoch !== sessionEpoch.current) return null;
         setState(s);
+        if (action.type === 'pokemon.learn' || action.type === 'pokemon.manual')
+          learningAudio.play(MOVE_LEARN_SOUND);
         return s;
       } catch (e) {
         toast(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
@@ -187,13 +195,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         </button>
       </div>
     );
-  if (!state)
-    return (
-      <div className="app-loading">
-        <div className="pokeball-mark loading-ball" />
-        <h1>Loading Kanto…</h1>
-      </div>
-    );
+  if (!state) return <PageSkeleton />;
   return (
     <AppContext.Provider
       value={{

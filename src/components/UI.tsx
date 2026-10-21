@@ -1,4 +1,7 @@
+import { createPortal } from 'react-dom';
 import {
+  createContext,
+  useContext,
   useEffect,
   useId,
   useLayoutEffect,
@@ -636,6 +639,7 @@ export function EmptyState({
     </div>
   );
 }
+export const ModalOwnerContext = createContext<string | undefined>(undefined);
 export function Modal({
   title,
   children,
@@ -653,6 +657,7 @@ export function Modal({
   dismissible?: boolean;
   className?: string;
 }) {
+  const owner = useContext(ModalOwnerContext);
   const id = useId(),
     panel = useRef<HTMLDivElement>(null),
     closeRef = useRef(onClose),
@@ -664,6 +669,8 @@ export function Modal({
     const unlockScroll = lockPageScroll(document);
     panel.current?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => {
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      if (dialogs[dialogs.length - 1] !== panel.current) return;
       if (e.key === 'Escape' && !closeDisabledRef.current) closeRef.current();
       if (e.key === 'Tab') {
         const focusable = panel.current?.querySelectorAll<HTMLElement>(
@@ -694,7 +701,7 @@ export function Modal({
       if (previous?.isConnected) previous.focus({ preventScroll: true });
     };
   }, []);
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onMouseDown={(e) => {
@@ -706,6 +713,7 @@ export function Modal({
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
+        data-modal-owner={owner}
         aria-labelledby={id}
         className={'modal-panel ' + (wide ? 'wide ' : '') + className}
       >
@@ -724,7 +732,8 @@ export function Modal({
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 export function Badge({

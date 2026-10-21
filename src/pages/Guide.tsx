@@ -252,14 +252,14 @@ const topics: GuideTopic[] = [
         title: 'How defence and league points work',
         text: [
           'Defence strength is the sum of each defender’s six combat stats at its current level. Shiny colour and SOL value do not make it stronger.',
-          'The first away-gym victory each UTC day gives points and supplies, up to five different gyms per day. Tougher defences award more. Weekly league points reset every Monday; your career points and medals remain.',
+          'The first away-gym victory each UTC day gives points and supplies, up to five different gyms per day. Tougher defences award more. Weekly league points reset every Monday; your career points and badges remain.',
         ],
       },
       {
         title: 'Badges and progress',
         text: [
           'Each gym uses its coin’s image as its badge. Your profile shows the badges you have earned and the gym you support. A badge is a trainer achievement and team identity, not another tradeable Pokémon.',
-          'Win gym battles to earn berries, revives and medals. At 1, 3 and 7 rewarded victories, unlock Thunder Wave, Rest and Swords Dance manuals. Equip one gym move per Pokémon in its PC Bag; these rewards have no SOL value.',
+          'Each rewarded gym win earns one badge, points, berries and revives. Gyms below 1,200 strength do not drop move manuals. Stronger gyms have a 25%, 40% or 60% chance of dropping one random manual, from pools of 10, 20 or 30 moves. View every move and its preview in the gym manual catalogue. An owned manual teaches any Pokémon once and is consumed only when you confirm learning.',
         ],
       },
     ],

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useApp } from '../state/AppContext';
 import { API_BASE } from '../services/http';
 import { availableMoveOffers } from '../state/model';
@@ -11,7 +11,7 @@ import {
 } from '../state/trainer-prompts';
 import { StarterChoice } from '../pages/Account';
 import { PokemonProgressDialog } from './PokemonProgressDialog';
-import { Modal } from './UI';
+import { Modal, ModalOwnerContext } from './UI';
 
 export function TrainerPrompts() {
   const { state, session, mode } = useApp();
@@ -34,7 +34,7 @@ export function TrainerPrompts() {
 }
 function AccountPrompts({ wallet }: { wallet: string }) {
   const { state, busy } = useApp();
-  const root = useRef<HTMLDivElement>(null);
+  const modalOwner = useId();
   const storageKey = promptStorageKey(API_BASE, wallet);
   const [deferred, setDeferred] = useState(() => {
     try {
@@ -73,7 +73,7 @@ function AccountPrompts({ wallet }: { wallet: string }) {
         document.visibilityState === 'hidden' ||
           Boolean(document.querySelector('.classic-match, .classic-team-screen')) ||
           [...document.querySelectorAll('[role="dialog"]')].some(
-            (dialog) => !root.current?.contains(dialog),
+            (dialog) => dialog.getAttribute('data-modal-owner') !== modalOwner,
           ),
       );
     const observer = new MutationObserver(inspect);
@@ -84,7 +84,7 @@ function AccountPrompts({ wallet }: { wallet: string }) {
       observer.disconnect();
       document.removeEventListener('visibilitychange', inspect);
     };
-  }, []);
+  }, [modalOwner]);
   useEffect(() => {
     if (state.starterEligibility?.canChoose) setStarterRequired(true);
   }, [state.starterEligibility?.canChoose]);
@@ -118,25 +118,27 @@ function AccountPrompts({ wallet }: { wallet: string }) {
     setActive(null);
   };
   return (
-    <div ref={root} className="trainer-prompts">
-      {showStarter && !blocked ? (
-        <Modal title="Choose your first Pokémon" onClose={() => {}} dismissible={false} wide>
-          <div className="starter-welcome">
-            <p className="starter-welcome-copy">
-              Your first partner is waiting. Choose one to join your team.
-            </p>
-            <StarterChoice />
-          </div>
-        </Modal>
-      ) : !showStarter && active ? (
-        <PokemonProgressDialog
-          key={active.key}
-          id={active.pokemonId}
-          kind={active.kind}
-          offerId={active.offerId}
-          onClose={later}
-        />
-      ) : null}
-    </div>
+    <ModalOwnerContext.Provider value={modalOwner}>
+      <div className="trainer-prompts">
+        {showStarter && !blocked ? (
+          <Modal title="Choose your first Pokémon" onClose={() => {}} dismissible={false} wide>
+            <div className="starter-welcome">
+              <p className="starter-welcome-copy">
+                Your first partner is waiting. Choose one to join your team.
+              </p>
+              <StarterChoice />
+            </div>
+          </Modal>
+        ) : !showStarter && active ? (
+          <PokemonProgressDialog
+            key={active.key}
+            id={active.pokemonId}
+            kind={active.kind}
+            offerId={active.offerId}
+            onClose={later}
+          />
+        ) : null}
+      </div>
+    </ModalOwnerContext.Provider>
   );
 }

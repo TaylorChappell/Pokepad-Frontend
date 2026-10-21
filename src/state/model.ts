@@ -1,4 +1,4 @@
-import { pcItemHealth, GYM_MANUALS } from '../game/gym-policy';
+import { pcItemHealth, GYM_MANUALS, drawGymManual } from '../game/gym-policy';
 import type { Action, AppSnapshot, Activity, OwnedPokemon, CoinSocials, Reward } from '../types';
 import { createInitialState, ACCENT_COLORS, CHARACTERS } from '../data/demo';
 import { pokemonById } from '../data/pokemon';
@@ -189,7 +189,7 @@ export function applyAction(
     return p;
   };
   s.bag ||= { berry: 3, revive: 1, potion: 2 };
-  s.gymProgress ||= { medals: 0, points: 0, wins: 0, manuals: [], claimedToday: [] };
+  s.gymProgress ||= { badges: 0, points: 0, wins: 0, manuals: {}, claimedToday: [] };
   if (action.type === 'pokemon.item') {
     const p = owned(action.id),
       hp = getPokemonHealth(p),
@@ -203,23 +203,23 @@ export function applyAction(
   if (action.type === 'pokemon.manual') {
     const p = owned(action.id);
     if (p.locked) throw new Error('Finish its battle first.');
-    p.baseMoves ||= [...p.moves];
-    if (action.move === null) {
-      p.moves = [...p.baseMoves];
-      delete p.gymManual;
-    } else {
-      if (
-        !s.gymProgress.manuals.includes(action.move) ||
-        action.slot === undefined ||
-        action.slot < 0 ||
-        action.slot >= Math.min(4, p.baseMoves.length) ||
-        p.baseMoves.includes(action.move)
-      )
-        throw new Error('Choose an unlocked gym move and a valid slot.');
-      p.gymManual = { wallet: s.profile.wallet, move: action.move, slot: action.slot };
-      p.moves = [...p.baseMoves];
-      p.moves[action.slot] = action.move;
-    }
+    if (
+      !action.move ||
+      !GYM_MANUALS.some((m) => m.move === action.move) ||
+      !s.gymProgress.manuals[action.move]
+    )
+      throw new Error('You do not have this move manual.');
+    if (p.moves.includes(action.move)) throw new Error('This Pokémon already knows that move.');
+    const slot = p.moves.length < 4 ? p.moves.length : action.slot;
+    if (slot === undefined || slot < 0 || slot >= 4 || !Number.isInteger(slot))
+      throw new Error('Choose which move to forget.');
+    s.gymProgress.manuals[action.move]--;
+    p.moves[slot] = action.move;
+    p.moveOffers.forEach((o) => {
+      if (o.move === action.move && o.status === 'pending') o.status = 'learned';
+    });
+    delete p.baseMoves;
+    delete p.gymManual;
   }
   if (action.type === 'gym.demo.finish') {
     for (const h of action.health) {
@@ -227,7 +227,11 @@ export function applyAction(
       if (p && !p.locked) p.health = h.hp;
     }
     const day = new Date(now).toISOString().slice(0, 10),
-      progress = s.gymProgress as typeof s.gymProgress & { day?: string; processed?: string[] };
+      progress = s.gymProgress as typeof s.gymProgress & {
+        day?: string;
+        processed?: string[];
+        lastManual?: string | null;
+      };
     if (progress.day !== day) {
       progress.day = day;
       progress.claimedToday = [];
@@ -244,11 +248,13 @@ export function applyAction(
       ) {
         progress.claimedToday.push(action.coinId);
         progress.points += action.prize.points;
-        progress.medals += action.prize.medals;
+        progress.badges += 1;
         progress.wins++;
         for (const key of ['berry', 'revive', 'potion'] as const)
           s.bag[key] += action.prize.items[key];
-        progress.manuals = GYM_MANUALS.filter((m) => m.wins <= progress.wins).map((m) => m.move);
+        const manual = drawGymManual(action.strength, () => randomIndex(1000000) / 1000000);
+        if (manual) progress.manuals[manual] = (progress.manuals[manual] || 0) + 1;
+        progress.lastManual = manual;
         if (!s.badges.includes(action.coinId)) s.badges.push(action.coinId);
       }
     }

@@ -1,7 +1,7 @@
 import { MoveInfoDialog } from '../components/MovePreview';
 import { PokemonBag } from '../components/PokemonBag';
 import { POKEMON_SORTS, sortPokemon } from '../state/pokemon-sort';
-import { useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { EvolutionValue, PokemonProgressDialog } from '../components/PokemonProgressDialog';
 import { POKEMON, pokemonById } from '../data/pokemon';
@@ -109,6 +109,98 @@ function FavouriteButton({
     </button>
   );
 }
+function PokemonActions({ pokemon: p }: { pokemon: OwnedPokemon }) {
+  const { state, act, busy, toast } = useApp(),
+    [open, setOpen] = useState(false),
+    [panel, setPanel] = useState<'items' | 'manuals' | 'learn' | 'evolve' | null>(null),
+    root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (!root.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('click', close);
+      document.removeEventListener('keydown', key);
+    };
+  }, [open]);
+  const pick = (p: typeof panel) => {
+    setOpen(false);
+    setPanel(p);
+  };
+  return (
+    <div className="pokemon-actions" ref={root}>
+      <button
+        className="pokemon-more-button"
+        aria-label={'More actions for ' + pokemonById(p.speciesId).name}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Icon name="MoreHorizontal" size={20} />
+      </button>
+      {open && (
+        <div className="pokemon-action-menu" role="menu">
+          <button role="menuitem" onClick={() => pick('items')}>
+            <Icon name="Backpack" size={16} />
+            Use item
+          </button>
+          <button role="menuitem" onClick={() => pick('manuals')}>
+            <Icon name="BookOpen" size={16} />
+            Teach move
+          </button>
+          {pendingMove(p) && (
+            <button role="menuitem" disabled={p.locked} onClick={() => pick('learn')}>
+              <Icon name="Swords" size={16} />
+              Learn new move
+            </button>
+          )}
+          {getEvolutionStatus(state, p).canEvolve && (
+            <button role="menuitem" onClick={() => pick('evolve')}>
+              <Icon name="ChevronUp" size={16} />
+              Evolve
+            </button>
+          )}
+          <button
+            role="menuitem"
+            disabled={busy || p.locked || state.profile.equippedId === p.id}
+            onClick={async () => {
+              setOpen(false);
+              if (await act({ type: 'pokemon.equip', id: p.id })) toast('Partner equipped.');
+            }}
+          >
+            <Icon name="Heart" size={16} />
+            Equip partner
+          </button>
+          <a role="menuitem" href={'#/pokemon/' + p.id}>
+            <Icon name="Info" size={16} />
+            View summary
+          </a>
+        </div>
+      )}
+      {(panel === 'items' || panel === 'manuals') && (
+        <Modal
+          title={
+            (panel === 'items' ? 'Use item · ' : 'Teach move · ') + pokemonById(p.speciesId).name
+          }
+          onClose={() => setPanel(null)}
+        >
+          <div className="pc-action-dialog">
+            <PokemonBag pokemon={p} section={panel} />
+          </div>
+        </Modal>
+      )}
+      {(panel === 'learn' || panel === 'evolve') && (
+        <PokemonProgressDialog id={p.id} kind={panel} onClose={() => setPanel(null)} />
+      )}
+    </div>
+  );
+}
 export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
   const { state } = useApp(),
     species = pokemonById(pokemon.speciesId),
@@ -119,7 +211,10 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
     needsAttention = evolution.canEvolve || canLearn;
   return (
     <div className="pc-slot-wrapper">
-      <FavouriteButton pokemon={pokemon} />
+      <div className="pc-card-actions">
+        <FavouriteButton pokemon={pokemon} />
+        <PokemonActions pokemon={pokemon} />
+      </div>
       <a
         href={'#/pokemon/' + pokemon.id}
         className={
@@ -198,7 +293,7 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
 export function InventoryPage() {
   const { state } = useApp(),
     [filter, setFilter] = useState('All'),
-    [sort, setSort] = useState('Ready first'),
+    [sort, setSort] = useState('Strongest first'),
     [search, setSearch] = useState('');
   const list = sortPokemon(
     state.pokemon.filter(
@@ -264,7 +359,6 @@ export function InventoryPage() {
       </div>
       <section className="pc-storage">
         <div className="pc-storage-bar">
-          <span className="pc-screen-light" />
           <strong>YOUR COLLECTION</strong>
           <span>
             {list.length} / {state.pokemon.length}
@@ -359,7 +453,10 @@ export function PokemonDetailPage({ id }: { id: string }) {
           <Icon name="ArrowLeft" size={18} />
           Back to My PC
         </a>
-        <FavouriteButton pokemon={p} showLabel />
+        <div className="summary-quick-actions">
+          <FavouriteButton pokemon={p} showLabel />
+          <PokemonActions pokemon={p} />
+        </div>
       </div>
       <div className="summary-workspace">
         <section
@@ -550,7 +647,13 @@ export function PokemonDetailPage({ id }: { id: string }) {
                         <dl>
                           <div>
                             <dt>POWER</dt>
-                            <dd>{move.power ?? '—'}</dd>
+                            <dd>
+                              {move.name === 'Dragon Rage'
+                                ? '40 fixed'
+                                : move.name === 'Night Shade'
+                                  ? 'Level'
+                                  : (move.power ?? '—')}
+                            </dd>
                           </div>
                           <div>
                             <dt>ACCURACY</dt>
@@ -573,8 +676,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
                   ))}
                 </div>
                 <p className="moves-footnote">
-                  Press ⓘ to preview a move and see its effect. New moves appear when a level-up
-                  opportunity is earned.
+                  Press the info button to preview a move and see its effect. New moves appear when
+                  a level-up opportunity is earned.
                 </p>
               </section>
             )}

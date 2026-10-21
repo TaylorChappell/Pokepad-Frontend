@@ -90,6 +90,7 @@ export function useGymChallenge(enabled: boolean, coinId: string) {
     if (!c.state.winner) return c;
     const next = await act({
       type: 'gym.demo.finish',
+      strength: c.strength,
       id: c.id,
       coinId: c.coinId,
       prize: c.prize,
@@ -105,9 +106,10 @@ export function useGymChallenge(enabled: boolean, coinId: string) {
         reason: 'battle',
         awarded,
         prize: awarded ? c.prize : null,
-        manuals: (next?.gymProgress?.manuals || []).filter(
-          (m) => !state.gymProgress?.manuals.includes(m),
-        ),
+        manuals:
+          awarded && (next?.gymProgress as any)?.lastManual
+            ? [(next!.gymProgress as any).lastManual]
+            : [],
         message: awarded
           ? 'Rewards added to your demo bag.'
           : c.state.winner === 'player'

@@ -503,7 +503,7 @@ export const POKEMON: PokemonSpecies[] = [
   },
   {
     id: 83,
-    name: 'Farfetch\\u2019d',
+    name: 'Farfetch’d',
     types: ['Normal', 'Flying'],
     evolvesTo: [],
   },
