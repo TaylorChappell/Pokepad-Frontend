@@ -33,6 +33,8 @@ import './battle-body-v11.css';
 import './battle/switch-effects.css';
 import './live-integration.css';
 import './online-battle.css';
+import './discovery-hero.css';
+import './starter-hero-art.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')!).render(<App />);

@@ -28,6 +28,7 @@ import {
 } from '../services/transactions';
 import { TransactionStatus } from '../components/TransactionStatus';
 import { WalletConnection } from '../components/WalletConnection';
+import { StarterHeroArt } from '../components/StarterHeroArt';
 function WatchStar({ filled = false }: { filled?: boolean }) {
   return (
     <svg
@@ -302,7 +303,7 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
     [sort, setSort] = useState('Trending'),
     [watchOnly, setWatchOnly] = useState(false),
     [view, setView] = useState<'grid' | 'list'>('grid');
-  const main = state.coins.find((c) => c.main)!;
+  const main = state.coins.find((c) => c.main);
   const watchlist = useCoinWatchlist(state.profile.wallet);
   let coins = state.coins.filter(
     (c) => (mode === 'All' || c.mode === mode) && (!watchOnly || watchlist.ids.includes(c.id)),
@@ -319,75 +320,42 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
   return (
     <>
       {!explore ? (
-        <section className="discovery-intro">
-          <div className="intro-dialogue">
-            <div className="intro-copy">
-              <h1>A launchpad for Pokémon trainers.</h1>
-              <p>Create a coin. Find your people. Build your Pokémon collection.</p>
-              <p>
-                Hold community coins to receive eggs and packs funded by trading fees. Hatch your
-                next partner, train with Rare Candy, and take your team into battle.
-              </p>
-              <div className="intro-actions">
+        <section className="discovery-hero" aria-labelledby="discovery-hero-title">
+          <div className="discovery-hero-copy">
+            <h1 id="discovery-hero-title">
+              <span>Launch a coin.</span>
+              <span>Build your Pokémon team.</span>
+            </h1>
+            <p>Hold community coins to receive eggs and packs funded by trading fees.</p>
+            <div className="discovery-hero-footer">
+              <div className="discovery-hero-actions">
                 <a href="#/create" className="button primary create-cta">
-                  Create a coin
-                  <Icon name="ArrowRight" size={16} />
+                  Create a coin <Icon name="ArrowRight" size={17} />
                 </a>
-                <a href="#/guide" className="button secondary">
-                  Learn more
+                <a href="#/explore" className="button secondary">
+                  Explore coins
                 </a>
               </div>
-            </div>
-            <div className="main-token-ticket">
-              <span>MAIN TOKEN</span>
-              <div>
-                <CoinAvatar coin={main} size={46} />
-                <h2>$POKE</h2>
+              <div className="discovery-hero-starter">
+                {main && (
+                  <>
+                    <CoinAvatar coin={main} size={34} />
+                    <a href={'#/coin/' + main.id} className="discovery-hero-ticker">
+                      ${main.ticker}
+                    </a>
+                    <span className="discovery-hero-divider" aria-hidden="true">
+                      ·
+                    </span>
+                  </>
+                )}
+                <a href="#/starter" className="discovery-hero-starter-link">
+                  Choose your starter <Icon name="ArrowRight" size={15} />
+                </a>
               </div>
-              <p>{compact(main.holders)} holders</p>
-              <a href={'#/coin/' + main.id}>
-                View coin
-                <Icon name="ArrowRight" size={14} />
-              </a>
             </div>
           </div>
-          <div
-            className="starter-showcase"
-            aria-label="Bulbasaur, Charmander, and Squirtle: your first Pokémon partners"
-          >
-            <div className="showcase-pokeball" aria-hidden="true" />
-            <div className="showcase-stars" aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </div>
-            <PokemonArt
-              id={1}
-              animated={false}
-              eager
-              styleOverride="drawn"
-              className="showcase-bulbasaur"
-            />
-            <PokemonArt
-              id={4}
-              animated={false}
-              eager
-              styleOverride="drawn"
-              className="showcase-charmander"
-            />
-            <PokemonArt
-              id={7}
-              animated={false}
-              eager
-              styleOverride="drawn"
-              className="showcase-squirtle"
-            />
-            <a href="#/starter" className="showcase-caption">
-              <strong>Meet your first partner.</strong>
-              <span>
-                Hold POKE to choose a starter <Icon name="ArrowRight" size={16} />
-              </span>
-            </a>
+          <div className="discovery-hero-art">
+            <StarterHeroArt />
           </div>
         </section>
       ) : (

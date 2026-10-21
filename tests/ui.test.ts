@@ -149,7 +149,7 @@ test('navigation, search, notifications, pixel artwork, and trainer settings wor
   const app = await mountApp();
   const { document, click, go, fill } = app;
   try {
-    assert.match(app.text(), /A launchpad for Pokémon trainers/);
+    assert.match(app.text(), /Launch a coin\.Build your Pokémon team\./);
     assert.equal(document.querySelectorAll('.coin-card').length, 8);
     assert.equal(document.querySelector('.gym-spotlight-ribbon'), null);
     assert.equal(app.saved().profile.artStyle, 'pixel');

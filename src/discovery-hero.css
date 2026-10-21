@@ -1,0 +1,197 @@
+/* Compact landing banner: one introduction, one illustration, then the coin list. */
+.discovery-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  min-height: 280px;
+  margin-bottom: 30px;
+  border: 1px solid #dfe7f0;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 7px 28px #29496905;
+  isolation: isolate;
+}
+.discovery-hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  padding: 28px 30px;
+}
+.discovery-hero h1 {
+  margin: 0;
+  color: #223b5a;
+  font-family: Nunito, ui-rounded, system-ui, sans-serif;
+  font-size: clamp(27px, 2.1vw, 39px);
+  font-weight: 1000;
+  line-height: 1.14;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+.discovery-hero h1 > span {
+  display: block;
+}
+.discovery-hero-copy > p {
+  max-width: 530px;
+  margin: 15px 0 23px;
+  color: #7c8b9e;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.discovery-hero-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 22px;
+}
+.discovery-hero-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.discovery-hero-actions .button {
+  min-height: 44px;
+  padding: 10px 17px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.discovery-hero-actions .primary {
+  background: #ff625c;
+  border-color: #f6534e;
+  box-shadow:
+    0 3px 0 #df4945,
+    inset 0 1px 0 #ffffff40;
+}
+.discovery-hero-actions .primary:hover {
+  background: #ff6c64;
+  box-shadow:
+    0 4px 0 #df4945,
+    0 8px 18px #ff625c26;
+}
+.discovery-hero-starter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+.discovery-hero-starter .coin-avatar {
+  flex: 0 0 auto;
+  border: 1px solid #e1dfcf;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px #5e667409;
+}
+.discovery-hero-ticker {
+  max-width: 100px;
+  overflow: hidden;
+  color: #243c5a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discovery-hero-divider {
+  color: #8a9aae;
+}
+.discovery-hero-starter-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #4c8bca;
+  white-space: nowrap;
+  transition: color 160ms ease;
+}
+.discovery-hero-starter-link > svg {
+  transition: transform 180ms ease;
+}
+.discovery-hero-starter-link:hover {
+  color: #2e6eaf;
+}
+.discovery-hero-starter-link:hover > svg {
+  transform: translateX(3px);
+}
+.discovery-hero-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 18px 16px 12px;
+  border-radius: 0 21px 21px 0;
+  background: radial-gradient(ellipse at 48% 50%, #f8fcff 10%, #edf5ff 100%);
+}
+.discovery-hero-art > .kanto-starter-hero-art {
+  display: block;
+  width: 100%;
+  height: 248px;
+  max-width: 650px;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+}
+@media (min-width: 1600px) {
+  .discovery-hero-copy {
+    padding-inline: 34px;
+  }
+}
+@media (max-width: 1100px) {
+  .discovery-hero-copy {
+    padding: 24px;
+  }
+  .discovery-hero-copy > p {
+    margin-bottom: 19px;
+  }
+  .discovery-hero-footer {
+    gap: 16px;
+  }
+  .discovery-hero-art {
+    padding-inline: 9px;
+  }
+}
+@media (max-width: 760px) {
+  .discovery-hero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    margin-bottom: 26px;
+    border-radius: 18px;
+  }
+  .discovery-hero-copy {
+    padding: 23px 22px 20px;
+  }
+  .discovery-hero h1 {
+    font-size: clamp(27px, 5.4vw, 34px);
+  }
+  .discovery-hero-copy > p {
+    margin: 12px 0 19px;
+    font-size: 13px;
+  }
+  .discovery-hero-footer {
+    gap: 16px;
+  }
+  .discovery-hero-art {
+    height: 198px;
+    padding: 0 16px 8px;
+    border-radius: 0 0 17px 17px;
+    background: linear-gradient(#fff, #f0f7ff 55%, #edf5ff);
+  }
+  .discovery-hero-art > .kanto-starter-hero-art {
+    height: 190px;
+    max-width: 460px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .discovery-hero a,
+  .discovery-hero a::before,
+  .discovery-hero a > svg {
+    transition: none;
+  }
+}
+[data-motion='reduced'] .discovery-hero a,
+[data-motion='reduced'] .discovery-hero a::before,
+[data-motion='reduced'] .discovery-hero a > svg {
+  transition: none;
+}
