@@ -3,7 +3,8 @@ import { Avatar, Button, EggArt, Icon, PackArt, PokemonArt, TypeChip } from '../
 import { pokemonById } from '../data/pokemon';
 import { useApp } from '../state/AppContext';
 import { isValidCoinTicker, profileName } from '../state/model';
-import { navigate } from '../utils';
+import { asset, navigate } from '../utils';
+import { CoinImagePicker } from '../components/CoinImagePicker';
 import type { RewardMode } from '../types';
 import { apiRequest } from '../services/http';
 import { useTransactionFlow, type TransactionConfirmation } from '../services/transactions';
@@ -22,7 +23,7 @@ function validSocial(value: string) {
   if (!value.trim()) return true;
   try {
     const url = new URL(value);
-    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password;
+    return url.protocol === 'https:' && !url.username && !url.password;
   } catch {
     return false;
   }
@@ -51,7 +52,6 @@ export function CreateCoinPage() {
   );
   const [mode, setMode] = useState<RewardMode>('Mixed');
   const [coinImage, setCoinImage] = useState('');
-  const [imageError, setImageError] = useState('');
   const [imageLoading, setImageLoading] = useState(false);
   const [socials, setSocials] = useState<Record<SocialKey, string>>({
     website: '',
@@ -60,22 +60,13 @@ export function CreateCoinPage() {
     discord: '',
   });
   const [pokemonFilter, setPokemonFilter] = useState('');
-  const fileInput = useRef<HTMLInputElement>(null);
   const stepTitle = useRef<HTMLHeadingElement>(null);
   const firstSocialInput = useRef<HTMLInputElement>(null);
   const focusLinksOnReturn = useRef(false);
-  const imageRequest = useRef(0);
 
   useEffect(() => {
     if (!eligible.some((p) => p.id === selectedId)) setSelectedId(eligible[0]?.id || '');
   }, [eligible, selectedId]);
-  useEffect(
-    () => () => {
-      imageRequest.current += 1;
-    },
-    [],
-  );
-
   useEffect(() => {
     const resize = () => setSmallScreen(window.innerWidth < 640);
     window.addEventListener('resize', resize);
@@ -86,19 +77,17 @@ export function CreateCoinPage() {
   const selected = trainerLaunch ? undefined : eligible.find((p) => p.id === selectedId);
   const selectedSpecies = selected ? pokemonById(selected.speciesId) : null;
   const invalidSocial = SOCIAL_FIELDS.some(({ key }) => !validSocial(socials[key]));
-  const canCreate =
+  const nameValid =
     name.trim().length >= 3 &&
-    (isLive ? new TextEncoder().encode(name.trim()).length <= 32 : name.trim().length <= 32) &&
-    (isLive
-      ? ticker.trim().length > 0 &&
-        new TextEncoder().encode(ticker).length <= 13 &&
-        !/[\u0000-\u001f\u007f]/.test(ticker)
-      : isValidCoinTicker(ticker)) &&
-    !invalidSocial &&
-    (trainerLaunch || !!selected) &&
-    !imageLoading &&
-    !imageError &&
-    (!isLive || Boolean(coinImage));
+    (isLive ? new TextEncoder().encode(name.trim()).length <= 32 : name.trim().length <= 32);
+  const tickerValid = isLive
+    ? ticker.trim().length > 0 &&
+      new TextEncoder().encode(ticker).length <= 13 &&
+      !/[\u0000-\u001f\u007f]/.test(ticker)
+    : isValidCoinTicker(ticker);
+  const detailsValid =
+    nameValid && tickerValid && !invalidSocial && !imageLoading && (!isLive || Boolean(coinImage));
+  const canCreate = detailsValid && (trainerLaunch || !!selected);
   const shownPokemon = eligible.filter((p) =>
     pokemonById(p.speciesId).name.toLowerCase().includes(pokemonFilter.trim().toLowerCase()),
   );
@@ -107,57 +96,6 @@ export function CreateCoinPage() {
   const pageCount = Math.max(1, Math.ceil(shownPokemon.length / pageSize));
   const safePage = Math.min(pokemonPage, pageCount - 1);
   const pagePokemon = shownPokemon.slice(safePage * pageSize, (safePage + 1) * pageSize);
-
-  const readImage = async (file?: File) => {
-    if (!file) return;
-    setImageError('');
-    if (
-      !(
-        isLive
-          ? ['image/png', 'image/jpeg', 'image/webp']
-          : ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
-      ).includes(file.type)
-    ) {
-      setImageError(
-        isLive ? 'Choose a PNG, JPG, or WebP image.' : 'Choose a PNG, JPG, WebP, or GIF image.',
-      );
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setImageError('Choose an image smaller than 2 MB.');
-      return;
-    }
-    const request = ++imageRequest.current;
-    setImageLoading(true);
-    try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error('This image could not be read.'));
-        reader.readAsDataURL(file);
-      });
-      await new Promise<void>((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => {
-          if (!image.naturalWidth || !image.naturalHeight) {
-            reject(new Error('This image is empty.'));
-          } else if (image.naturalWidth > 4096 || image.naturalHeight > 4096) {
-            reject(new Error('Use an image no larger than 4096 × 4096 pixels.'));
-          } else resolve();
-        };
-        image.onerror = () => reject(new Error('This image could not be opened.'));
-        image.src = dataUrl;
-      });
-      if (request === imageRequest.current) setCoinImage(dataUrl);
-    } catch (error) {
-      if (request === imageRequest.current) {
-        setImageError(error instanceof Error ? error.message : 'Please choose another image.');
-      }
-    } finally {
-      if (request === imageRequest.current) setImageLoading(false);
-      if (fileInput.current) fileInput.current.value = '';
-    }
-  };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -185,7 +123,11 @@ export function CreateCoinPage() {
         name: name.trim(),
         symbol: ticker,
         description: description.trim(),
-        socials,
+        socials: Object.fromEntries(
+          Object.entries(socials)
+            .map(([key, value]) => [key, value.trim()])
+            .filter(([, value]) => value),
+        ),
       };
       const body = JSON.stringify(metadata);
       if (upload.current?.body !== body) upload.current = { body, requestId: crypto.randomUUID() };
@@ -248,18 +190,7 @@ export function CreateCoinPage() {
   }
 
   const steps = ['Details', 'Partner', 'Rewards', 'Review'];
-  const stepValid = [
-    name.trim().length >= 3 &&
-      (isLive
-        ? ticker.trim().length > 0 && new TextEncoder().encode(ticker).length <= 13
-        : isValidCoinTicker(ticker)) &&
-      !imageLoading &&
-      !imageError &&
-      !invalidSocial,
-    trainerLaunch || !!selected,
-    true,
-    canCreate,
-  ];
+  const stepValid = [detailsValid, trainerLaunch || !!selected, true, canCreate];
   useEffect(() => {
     if (step === 0 && focusLinksOnReturn.current) {
       firstSocialInput.current?.focus();
@@ -276,11 +207,11 @@ export function CreateCoinPage() {
   );
 
   return (
-    <div className="creation-desk creation-v7">
+    <div className="creation-desk creation-v7 creation-refined">
       <header className="creation-heading">
         <div>
           <h1>Create a coin</h1>
-          <p>Your community starts here. Make it yours, one step at a time.</p>
+          <p>A coin, a partner, and a community of your own.</p>
         </div>
       </header>
       {isLive && transaction.pending && step !== 3 && (
@@ -299,7 +230,15 @@ export function CreateCoinPage() {
             disabled={index > step}
             onClick={() => setStep(index)}
           >
-            <span>{index < step ? <Icon name="Check" size={16} /> : index + 1}</span>
+            <span>
+              {index < step ? (
+                <Icon name="Check" size={16} />
+              ) : index === step ? (
+                <Icon name="Pokeball" size={20} />
+              ) : (
+                index + 1
+              )}
+            </span>
             <strong>{label}</strong>
           </button>
         ))}
@@ -327,58 +266,23 @@ export function CreateCoinPage() {
                   }
                 </h2>
               </div>
+              <div className="creation-device-lights" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </div>
             </div>
             {step === 0 && (
               <>
                 <div className="creation-details-content">
                   <div className="creation-identity-fields">
-                    <div className="coin-image-field">
-                      <label className="creation-label" htmlFor="coin-image">
-                        Coin image <small>optional</small>
-                      </label>
-                      <input
-                        ref={fileInput}
-                        id="coin-image"
-                        tabIndex={-1}
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        className="creation-file-input"
-                        onChange={(e) => readImage(e.target.files?.[0])}
-                        aria-describedby="coin-image-help"
-                      />
-                      <button
-                        className={'coin-image-upload ' + (coinImage ? 'has-image' : '')}
-                        type="button"
-                        onClick={() => fileInput.current?.click()}
-                        disabled={imageLoading}
-                        aria-label={coinImage ? 'Change coin image' : 'Upload coin image'}
-                      >
-                        {coinImage ? (
-                          <img src={coinImage} alt="Your coin image" />
-                        ) : (
-                          <>
-                            <Icon name="Plus" size={28} />
-                            <strong>{imageLoading ? 'Loading…' : 'Upload image'}</strong>
-                          </>
-                        )}
-                        {coinImage && <span className="image-change-label">Change image</span>}
-                      </button>
-                      <span id="coin-image-help" className="creation-field-note">
-                        PNG, JPG, WebP or GIF · up to 2 MB
-                      </span>
-                      {coinImage && (
-                        <button
-                          className="creation-text-button"
-                          type="button"
-                          onClick={() => {
-                            setCoinImage('');
-                            setImageError('');
-                          }}
-                        >
-                          Remove image
-                        </button>
-                      )}
-                    </div>
+                    <CoinImagePicker
+                      value={coinImage}
+                      onChange={setCoinImage}
+                      onBusyChange={setImageLoading}
+                      live={isLive}
+                      disabled={busy}
+                    />
                     <div className="coin-name-fields">
                       <div>
                         <label className="creation-label" htmlFor="coin-name">
@@ -393,8 +297,13 @@ export function CreateCoinPage() {
                           required
                           placeholder="e.g. Moonstone Club"
                           onChange={(e) => setName(e.target.value)}
+                          aria-invalid={Boolean(name) && !nameValid}
                         />
-                        <span className="creation-field-note">3–32 characters</span>
+                        <span className="creation-field-note">
+                          {name && !nameValid
+                            ? 'Use a name between 3 and 32 characters.'
+                            : '3–32 characters'}
+                        </span>
                       </div>
                       <div>
                         <label className="creation-label" htmlFor="coin-ticker">
@@ -422,40 +331,29 @@ export function CreateCoinPage() {
                           />
                         </div>
                         <span id="ticker-help" className="creation-field-note">
-                          {isLive ? 'Up to 13 UTF-8 bytes' : '1–10 characters'}
+                          {ticker && !tickerValid
+                            ? 'Choose a shorter, non-empty ticker.'
+                            : `Up to ${isLive ? 13 : 10} characters`}
                         </span>
                       </div>
+                      <div className="coin-description-field">
+                        <label className="creation-label" htmlFor="coin-description">
+                          Description <small>optional</small>
+                        </label>
+                        <textarea
+                          id="coin-description"
+                          className="creation-input"
+                          rows={2}
+                          maxLength={280}
+                          placeholder="What brings your community together?"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                        />
+                        <div className="creation-field-footer">
+                          <span>{description.length}/280</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  {imageError && (
-                    <p className="creation-error" role="alert">
-                      {imageError}{' '}
-                      <button
-                        type="button"
-                        className="creation-text-button"
-                        onClick={() => {
-                          setCoinImage('');
-                          setImageError('');
-                        }}
-                      >
-                        Continue without an image
-                      </button>
-                    </p>
-                  )}
-                  <label className="creation-label" htmlFor="coin-description">
-                    Description <small>optional</small>
-                  </label>
-                  <textarea
-                    id="coin-description"
-                    className="creation-input"
-                    rows={2}
-                    maxLength={280}
-                    placeholder="What brings your community together?"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                  />
-                  <div className="creation-field-footer">
-                    <span>{description.length}/280</span>
                   </div>
                 </div>
                 <section className="creation-socials" aria-labelledby="creation-socials-title">
@@ -486,7 +384,7 @@ export function CreateCoinPage() {
                           />
                           {!validSocial(socials[key]) && (
                             <p id={'social-error-' + key} className="creation-error">
-                              Enter a full http:// or https:// link.
+                              Use a full https:// link.
                             </p>
                           )}
                         </div>
@@ -802,15 +700,13 @@ export function CreateCoinPage() {
           <div className="creation-preview-header">
             <strong>Your coin</strong>
           </div>
-          <div className="creation-preview-stage">{partnerArt}</div>
+          <div className={'creation-preview-stage coin-card-art' + (coinImage ? ' has-image' : '')}>
+            <img
+              src={coinImage || asset('brand/kanto-emblem.png')}
+              alt={coinImage ? 'Your coin artwork' : ''}
+            />
+          </div>
           <div className="creation-preview-identity">
-            <div className="creation-preview-image">
-              {coinImage ? (
-                <img src={coinImage} alt="Coin image preview" />
-              ) : (
-                <Icon name="Plus" size={24} />
-              )}
-            </div>
             <div>
               <h2>{name.trim() || 'Coin name'}</h2>
               <span>${ticker || 'TICKER'}</span>
@@ -819,6 +715,13 @@ export function CreateCoinPage() {
           <p className="creation-preview-description">
             {description.trim() || 'A new community, ready to grow.'}
           </p>
+          <div className="creation-preview-partner">
+            <span className="preview-partner-art">{partnerArt}</span>
+            <div>
+              <small>Launch partner</small>
+              <strong>{selectedSpecies?.name || profileName(state)}</strong>
+            </div>
+          </div>
           {selectedSpecies && (
             <div className="creation-preview-types">
               {selectedSpecies.types.map((type) => (
