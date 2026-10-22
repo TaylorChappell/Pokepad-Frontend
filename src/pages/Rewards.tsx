@@ -24,6 +24,7 @@ import { duration, navigate, relativeTime } from '../utils';
 import { useRevealAudio } from '../audio/sound';
 import { REVEAL_TIMELINES } from '../audio/catalog';
 import type { RevealFrame } from '../audio/reveal-timeline';
+import { preloadPokemonArtwork } from '../components/pokemon-art-loading';
 
 const legendaryIds = [144, 145, 146, 150, 151];
 function SourceCoin({ id }: { id: string }) {
@@ -69,6 +70,35 @@ export function RewardOpening({
     revealed: false,
   });
   const [result, setResult] = useState<AppSnapshot | null>(null);
+  const artworkReady = useRef(false);
+  const [artworkError, setArtworkError] = useState(false);
+  const [artworkAttempt, setArtworkAttempt] = useState(0);
+  const resolvedReward = result?.rewards.find((r) => r.id === reward.id);
+  const owned = result?.pokemon.find(
+    (p) => p.id === (resolvedReward?.pokemonInstanceId || 'hatched-' + reward.id),
+  );
+  useEffect(() => {
+    if (!owned || !result) return;
+    let cancelled = false;
+    artworkReady.current = false;
+    setArtworkError(false);
+    void preloadPokemonArtwork({
+      id: owned.speciesId,
+      shiny: owned.shiny,
+      artStyle: result.profile.artStyle,
+      reducedMotion: result.profile.reducedMotion,
+    }).then(
+      () => {
+        if (!cancelled) artworkReady.current = true;
+      },
+      () => {
+        if (!cancelled) setArtworkError(true);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [owned, result, artworkAttempt]);
   const openRequest = useRef<Promise<AppSnapshot | null> | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -90,15 +120,12 @@ export function RewardOpening({
     if (!result) return;
     void audio.start(kind, {
       reducedMotion: result.profile.reducedMotion,
+      canReveal: () => artworkReady.current,
       onFrame: setFrame,
       onReveal: () => setPhase('revealed'),
     });
     return audio.stop;
   }, [result, kind, audio.start, audio.stop]);
-  const resolvedReward = result?.rewards.find((r) => r.id === reward.id);
-  const owned = result?.pokemon.find(
-    (p) => p.id === (resolvedReward?.pokemonInstanceId || 'hatched-' + reward.id),
-  );
   const species = pokemonById(owned?.speciesId || resolvedReward?.outcomeSpeciesId || 1);
   const revealed = phase === 'revealed' && !!owned;
   return (
@@ -210,17 +237,37 @@ export function RewardOpening({
         ) : (
           <div className="reveal-v3-wait" role="status">
             <h3>
-              {result
-                ? reward.kind === 'egg'
-                  ? 'Something is moving…'
-                  : 'Who’s inside?'
-                : 'Getting your reward ready…'}
+              {artworkError
+                ? 'Your Pokémon is safe in your PC.'
+                : result
+                  ? reward.kind === 'egg'
+                    ? 'Something is moving…'
+                    : 'Who’s inside?'
+                  : 'Getting your reward ready…'}
             </h3>
             <p>
-              {result
-                ? 'Your new Pokémon is almost here.'
-                : 'You can close this window. Opened rewards are saved in your PC.'}
+              {artworkError
+                ? 'The artwork couldn’t load. Try again or view it in your PC.'
+                : result
+                  ? 'Your new Pokémon is almost here.'
+                  : 'You can close this window. Opened rewards are saved in your PC.'}
             </p>
+            {artworkError && (
+              <div className="reveal-v3-actions">
+                <Button onClick={() => setArtworkAttempt((attempt) => attempt + 1)}>
+                  Retry artwork
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    onClose();
+                    navigate('/pokemon');
+                  }}
+                >
+                  My PC
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>

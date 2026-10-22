@@ -66,3 +66,17 @@
 [data-motion='reduced'] .trainer-public-badges > div > a {
   transition: none;
 }
+
+@media (max-width: 350px) {
+  .brand > .generated-wordmark.pokemon-wordmark.brand-lockup {
+    width: 114px;
+    height: 42px;
+  }
+  .topbar .account-button {
+    padding: 3px;
+  }
+  .topbar .account-button .trainer-portrait {
+    width: 42px;
+    height: 46px;
+  }
+}

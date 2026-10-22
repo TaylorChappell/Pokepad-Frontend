@@ -400,8 +400,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
     p = state.pokemon.find((p) => p.id === id),
     [dialog, setDialog] = useState<
       'learn' | 'evolve' | 'sell' | 'details' | 'items' | 'manuals' | null
-    >(null),
-    [section, setSection] = useState<'stats' | 'moves'>('stats');
+    >(null);
   if (!p)
     return (
       <EmptyState
@@ -560,44 +559,6 @@ export function PokemonDetailPage({ id }: { id: string }) {
           )}
         </section>
         <div className="summary-command-panel">
-          <div className="summary-menu" role="tablist" aria-label="Pokémon information">
-            {(
-              [
-                { id: 'stats', label: 'Stats', icon: 'Activity' },
-                { id: 'moves', label: 'Moves', icon: 'Swords' },
-              ] as const
-            ).map((item) => (
-              <button
-                key={item.id}
-                role="tab"
-                id={'summary-tab-' + id + '-' + item.id}
-                aria-selected={section === item.id}
-                aria-controls={'summary-panel-' + id + '-' + item.id}
-                tabIndex={section === item.id ? 0 : -1}
-                onKeyDown={(event) => {
-                  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
-                  event.preventDefault();
-                  const next =
-                    event.key === 'Home'
-                      ? 'stats'
-                      : event.key === 'End'
-                        ? 'moves'
-                        : section === 'stats'
-                          ? 'moves'
-                          : 'stats';
-                  setSection(next);
-                  document.getElementById('summary-tab-' + id + '-' + next)?.focus();
-                }}
-                onClick={() => setSection(item.id)}
-              >
-                <Icon name={item.icon} size={18} />
-                <span>{item.label}</span>
-                {item.id === 'moves' && offer && (
-                  <i className="summary-menu-dot" aria-label="New move available" />
-                )}
-              </button>
-            ))}
-          </div>
           {offer && newMove && (
             <button
               className="pending-move-prompt"
@@ -620,67 +581,48 @@ export function PokemonDetailPage({ id }: { id: string }) {
               </span>
             </button>
           )}
-          <div
-            className="summary-information"
-            role="tabpanel"
-            id={'summary-panel-' + id + '-stats'}
-            aria-labelledby={'summary-tab-' + id + '-stats'}
-            hidden={section !== 'stats'}
-            tabIndex={0}
-          >
-            {section === 'stats' && (
-              <section className="summary-stats" aria-label="Battle stats">
-                <div className="summary-section-heading">
+          <div className="summary-information summary-moves-panel">
+            <PokemonMoveSet moves={p.moves} onPreview={setPreviewMove} />
+          </div>
+        </div>
+        <div className="summary-information summary-stats-panel">
+          <section className="summary-stats" aria-label="Battle stats">
+            <div className="summary-section-heading">
+              <div>
+                <h2>Battle stats</h2>
+              </div>
+              <span className="stat-level">Lv. {p.level}</span>
+            </div>
+            <div className="stat-rows">
+              {statRows.map((stat) => (
+                <div className="stat-row" key={stat.name}>
+                  <span>{stat.name}</span>
+                  <strong>{stat.value}</strong>
                   <div>
-                    <h2>Battle stats</h2>
-                  </div>
-                  <span className="stat-level">Lv. {p.level}</span>
-                </div>
-                <div className="stat-rows">
-                  {statRows.map((stat) => (
-                    <div className="stat-row" key={stat.name}>
-                      <span>{stat.name}</span>
-                      <strong>{stat.value}</strong>
-                      <div>
-                        <i
-                          style={{
-                            width: (stat.value / statScale) * 100 + '%',
-                            background: stat.color,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="summary-candy-meter">
-                  <CandySprite />
-                  <span>Rare Candy</span>
-                  <strong>
-                    {p.rareCandy.toLocaleString()}
-                    {species.evolvesTo.length > 0 && (
-                      <small> / {evoStatus.candyRequired.toLocaleString()}</small>
-                    )}
-                  </strong>
-                  {species.evolvesTo.length > 0 && (
-                    <Progress
-                      value={(p.rareCandy / evoStatus.candyRequired) * 100}
-                      color="#8191d8"
+                    <i
+                      style={{
+                        width: (stat.value / statScale) * 100 + '%',
+                        background: stat.color,
+                      }}
                     />
-                  )}
+                  </div>
                 </div>
-              </section>
-            )}
-          </div>
-          <div
-            className="summary-information"
-            role="tabpanel"
-            id={'summary-panel-' + id + '-moves'}
-            aria-labelledby={'summary-tab-' + id + '-moves'}
-            hidden={section !== 'moves'}
-            tabIndex={0}
-          >
-            {section === 'moves' && <PokemonMoveSet moves={p.moves} onPreview={setPreviewMove} />}
-          </div>
+              ))}
+            </div>
+            <div className="summary-candy-meter">
+              <CandySprite />
+              <span>Rare Candy</span>
+              <strong>
+                {p.rareCandy.toLocaleString()}
+                {species.evolvesTo.length > 0 && (
+                  <small> / {evoStatus.candyRequired.toLocaleString()}</small>
+                )}
+              </strong>
+              {species.evolvesTo.length > 0 && (
+                <Progress value={(p.rareCandy / evoStatus.candyRequired) * 100} color="#8191d8" />
+              )}
+            </div>
+          </section>
         </div>
       </div>
       {dialog === 'details' && (

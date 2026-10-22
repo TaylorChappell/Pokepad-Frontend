@@ -1,12 +1,6 @@
 import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import { asset } from '../utils';
-import {
-  REVEAL_SOUNDS,
-  REVEAL_TIMELINES,
-  type SoundLayer,
-  type RevealKind,
-  type RevealPhase,
-} from './catalog';
+import { REVEAL_SOUNDS, type SoundLayer, type RevealKind, type RevealPhase } from './catalog';
 import { runRevealTimeline, type RevealFrame, type RevealClock } from './reveal-timeline';
 
 const MUTE_KEY = 'kanto-audio-muted';
@@ -205,6 +199,7 @@ export function useSoundEffects(active = true) {
 
 export interface RevealStartOptions {
   reducedMotion?: boolean;
+  canReveal?(): boolean;
   onFrame(frame: RevealFrame): void;
   onReveal(): void;
   /** Injectable clock for deterministic timing tests. */
@@ -274,16 +269,11 @@ export function useRevealAudio() {
         options.reducedMotion ||
         (typeof window.matchMedia === 'function' &&
           window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-      if (document.hidden) {
-        const durationMs = reducedMotion ? 180 : REVEAL_TIMELINES[kind].durationMs;
-        options.onFrame({ elapsedMs: durationMs, durationMs, progress: 1, revealed: true });
-        options.onReveal();
-        return true;
-      }
       sequence.current = runRevealTimeline(
         kind,
         {
           reducedMotion,
+          canReveal: options.canReveal,
           onFrame: options.onFrame,
           onReveal: options.onReveal,
           onSound: (cue) => {
@@ -292,6 +282,7 @@ export function useRevealAudio() {
         },
         options.clock,
       );
+      if (document.hidden) sequence.current.finishSilently();
       return true;
     },
     [prepare, playEffects, stop],

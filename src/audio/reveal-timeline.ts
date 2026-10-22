@@ -13,6 +13,8 @@ export interface RevealClock {
 }
 export interface RevealTimelineOptions {
   reducedMotion?: boolean;
+  /** Hold before the final flash until the result's artwork has decoded. */
+  canReveal?(): boolean;
   onFrame(frame: RevealFrame): void;
   onSound(layers: readonly SoundLayer[]): void;
   onReveal(): void;
@@ -32,7 +34,12 @@ export function runRevealTimeline(
   const timeline = REVEAL_TIMELINES[kind];
   const durationMs = options.reducedMotion ? 180 : timeline.durationMs;
   const cues = options.reducedMotion ? [] : timeline.cues;
-  const began = clock.now();
+  let lastFrame = clock.now();
+  let elapsed = 0;
+  let quiet = false;
+  const holdAt = options.reducedMotion
+    ? durationMs - 1
+    : (timeline.cues.find((cue) => cue.name === 'flash')?.atMs ?? durationMs) - 1;
   let request: number | undefined;
   let cancelled = false;
   let complete = false;
@@ -45,19 +52,22 @@ export function runRevealTimeline(
   });
   const tick = () => {
     if (cancelled || complete) return;
-    const elapsed = Math.min(durationMs, Math.max(0, clock.now() - began));
+    const now = clock.now();
+    const nextElapsed = quiet ? durationMs : elapsed + Math.max(0, now - lastFrame);
+    lastFrame = now;
+    elapsed = Math.min(options.canReveal?.() === false ? holdAt : durationMs, nextElapsed);
     // Paint the same sampled pose before starting its associated sound in this frame.
     options.onFrame(frame(elapsed));
     if (cancelled) return;
     while (nextCue < cues.length && cues[nextCue].atMs <= elapsed) {
       const cue = cues[nextCue++];
       // A blocked frame must not replay several old cracks/rips over an already-revealed Pokémon.
-      if (elapsed - cue.atMs <= 100) options.onSound(cue.layers);
+      if (!quiet && elapsed - cue.atMs <= 100) options.onSound(cue.layers);
       if (cancelled) return;
     }
     if (elapsed === durationMs) {
       complete = true;
-      options.onSound(timeline.revealed);
+      if (!quiet) options.onSound(timeline.revealed);
       if (!cancelled) options.onReveal();
     } else request = clock.request(tick);
   };
@@ -70,10 +80,10 @@ export function runRevealTimeline(
     // Backgrounding reveals the already-owned result quietly; no stale sound resumes on return.
     finishSilently() {
       if (cancelled || complete) return;
-      cancelled = true;
       if (request !== undefined) clock.cancel(request);
-      options.onFrame(frame(durationMs));
-      options.onReveal();
+      quiet = true;
+      nextCue = cues.length;
+      tick();
     },
   };
 }

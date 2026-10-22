@@ -726,3 +726,30 @@
     transition: none !important;
   }
 }
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .arena-lobby .lobby-rival-panel {
+    padding: 10px 12px;
+  }
+  .arena-lobby .lobby-rival-heading {
+    margin-bottom: 6px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties {
+    gap: 6px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-difficulties > button {
+    min-height: 40px;
+    padding: 3px 6px;
+  }
+  .arena-lobby .lobby-rival-panel .classic-lobby-actions {
+    margin-top: 6px;
+  }
+}
+
+/* Let the party panel scroll inside its row on short phones instead of
+   extending behind the fixed-height lobby and footer. */
+.online-battle-lobby > .slot-party-desk {
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

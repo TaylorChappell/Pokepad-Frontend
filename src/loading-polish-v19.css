@@ -546,3 +546,54 @@ img[data-media-state='loading'] {
   grid-column: 1/-1;
   padding: 0;
 }
+
+@media (max-width: 760px) {
+  .page-heading h1 {
+    font-size: clamp(24px, 7vw, 30px);
+    line-height: 1.3;
+  }
+  .pc-slot .pokemon-card-value {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 5px 9px;
+  }
+  /* Keep form text at a readable size without triggering iOS focus zoom. */
+  input:not([type='file']):not([type='range']):not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .two-column {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .two-column > .panel {
+    min-width: 0;
+  }
+  .starter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .starter-grid .starter-card {
+    min-width: 0;
+    padding-inline: 10px;
+  }
+  .starter-card .pokemon-art {
+    max-width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .partner-summary,
+  .profile-partner {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  .profile-gym {
+    gap: 12px;
+  }
+  .profile-gym > div {
+    min-width: 0;
+  }
+}

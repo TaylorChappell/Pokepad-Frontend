@@ -76,3 +76,16 @@
 [data-motion='reduced'] .search-trigger {
   transition: none;
 }
+
+/* Long notification histories must remain reachable on short phone screens. */
+.notification-dropdown {
+  max-height: min(680px, calc(100dvh - var(--top) - 18px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.notification-dropdown > .dropdown-heading {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+}

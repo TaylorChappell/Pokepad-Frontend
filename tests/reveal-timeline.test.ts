@@ -131,3 +131,76 @@ test('reduced motion reveals promptly without cracks, flashes or a long evolutio
     assert.equal(app.frames.at(-1)!.durationMs, 180);
   }
 });
+
+test('slow artwork holds before the flash and resumes sound with the reveal after decoding', () => {
+  for (const kind of ['hatch', 'pack'] as const) {
+    const time = clock();
+    let ready = false,
+      reveals = 0;
+    const frames: RevealFrame[] = [];
+    const sounds: string[] = [];
+    const plan = REVEAL_TIMELINES[kind];
+    runRevealTimeline(
+      kind,
+      {
+        canReveal: () => ready,
+        onFrame: (frame) => frames.push(frame),
+        onSound: (layers) => sounds.push(...layers.map((layer) => layer.file)),
+        onReveal: () => reveals++,
+      },
+      time.source,
+    );
+    time.advance(plan.durationMs + 5000);
+    const held = frames.at(-1)!.elapsedMs;
+    assert.equal(held, plan.cues.find((cue) => cue.name === 'flash')!.atMs - 1);
+    time.advance(plan.durationMs + 6000);
+    assert.equal(frames.at(-1)!.elapsedMs, held);
+    assert.equal(reveals, 0);
+    ready = true;
+    time.advance(plan.durationMs + 6001);
+    assert.ok(sounds.includes(plan.cues.find((cue) => cue.name === 'flash')!.layers[0].file));
+    time.advance(plan.durationMs + 6000 + plan.durationMs - held);
+    assert.equal(reveals, 1);
+    assert.equal(frames.at(-1)!.revealed, true);
+    assert.ok(sounds.includes(plan.revealed[0].file));
+  }
+});
+
+test('a hidden or reduced-motion reward still waits for artwork; cancellation never reveals later', () => {
+  const time = clock();
+  let ready = false,
+    reveals = 0,
+    sounds = 0;
+  const run = runRevealTimeline(
+    'pack',
+    {
+      reducedMotion: true,
+      canReveal: () => ready,
+      onFrame() {},
+      onSound: () => sounds++,
+      onReveal: () => reveals++,
+    },
+    time.source,
+  );
+  run.finishSilently();
+  time.advance(9000);
+  assert.equal(reveals, 0);
+  ready = true;
+  time.advance(9010);
+  assert.equal(reveals, 1);
+  assert.equal(sounds, 0);
+  const cancelled = runRevealTimeline(
+    'hatch',
+    {
+      canReveal: () => false,
+      onFrame() {},
+      onSound() {},
+      onReveal: () => reveals++,
+    },
+    time.source,
+  );
+  cancelled.cancel();
+  time.advance(12000);
+  assert.equal(reveals, 1);
+  assert.equal(time.pending(), 0);
+});

@@ -1644,3 +1644,47 @@
     animation: none !important;
   }
 }
+
+/* Reserve enough room for the bag's Back button, items, and rival supplies
+   when the phone is landscape. The battlefield uses the remaining height. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .classic-handheld:has(.command-bag) {
+    grid-template-rows: minmax(0, 1fr) 148px;
+  }
+  .battle-bag-menu .battle-bag-items small {
+    display: none;
+  }
+}
+
+.gym-defenders:not(.compact) {
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+}
+@media (max-width: 600px) {
+  .gym-defenders:not(.compact) .gym-defender-moves {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .gym-detail-refresh .gym-detail-header {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px 14px;
+  }
+  .gym-detail-refresh .gym-detail-header .gym-coin-badge .coin-avatar {
+    width: 64px !important;
+    height: 64px !important;
+  }
+  .gym-detail-refresh .gym-detail-header > .button {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .gym-detail-refresh .gym-detail-header h1 {
+    font-size: clamp(20px, 5vw, 24px);
+    overflow-wrap: anywhere;
+  }
+}

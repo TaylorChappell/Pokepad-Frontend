@@ -1289,3 +1289,18 @@
     height: min(690px, 90dvh);
   }
 }
+
+@media (max-width: 420px) {
+  .rewards-v3 .tab-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    overflow: visible;
+  }
+  .rewards-v3 .tab-bar button {
+    min-width: 0;
+    justify-content: center;
+    padding-inline: 5px;
+    gap: 5px;
+  }
+}

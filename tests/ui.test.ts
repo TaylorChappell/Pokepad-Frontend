@@ -640,7 +640,8 @@ test('earned moves can be added or replace one move, while Eevee evolves to a fu
     assert.equal(learned.moveOffers[0].status, 'learned');
     assert.equal(document.querySelector('.pending-move-prompt'), null);
     await go('/pokemon/eevee');
-    assert.equal(document.querySelectorAll('.summary-menu button').length, 2);
+    assert.ok(document.querySelector('.summary-stats'));
+    assert.ok(document.querySelector('.pokemon-move-set'));
     await click(document.querySelector('.summary-evolve-button'));
     assert.equal(document.querySelector('.evolution-funding-note'), null);
     assert.equal(document.querySelectorAll('.evolution-mystery').length, 3);
@@ -948,25 +949,17 @@ test('Pokémon summary exposes current HP and stats without individual reward-ti
     );
     assert.equal(app.document.querySelector('main .rarity-badge'), null);
     assert.ok(app.document.querySelector('main .pokemon-art'));
-    await app.click(app.button('Moves'));
-    assert.equal(
-      app.document.querySelector('.summary-stats'),
-      null,
-      'Only the selected information panel is shown',
-    );
+    assert.ok(app.document.querySelector('.summary-stats'));
+    assert.ok(app.document.querySelector('.pokemon-move-set'));
     assert.ok(app.document.querySelector('.summary-main-actions'));
     assert.ok(app.document.querySelector('.pending-move-prompt'));
-    assert.deepEqual(
-      [...app.document.querySelectorAll('.summary-menu button')].map((b) => b.textContent?.trim()),
-      ['Stats', 'Moves'],
-    );
+    assert.equal(app.document.querySelector('.summary-menu'), null);
     await app.click(app.document.querySelector('[aria-label="Pokémon details"]'));
     assert.ok(app.document.querySelector('.pokemon-record-modal'));
     assert.ok(app.document.querySelector('.summary-main-actions'));
     await app.click(
       app.document.querySelector('.pokemon-record-modal [aria-label="Close dialog"]'),
     );
-    await app.click(app.button('Stats'));
     assert.ok(app.document.querySelector('.summary-stats'));
   } finally {
     await app.close();
@@ -1307,7 +1300,6 @@ test('PC bag heals only eligible Pokémon and move info opens the shared battle 
     assert.ok(app.saved().pokemon.find((p) => p.id === 'partner')!.health! > 0);
     assert.equal(app.saved().bag?.revive, 0);
     await app.click(app.document.querySelector('[role="dialog"] [aria-label="Close dialog"]'));
-    await app.click(app.button('Moves'));
     assert.equal(app.document.querySelector('.summary-move-card summary'), null);
     await app.click(app.document.querySelector('[aria-label="Preview Scratch"]'));
     assert.ok(app.document.querySelector('.move-preview-field'));
@@ -1529,28 +1521,20 @@ test('legal routes remain readable during pending trainer prompts and footer des
   }
 });
 
-test('Stats and Moves have separate tab panels and support arrow-key navigation', async () => {
+test('summary shows moves beside the Pokémon and stats below, including after selecting a move', async () => {
   const app = await mountApp('/pokemon/dragonite');
   try {
-    const tabs = app.document.querySelector('[role="tablist"][aria-label="Pokémon information"]')!;
-    const stats = app.button('Stats', tabs);
-    const moves = app.button('Moves', tabs);
-    assert.notEqual(stats.getAttribute('aria-controls'), moves.getAttribute('aria-controls'));
-    assert.equal(stats.getAttribute('aria-selected'), 'true');
-    assert.equal(app.document.querySelectorAll('.summary-information:not([hidden])').length, 1);
-    await act(async () => {
-      stats.focus();
-      stats.dispatchEvent(
-        new app.dom.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }),
-      );
-    });
-    assert.equal(app.document.activeElement, moves);
-    assert.equal(moves.getAttribute('aria-selected'), 'true');
-    assert.equal(app.document.querySelector('.summary-stats'), null);
+    assert.equal(
+      app.document.querySelector('[role="tablist"][aria-label="Pokémon information"]'),
+      null,
+    );
     assert.ok(app.document.querySelector('.pokemon-move-set'));
-    await app.click(stats);
     assert.ok(app.document.querySelector('.summary-stats'));
-    assert.equal(app.document.querySelector('.pokemon-move-set'), null);
+    await app.click(app.document.querySelectorAll('.game-move-select')[1]);
+    assert.ok(app.document.querySelector('.summary-stats'));
+    assert.ok(app.document.querySelector('.summary-main-actions'));
+    await app.click(app.document.querySelector('.game-move-row .move-info-button'));
+    assert.ok(app.document.querySelector('[role="dialog"]'));
   } finally {
     await app.close();
   }
@@ -1592,6 +1576,41 @@ test('a single paired defender can be challenged and unpaired gyms render no emp
     );
     assert.equal(app.document.querySelector('a[href="#/battles?gym=unpaired"]'), null);
   } finally {
+    await app.close();
+  }
+});
+
+test('reward opening preloads its artwork, waits for decoding, and retries without a second claim', async () => {
+  const app = await mountApp('/rewards', (s) => {
+    s.profile.artStyle = 'drawn';
+  });
+  const prototype = app.dom.window.HTMLImageElement.prototype;
+  const decode = prototype.decode;
+  const pending: { resolve: () => void; reject: (error: Error) => void }[] = [];
+  prototype.decode = function () {
+    if (!this.isConnected && this.src.includes('/pokemon/'))
+      return new Promise<void>((resolve, reject) => pending.push({ resolve, reject }));
+    return decode.call(this);
+  };
+  try {
+    const count = app.saved().pokemon.length;
+    await app.click(app.document.querySelector('button[aria-label="Hatch Rare egg"]'));
+    await app.until(() => pending.length === 1, 'Reward artwork begins decoding during opening');
+    await app.wait(250);
+    assert.equal(app.document.querySelector('.reveal-v3.is-revealed'), null);
+    assert.equal(app.saved().pokemon.length, count + 1);
+    await act(async () => pending[0].reject(new Error('Temporary artwork failure')));
+    await app.click(app.button('Retry artwork'));
+    await app.until(() => pending.length === 2, 'Retry downloads only the artwork');
+    assert.equal(app.saved().pokemon.length, count + 1);
+    await act(async () => pending[1].resolve());
+    await app.until(
+      () => !!app.document.querySelector('.reveal-v3.is-revealed'),
+      'Reveal waits for the decoded Pokémon',
+    );
+    assert.equal(app.saved().pokemon.length, count + 1);
+  } finally {
+    prototype.decode = decode;
     await app.close();
   }
 });
