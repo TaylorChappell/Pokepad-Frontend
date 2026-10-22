@@ -693,7 +693,7 @@ export function CoinPage({ id }: { id: string }) {
                 <i />
                 <i />
               </span>
-              <span>{isDemo ? 'DEMO MARKET' : 'MARKET OVERVIEW'}</span>
+              <span>{isDemo ? 'Demo market' : 'Market overview'}</span>
               <span className="kanto-market-terminal-lines" aria-hidden="true" />
             </div>
             <MarketCapChart coin={coin} demo={isDemo} />
@@ -764,7 +764,7 @@ export function CoinPage({ id }: { id: string }) {
                   <>
                     <div className="kanto-market-section-caption">
                       <span>Recent trades</span>
-                      <span>Sample activity</span>
+                      <span>Demo activity</span>
                     </div>
                     <div className="kanto-market-table-scroll">
                       <table className="kanto-market-table">
@@ -820,7 +820,7 @@ export function CoinPage({ id }: { id: string }) {
                   <>
                     <div className="kanto-market-section-caption">
                       <span>Community holders</span>
-                      <span>Sample holders</span>
+                      <span>Demo holders</span>
                     </div>
                     <div className="kanto-market-table-scroll">
                       <table className="kanto-market-table">

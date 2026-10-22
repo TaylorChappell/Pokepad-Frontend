@@ -20,29 +20,42 @@ export function GymDefenders({
   return (
     <>
       {defenders.length ? (
-        <div className={'gym-defenders ' + (compact ? 'compact' : '')}>
+        <div
+          className={'gym-defenders ' + (compact ? 'compact' : 'detailed')}
+          data-count={defenders.length}
+        >
           {defenders.map((p) => (
             <div
               className={'gym-defender' + (p.source === 'partner' ? ' gym-partner-defender' : '')}
               key={p.id}
             >
-              <span className="gym-defender-level">Lv. {p.level}</span>
-              <div className="gym-sprite-stage">
-                <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
-              </div>
-              <strong>{pokemonById(p.speciesId).name}</strong>
-              {p.source === 'partner' && <span className="gym-partner-label">Gym partner</span>}
-              {!compact && (
-                <>
+              <div className="gym-defender-portrait">
+                <span className="gym-defender-level">Lv. {p.level}</span>
+                <div className="gym-sprite-stage">
+                  <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
+                </div>
+                <strong>{pokemonById(p.speciesId).name}</strong>
+                {p.source === 'partner' && <span className="gym-partner-label">Gym partner</span>}
+                {!compact && (
                   <div className="type-row">
                     {pokemonById(p.speciesId).types.map((t) => (
                       <TypeChip key={t} type={t} />
                     ))}
                   </div>
-                  <small>{p.strength.toLocaleString()} strength</small>
+                )}
+              </div>
+              {!compact && (
+                <div className="gym-defender-loadout">
+                  <div className="gym-defender-rating">
+                    <strong>{p.strength.toLocaleString()}</strong>
+                    <span>Strength</span>
+                  </div>
                   {p.source !== 'partner' && p.trainerWallet && (
-                    <a href={'#/trainer/' + p.trainerWallet}>{p.trainerName}</a>
+                    <a className="gym-defender-trainer" href={'#/trainer/' + p.trainerWallet}>
+                      {p.trainerName}
+                    </a>
                   )}
+                  <span className="gym-moves-label">Moves</span>
                   <div className="gym-defender-moves">
                     {p.moves.map((move) => (
                       <button
@@ -55,7 +68,7 @@ export function GymDefenders({
                       </button>
                     ))}
                   </div>
-                </>
+                </div>
               )}
             </div>
           ))}
@@ -292,9 +305,7 @@ export function GymDetailPage({ id }: { id: string }) {
             <div>
               <h2>The defending team</h2>
               <p>
-                {gym.defenders.some((p) => p.source === 'partner')
-                  ? 'Supporters lead the team. One copy of the coin’s paired Pokémon joins when there’s room.'
-                  : 'The three strongest Pokémon from this gym’s supporters.'}
+                {gym.defenders.length} {gym.defenders.length === 1 ? 'defender' : 'defenders'}
               </p>
             </div>
             <span className="gym-strength-pill">{gym.strength.toLocaleString()} strength</span>

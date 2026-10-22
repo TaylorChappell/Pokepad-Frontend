@@ -1,3 +1,4 @@
+import { PortfolioRewardsArt } from '../components/PortfolioRewardsArt';
 import { holdingStreakLabel } from '../services/holdings';
 import { TrainerBanner, TrainerImageEditor } from '../components/TrainerImages';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -11,8 +12,6 @@ import { ACCENT_COLORS, CHARACTERS } from '../data/demo';
 import { pokemonById } from '../data/pokemon';
 import {
   Avatar,
-  EggArt,
-  PackArt,
   RareCandyIcon,
   Button,
   CoinAvatar,
@@ -249,10 +248,7 @@ export function PortfolioPage() {
           })()}
         </div>
         <div className="panel inset holding-tip">
-          <div className="portfolio-reward-art" aria-hidden="true">
-            <EggArt tier="Rare" />
-            <PackArt tier="Standard" />
-          </div>
+          <PortfolioRewardsArt />
           <h2>Holding rewards</h2>
           <p>
             Your balance and uninterrupted holding time help determine your reward tier. Inactive

@@ -564,7 +564,9 @@ export function PackArt({
     >
       <div className="pack-crimp top" />
       <div className="pack-inner">
-        <span className="pack-brand">KANTO</span>
+        <span className="pack-brand">
+          <img className="pack-logo" src={asset('brand/kanto-lockup.png')} alt="Kanto" />
+        </span>
         <span className="pack-edition">KANTO COLLECTION</span>
         <span className="pack-ball-emblem">
           <svg viewBox="0 0 80 80" aria-hidden="true">

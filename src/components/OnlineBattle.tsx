@@ -775,13 +775,6 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
           teamSize={desk === 'join' ? preview?.teamSize : undefined}
           disabled={online.pending}
         />
-        <div className="link-room-note">
-          <Icon name="Users" size={20} />
-          <div>
-            <strong>A fair match starts here</strong>
-            <p>Review both teams, agree on items and stakes, then both trainers accept.</p>
-          </div>
-        </div>
         <button className="button primary party-next-step" onClick={() => setMobilePanel('match')}>
           Match settings <Icon name="ArrowRight" size={16} />
         </button>

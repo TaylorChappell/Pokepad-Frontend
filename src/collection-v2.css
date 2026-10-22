@@ -803,7 +803,6 @@
 }
 .summary-move-card {
   border: 1px solid #dfe6ea;
-  border-top: 3px solid color-mix(in srgb, var(--move-color) 70%, #3f5265);
   border-radius: 12px;
   background: #fff;
   overflow: hidden;

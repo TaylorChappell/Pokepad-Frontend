@@ -1,21 +1,46 @@
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Coin } from '../types';
 import { marketCapHistory, marketCapLabel, usdMarketCap } from '../data/market-chart';
 
 export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
   const gradient = useId();
   const description = useId();
+  const plot = useRef<SVGSVGElement>(null);
+  const [size, setSize] = useState({ width: 900, height: 320 });
   const [range, setRange] = useState<'all' | 'recent'>('all');
   const [hover, setHover] = useState<number | null>(null);
   const history = useMemo(() => marketCapHistory(coin, demo), [coin, demo]);
+  useEffect(() => {
+    const element = plot.current;
+    if (!element) return;
+    const measure = () => {
+      const { width, height } = element.getBoundingClientRect();
+      if (width > 0 && height > 0)
+        setSize((previous) =>
+          previous.width === width && previous.height === height ? previous : { width, height },
+        );
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(element);
+    window.addEventListener('resize', measure);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [!!history]);
   const values = history ? (range === 'recent' ? history.values.slice(-24) : history.values) : [];
   const low = values.length ? Math.min(...values) : 0;
   const high = values.length ? Math.max(...values) : 1;
   const padding = Math.max((high - low) * 0.2, high * 0.015, 0.0001);
   const floor = Math.max(0, low - padding);
   const ceiling = high + padding;
-  const x = (index: number) => 18 + (index / Math.max(1, values.length - 1)) * 856;
-  const y = (value: number) => 22 + (1 - (value - floor) / (ceiling - floor)) * 228;
+  const left = 14,
+    right = Math.max(15, size.width - 16),
+    top = 20,
+    bottom = size.height - 35;
+  const x = (index: number) => left + (index / Math.max(1, values.length - 1)) * (right - left);
+  const y = (value: number) => top + (1 - (value - floor) / (ceiling - floor)) * (bottom - top);
   const path = values
     .map((value, index) => `${index ? 'L' : 'M'}${x(index).toFixed(2)} ${y(value).toFixed(2)}`)
     .join(' ');
@@ -34,7 +59,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
             <strong className="kanto-market-price">{marketCapLabel(currentValue)}</strong>
             <span className={'kanto-market-change ' + (coin.change >= 0 ? 'positive' : 'negative')}>
               {coin.change >= 0 ? '+' : ''}
-              {coin.change.toFixed(1)}% <small>24h</small>
+              {coin.change.toFixed(2)}% <small>24h</small>
             </span>
           </div>
         </div>
@@ -45,11 +70,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
               type="button"
               aria-pressed={range === option}
               disabled={!history || (option === 'recent' && history.values.length <= 24)}
-              title={
-                option === 'recent'
-                  ? 'Show the latest 24 available samples'
-                  : 'Show all available samples'
-              }
+              title={option === 'recent' ? 'Show recent history' : 'Show all history'}
               onClick={() => {
                 setRange(option);
                 setHover(null);
@@ -70,7 +91,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
             aria-valuemin={1}
             aria-valuemax={values.length}
             aria-valuenow={(active ?? values.length - 1) + 1}
-            aria-valuetext={`Sample ${(active ?? values.length - 1) + 1} of ${values.length}: ${marketCapLabel(values[active ?? values.length - 1], true)}`}
+            aria-valuetext={`${marketCapLabel(values[active ?? values.length - 1], true)} market cap, point ${(active ?? values.length - 1) + 1} of ${values.length}`}
             aria-describedby={description}
             onFocus={() => setHover(values.length - 1)}
             onBlur={() => setHover(null)}
@@ -93,18 +114,20 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
             }}
           >
             <svg
-              viewBox="0 0 900 290"
+              ref={plot}
+              viewBox={`0 0 ${size.width} ${size.height}`}
               preserveAspectRatio="none"
               aria-hidden="true"
               onPointerMove={(event) => {
                 const bounds = event.currentTarget.getBoundingClientRect();
-                const position = ((event.clientX - bounds.left) / bounds.width) * 900;
+                if (!bounds.width) return;
+                const position = ((event.clientX - bounds.left) / bounds.width) * size.width;
                 setHover(
                   Math.max(
                     0,
                     Math.min(
                       values.length - 1,
-                      Math.round(((position - 18) / 856) * (values.length - 1)),
+                      Math.round(((position - left) / (right - left)) * (values.length - 1)),
                     ),
                   ),
                 );
@@ -113,32 +136,38 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
             >
               <defs>
                 <linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="currentColor" stopOpacity=".18" />
+                  <stop offset="0%" stopColor="currentColor" stopOpacity=".23" />
                   <stop offset="100%" stopColor="currentColor" stopOpacity=".015" />
                 </linearGradient>
               </defs>
-              {[0, 1, 2, 3, 4].map((tick) => {
-                const value = ceiling - ((ceiling - floor) * tick) / 4;
-                return (
-                  <g key={tick} className="kanto-market-gridline">
-                    <path d={`M18 ${y(value)}H874`} />
-                  </g>
-                );
-              })}
-              <path d={`${path} L874 250 L18 250Z`} fill={`url(#${gradient})`} />
+              {[0, 1, 2, 3, 4].map((tick) => (
+                <g key={tick} className="kanto-market-gridline">
+                  <path d={`M${left} ${y(ceiling - ((ceiling - floor) * tick) / 4)}H${right}`} />
+                </g>
+              ))}
+              <path
+                d={`${path} L${right} ${bottom} L${left} ${bottom}Z`}
+                fill={`url(#${gradient})`}
+              />
               <path className="kanto-market-chart-line" d={path} />
+              <path
+                className="kanto-market-last-line"
+                d={`M${left} ${y(values.at(-1)!)}H${right}`}
+              />
               <circle
                 cx={x(values.length - 1)}
                 cy={y(values.at(-1)!)}
-                r="4.5"
+                r="5"
                 fill="currentColor"
-                stroke="white"
-                strokeWidth="2"
+                stroke="#fffef6"
+                strokeWidth="2.5"
               />
               {active !== null && (
                 <g className="kanto-market-crosshair">
-                  <path d={`M${x(active)} 12V250 M18 ${y(values[active])}H874`} />
-                  <circle cx={x(active)} cy={y(values[active])} r="6" />
+                  <path
+                    d={`M${x(active)} ${top}V${bottom} M${left} ${y(values[active])}H${right}`}
+                  />
+                  <circle cx={x(active)} cy={y(values[active])} r="5.5" />
                 </g>
               )}
             </svg>
@@ -146,36 +175,38 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
               {[0, 1, 2, 3, 4].map((tick) => {
                 const value = ceiling - ((ceiling - floor) * tick) / 4;
                 return (
-                  <span key={tick} style={{ top: (y(value) / 290) * 100 + '%' }}>
+                  <span key={tick} style={{ top: (y(value) / size.height) * 100 + '%' }}>
                     {marketCapLabel(value)}
                   </span>
                 );
               })}
             </div>
-            <div className="kanto-market-sample-axis" aria-hidden="true">
-              <span>{range === 'recent' ? 'Recent samples' : 'First sample'}</span>
+            <div className="kanto-market-history-axis" aria-hidden="true">
+              <span>Earlier</span>
               <span>Latest</span>
             </div>
             {active !== null && (
               <div
                 className="kanto-market-chart-tooltip"
-                style={{ left: Math.max(14, Math.min(77, (x(active) / 960) * 100)) + '%' }}
+                style={{ left: Math.max(18, Math.min(75, (x(active) / size.width) * 90)) + '%' }}
               >
-                <span>
-                  Sample {active + 1} / {values.length}
-                </span>
+                <span>Market cap</span>
                 <strong>{marketCapLabel(values[active], true)}</strong>
               </div>
             )}
           </div>
-          <p id={description} className="kanto-market-chart-source">
-            <span className="kanto-market-source-dot" aria-hidden="true" />
-            {history.source === 'demo' ? 'Demo market history' : 'Recorded market cap'}
-            <span>
-              {values.length} samples
-              {' · current USD quote'}
-            </span>
+          <p id={description} className="sr-only">
+            Market cap in US dollars. Use the left and right arrow keys to explore history.
           </p>
+          <div className="market-range-summary" aria-label="Displayed range">
+            <span>
+              Range low <strong>{marketCapLabel(low)}</strong>
+            </span>
+            <span>
+              Range high <strong>{marketCapLabel(high)}</strong>
+            </span>
+            {history.source === 'demo' && <small>Demo</small>}
+          </div>
         </>
       ) : (
         <div className="kanto-market-chart-empty">
@@ -190,7 +221,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
           <p>
             {currentValue === null
               ? 'Please try again shortly.'
-              : 'A line chart will appear when price samples are available.'}
+              : 'The chart will appear as trading history becomes available.'}
           </p>
         </div>
       )}

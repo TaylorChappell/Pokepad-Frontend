@@ -375,19 +375,6 @@
     sans-serif;
   white-space: nowrap;
 }
-.kanto-market-sample-axis {
-  position: absolute;
-  bottom: 2px;
-  left: 2%;
-  right: 68px;
-  display: flex;
-  justify-content: space-between;
-  color: #98a49c;
-  font:
-    700 10px Nunito,
-    sans-serif;
-  pointer-events: none;
-}
 .kanto-market-crosshair path {
   fill: none;
   stroke: currentColor;
@@ -423,24 +410,6 @@
 .kanto-market-chart-tooltip > span {
   font-size: 10px;
   color: #c2d0cb;
-}
-.kanto-market-chart-source {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #8b9890;
-  font-size: 10px;
-  margin: 5px 0 0;
-}
-.kanto-market-chart-source > span:last-child {
-  margin-left: auto;
-  text-align: right;
-}
-.kanto-market-source-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #a6b7a8;
 }
 .kanto-market-chart-empty {
   min-height: 285px;
@@ -1160,10 +1129,6 @@
   }
   .kanto-market-chart-screen > svg {
     height: 220px;
-  }
-  .kanto-market-chart-source {
-    font-size: 10px;
-    gap: 4px;
   }
   .kanto-market-stat-strip {
     padding: 17px;

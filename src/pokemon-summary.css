@@ -62,7 +62,6 @@
 .summary-v20 .summary-mon-screen {
   border-radius: 16px;
   padding: 20px;
-  border-top: 4px solid #8ba9ae;
   background: linear-gradient(#fff 55%, #f3f7f8);
 }
 .summary-v20 .summary-identity {

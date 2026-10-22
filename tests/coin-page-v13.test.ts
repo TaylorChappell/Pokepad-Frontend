@@ -102,7 +102,19 @@ test('chart ranges and history exploration are keyboard accessible', async () =>
     await app.key(slider, 'ArrowRight');
     assert.equal(slider.getAttribute('aria-valuenow'), '2');
     assert.ok(app.document.querySelector('.kanto-market-crosshair'));
-    assert.match(slider.getAttribute('aria-valuetext') || '', /Sample 2 of 24/);
+    assert.match(slider.getAttribute('aria-valuetext') || '', /point 2 of 24/);
+    assert.doesNotMatch(
+      app.document.querySelector('.kanto-market-chart')?.textContent || '',
+      /sample|current USD quote/i,
+    );
+    assert.match(
+      app.document.querySelector('.kanto-market-chart-tooltip')?.textContent || '',
+      /Market cap\$/,
+    );
+    assert.match(
+      app.document.querySelector('.market-range-summary')?.textContent || '',
+      /Range low.*Range high/,
+    );
   } finally {
     await app.close();
   }

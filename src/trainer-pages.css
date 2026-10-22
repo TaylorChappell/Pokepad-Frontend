@@ -68,7 +68,6 @@
 .analytics-observatory,
 .gym-badge-case {
   border: 1px solid #cbd8d0;
-  border-top: 5px solid #ce5c53;
   border-radius: 17px;
   background: #fffdf6;
   box-shadow:
@@ -224,25 +223,6 @@
   margin: 0 0 16px;
   color: #6d7e68;
 }
-.portfolio-reward-art {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  width: 135px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  gap: 0;
-}
-.portfolio-reward-art > * {
-  width: 74px !important;
-  height: 100px !important;
-  flex-shrink: 0;
-}
-.portfolio-reward-art > :last-child {
-  margin-left: -16px;
-  transform: rotate(10deg);
-}
 /* Analytics has a clean readout, with no decorative icon tiles. */
 .analytics-page .analytics-heading h1 {
   margin: 0 0 8px;
@@ -371,7 +351,6 @@
 }
 .gym-badge-case {
   margin-bottom: 27px;
-  border-top-color: #c5a65c;
 }
 .gym-badge-case .trainer-device-heading {
   background: #f5edce;
@@ -469,7 +448,6 @@
 .gyms-refresh .gym-directory-identity {
   padding: 19px;
   gap: 12px;
-  border-top: 4px solid var(--gym-color, #9ab88c);
 }
 .gyms-refresh .gym-directory-identity h2 {
   font-size: 17px;
@@ -524,7 +502,7 @@
   height: 76px;
   max-width: 100%;
 }
-.gyms-refresh .gym-defenders.compact .gym-defender > strong {
+.gyms-refresh .gym-defenders.compact .gym-defender-portrait > strong {
   font-size: 11px;
 }
 .gyms-refresh .gym-defenders.compact .gym-defender-level {
@@ -580,7 +558,6 @@
 .gym-detail-refresh .gym-detail-header {
   background: #fffdf5;
   border: 1px solid #d0dccc;
-  border-top: 4px solid var(--gym-color);
   border-radius: 15px;
   padding: 23px;
 }
@@ -607,7 +584,6 @@
 }
 .howto-page .howto-manual {
   border: 1px solid #cdd8ce;
-  border-top: 5px solid #c95b52;
   border-radius: 17px;
   background: #fffdf5;
   box-shadow: 0 4px 0 #dfe5d9;
@@ -808,7 +784,6 @@
   padding: 22px;
   background: #f9faf0;
   border: 1px solid #bfcfc3;
-  border-top: 5px solid #6f9d85;
   border-radius: 16px;
   box-shadow: 0 4px 0 #d5e1d3;
   overflow: visible;
@@ -891,9 +866,6 @@
     0 3px 0 #c7d8bd,
     inset 0 0 0 3px #edf3df;
   transform: none;
-}
-.party-console .battle-party-slot:first-child {
-  border-left-color: #c6aa61;
 }
 .party-console .battle-party-slot:disabled {
   opacity: 0.45;
@@ -1058,28 +1030,6 @@
   padding: 8px 10px;
   min-height: 32px;
 }
-.link-room-note {
-  display: flex;
-  align-items: start;
-  gap: 12px;
-  padding: 15px 20px;
-  color: #89967d;
-}
-.link-room-note > svg {
-  flex-shrink: 0;
-  color: #8caa87;
-  margin-top: 2px;
-}
-.link-room-note strong {
-  font-size: 12px;
-  color: #627d5c;
-}
-.link-room-note p {
-  font-size: 11px;
-  line-height: 1.7;
-  margin: 3px 0 0;
-  max-width: 380px;
-}
 .party-next-step {
   display: none;
 }
@@ -1089,7 +1039,6 @@
   height: auto;
   max-height: none;
   border: 1px solid #c9d6ca;
-  border-top: 5px solid #ce5c53;
   border-radius: 16px;
   background: #fffdf6;
   box-shadow: 0 4px 0 #dce4d7;
@@ -1233,7 +1182,6 @@
   height: auto;
   max-height: none;
   border: 1px solid #bacfc0;
-  border-top: 5px solid #77a18a;
   border-radius: 16px;
   box-shadow: 0 4px 0 #d9e3d4;
   background: #fafbf1;
@@ -1279,7 +1227,6 @@
 }
 .arena-lobby .lobby-rival-panel {
   border: 1px solid #cdd9c8;
-  border-top: 5px solid #cda95b;
   border-radius: 16px;
   background: #fffdf3;
   box-shadow: 0 4px 0 #e3e5d2;
@@ -1337,7 +1284,6 @@
   gap: 0;
   background: #fffdf4;
   border: 2px solid #b9cbb9;
-  border-top: 6px solid #cb5b51;
   border-radius: 17px;
   box-shadow:
     0 7px 0 #304d4226,
@@ -1563,14 +1509,6 @@
   .portfolio-page .holding-tip {
     padding-right: 120px !important;
   }
-  .portfolio-reward-art {
-    width: 95px;
-    right: 12px;
-  }
-  .portfolio-reward-art > * {
-    width: 56px !important;
-    height: 80px !important;
-  }
   .arena-lobby .online-battle-lobby,
   .arena-lobby .lobby-workspace {
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -1652,9 +1590,6 @@
   .party-next-step {
     display: inline-flex;
     justify-content: center;
-  }
-  .link-room-note {
-    padding: 4px 14px;
   }
   .arena-lobby .lobby-workspace {
     grid-template-columns: minmax(0, 1fr);

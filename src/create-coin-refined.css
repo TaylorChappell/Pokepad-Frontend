@@ -79,7 +79,6 @@
   grid-template-columns: minmax(0, 1fr);
   height: auto;
   border: 1px solid #cad8db;
-  border-top: 5px solid #d85751;
   border-radius: 18px;
   box-shadow:
     0 5px 0 #dce5e7,
