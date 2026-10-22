@@ -5,6 +5,7 @@ import { getWallets } from '@wallet-standard/app';
 import type { Wallet, WalletAccount } from '@wallet-standard/base';
 import { createWalletController, type PreparedTransaction } from '../src/services/wallet';
 import {
+  API_BASE,
   apiRequest,
   ApiError,
   onUnauthorized,
@@ -37,6 +38,8 @@ function fixture(
   options: {
     name?: 'Phantom' | 'MetaMask';
     registered?: boolean;
+    stored?: Map<string, string>;
+    storageUnavailable?: boolean;
     request?: (path: string, init: ApiRequestOptions) => Promise<unknown>;
   } = {},
 ) {
@@ -49,7 +52,9 @@ function fixture(
   };
   const events = new Set<(change: { accounts: readonly WalletAccount[] }) => void>();
   const requests: Array<{ path: string; init: ApiRequestOptions }> = [];
-  const stored = new Map<string, string>();
+  const stored = options.stored ?? new Map<string, string>();
+  const connectInputs: Array<{ silent?: boolean } | undefined> = [];
+  let accounts: readonly WalletAccount[] = [account];
   const tokens: Array<string | null> = [],
     enabled: boolean[] = [];
   const signedMessages: Uint8Array[] = [];
@@ -57,7 +62,13 @@ function fixture(
     metaMaskRegistrations = 0,
     unauthorized: (() => void) | undefined;
   const features: any = {
-    'standard:connect': { version: '1.0.0', connect: async () => ({ accounts: [account] }) },
+    'standard:connect': {
+      version: '1.0.0',
+      connect: async (input?: { silent?: boolean }) => {
+        connectInputs.push(input);
+        return { accounts: [account] };
+      },
+    },
     'standard:disconnect': {
       version: '1.0.0',
       disconnect: async () => {
@@ -89,7 +100,9 @@ function fixture(
     version: '1.0.0',
     icon: 'data:image/svg+xml;base64,AA==',
     chains: ['solana:mainnet'],
-    accounts: [account],
+    get accounts() {
+      return accounts;
+    },
     features,
   } as Wallet;
   let unregister = options.registered === false ? undefined : getWallets().register(wallet);
@@ -103,7 +116,8 @@ function fixture(
       if (path.endsWith('/verify'))
         return { authenticated: true, wallet: account.address, token, expiresAt: expiresAt() };
       if (path.endsWith('/session'))
-        return tokens.at(-1) === token
+        return tokens.at(-1) === token ||
+          new Headers(init.headers).get('Authorization') === `Bearer ${token}`
           ? { authenticated: true, wallet: account.address, expiresAt: expiresAt() }
           : { authenticated: false, wallet: null, expiresAt: null };
       if (path.endsWith('/submit')) return { signature: bs58.encode(new Uint8Array(64).fill(4)) };
@@ -111,7 +125,7 @@ function fixture(
     }) as typeof apiRequest,
     ensureMetaMask: async () => {
       metaMaskRegistrations++;
-      unregister = getWallets().register(wallet);
+      unregister ??= getWallets().register(wallet);
     },
     setAccessToken: (value) => {
       tokens.push(value);
@@ -125,15 +139,18 @@ function fixture(
         unauthorized = undefined;
       };
     },
-    storage: () => ({
-      getItem: (key) => stored.get(key) ?? null,
-      setItem: (key, value) => {
-        stored.set(key, value);
-      },
-      removeItem: (key) => {
-        stored.delete(key);
-      },
-    }),
+    storage: () => {
+      if (options.storageUnavailable) throw new Error('Storage disabled');
+      return {
+        getItem: (key) => stored.get(key) ?? null,
+        setItem: (key, value) => {
+          stored.set(key, value);
+        },
+        removeItem: (key) => {
+          stored.delete(key);
+        },
+      };
+    },
   });
   return {
     controller,
@@ -145,6 +162,13 @@ function fixture(
     tokens,
     enabled,
     signedMessages,
+    connectInputs,
+    setAccounts(value: readonly WalletAccount[]) {
+      accounts = value;
+    },
+    register() {
+      unregister ??= getWallets().register(wallet);
+    },
     emitAccounts(accounts: readonly WalletAccount[]) {
       for (const event of events) event({ accounts });
     },
@@ -161,7 +185,7 @@ function fixture(
   };
 }
 
-test('Phantom signs the exact UTF-8 server message and keeps its bearer out of browser storage', async () => {
+test('Phantom signs the exact UTF-8 message and saves a verified tab session until logout', async () => {
   const f = fixture();
   try {
     await f.controller.connectWallet('Phantom');
@@ -172,8 +196,12 @@ test('Phantom signs the exact UTF-8 server message and keeps its bearer out of b
     assert.equal(bs58.decode(proof.signature).length, 64);
     assert.equal(f.tokens.at(-1), token);
     assert.equal(f.enabled.at(-1), true);
-    assert.equal(JSON.stringify([...f.stored]).includes(token), false);
-    assert.equal(f.stored.size, 0);
+    const saved = JSON.parse(f.stored.get(`kanto.wallet-session:v1:${API_BASE}`)!);
+    assert.equal(saved.token, token);
+    assert.equal(saved.wallet, f.account.address);
+    assert.equal(saved.provider, 'Phantom');
+    assert.ok(Date.parse(saved.expiresAt) > Date.now());
+    assert.equal(f.stored.size, 1);
     await f.controller.disconnectWallet();
     assert.equal(f.tokens.at(-1), null);
     assert.equal(f.enabled.at(-1), false);
@@ -253,7 +281,7 @@ test('a stale cookie restore cannot resurrect an explicitly disconnected wallet'
   }
 });
 
-test('failed restoration leaves public browsing anonymous and restored cookies require signing-provider reconnection', async () => {
+test('failed restoration leaves public browsing anonymous and valid cookies reuse an authorized provider', async () => {
   const failure = fixture({
     request: async () => {
       throw new Error('Network unavailable');
@@ -273,8 +301,10 @@ test('failed restoration leaves public browsing anonymous and restored cookies r
   restoredWallet = restored.account.address;
   try {
     await restored.controller.restoreWalletSession();
-    assert.equal(restored.controller.currentWalletSession().signingReady, false);
-    await assert.rejects(restored.controller.signAndSendPrepared(prepared), /Reconnect/);
+    assert.equal(restored.controller.currentWalletSession().signingReady, true);
+    assert.equal(restored.connectInputs.length, 0);
+    assert.equal(restored.signedMessages.length, 0);
+    assert.equal(bs58.decode(await restored.controller.signAndSendPrepared(prepared)).length, 64);
   } finally {
     restored.dispose();
   }
@@ -337,6 +367,7 @@ test('provider account changes and authorization expiry clear the connected acco
     f.expire();
     assert.equal(f.controller.currentWalletSession().status, 'anonymous');
     assert.equal(f.enabled.at(-1), false);
+    assert.equal(f.stored.has(`kanto.wallet-session:v1:${API_BASE}`), false);
   } finally {
     f.dispose();
   }
@@ -499,8 +530,244 @@ test('an accepted signature without a usable server session never announces a su
     await assert.rejects(f.controller.connectWallet('Phantom'), /couldn’t keep you signed in/);
     assert.ok(!statuses.includes('authenticated'));
     assert.equal(f.tokens.at(-1), null);
+    assert.equal(f.stored.size, 0);
   } finally {
     stop();
+    f.dispose();
+  }
+});
+
+async function savedLogin(name: 'Phantom' | 'MetaMask' = 'Phantom') {
+  const first = fixture({ name });
+  try {
+    await first.controller.connectWallet(name);
+    return first.stored;
+  } finally {
+    first.dispose();
+  }
+}
+const sessionKey = `kanto.wallet-session:v1:${API_BASE}`;
+
+test('refresh validates the saved bearer without cookies and silently restores Phantom without signing again', async () => {
+  const f = fixture({ stored: await savedLogin() });
+  f.setAccounts([]);
+  try {
+    await f.controller.restoreWalletSession();
+    assert.equal(f.controller.currentWalletSession().status, 'authenticated');
+    assert.equal(f.controller.currentWalletSession().signingReady, true);
+    assert.equal(f.controller.currentWalletSession().restoringProvider, false);
+    assert.deepEqual(f.connectInputs, [{ silent: true }]);
+    assert.equal(f.signedMessages.length, 0);
+    assert.deepEqual(
+      f.requests.map(({ path }) => path),
+      ['/v1/auth/session'],
+    );
+    assert.equal(f.requests[0].init.credentials, 'omit');
+    assert.equal(new Headers(f.requests[0].init.headers).get('Authorization'), `Bearer ${token}`);
+    assert.equal(f.tokens.at(-1), token);
+    assert.equal(f.eventCount(), 1);
+    await f.controller.restoreWalletSession();
+    assert.equal(f.eventCount(), 1);
+    await f.controller.disconnectWallet();
+    assert.equal(f.stored.has(sessionKey), false);
+    const requests = f.requests.length;
+    await f.controller.restoreWalletSession();
+    assert.equal(f.requests.length, requests);
+    assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+  } finally {
+    f.dispose();
+  }
+});
+
+test('MetaMask refresh awaits registration and reuses its restored account without opening a connection prompt', async () => {
+  const stored = await savedLogin('MetaMask');
+  const f = fixture({ name: 'MetaMask', registered: false, stored });
+  try {
+    await f.controller.restoreWalletSession();
+    assert.equal(f.metaMaskRegistrations(), 1);
+    assert.equal(f.controller.currentWalletSession().provider, 'MetaMask');
+    assert.equal(f.controller.currentWalletSession().signingReady, true);
+    assert.equal(f.connectInputs.length, 0);
+    assert.equal(f.signedMessages.length, 0);
+  } finally {
+    f.dispose();
+  }
+  const locked = fixture({ name: 'MetaMask', stored });
+  locked.setAccounts([]);
+  try {
+    await locked.controller.restoreWalletSession();
+    assert.equal(locked.controller.currentWalletSession().status, 'authenticated');
+    assert.equal(locked.controller.currentWalletSession().signingReady, false);
+    assert.equal(locked.controller.currentWalletSession().restoringProvider, false);
+    assert.equal(locked.connectInputs.length, 0);
+    assert.equal(locked.signedMessages.length, 0);
+  } finally {
+    locked.dispose();
+  }
+});
+
+test('server-rejected or mismatched saved sessions cannot authenticate or connect a provider', async () => {
+  for (const result of [
+    { authenticated: false, wallet: null, expiresAt: null },
+    {
+      authenticated: true,
+      wallet: bs58.encode(new Uint8Array(32).fill(8)),
+      expiresAt: expiresAt(),
+    },
+    {
+      authenticated: true,
+      wallet: bs58.encode(new Uint8Array(32).fill(7)),
+      expiresAt: '2000-01-01',
+    },
+  ]) {
+    const f = fixture({ stored: await savedLogin(), request: async () => result });
+    try {
+      await f.controller.restoreWalletSession();
+      assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+      assert.equal(f.stored.has(sessionKey), false);
+      assert.equal(f.tokens.includes(token), false);
+      assert.equal(f.connectInputs.length, 0);
+      assert.equal(f.eventCount(), 0);
+    } finally {
+      f.dispose();
+    }
+  }
+});
+
+test('expired, malformed and other-API saved records are never sent as credentials', async () => {
+  const initial = await savedLogin();
+  const valid = JSON.parse(initial.get(sessionKey)!);
+  for (const [key, value] of [
+    [sessionKey, JSON.stringify({ ...valid, expiresAt: '2000-01-01' })],
+    [sessionKey, '{bad json'],
+    [sessionKey, JSON.stringify({ ...valid, token: 'invalid token' })],
+    ['kanto.wallet-session:v1:https://another-api.example', JSON.stringify(valid)],
+  ]) {
+    const f = fixture({ stored: new Map([[key, value]]) });
+    try {
+      await f.controller.restoreWalletSession();
+      assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+      assert.equal(new Headers(f.requests[0].init.headers).has('Authorization'), false);
+      assert.equal(f.tokens.includes(token), false);
+    } finally {
+      f.dispose();
+    }
+  }
+});
+
+test('locked or different Phantom accounts keep authenticated browsing without installing a mismatched signer', async () => {
+  for (const locked of [true, false]) {
+    const f = fixture({ stored: await savedLogin() });
+    const publicKey = new Uint8Array(32).fill(8);
+    const other = { ...f.account, publicKey, address: bs58.encode(publicKey) };
+    f.setAccounts([other]);
+    f.features['standard:connect'].connect = async (input: { silent?: boolean }) => {
+      assert.equal(input.silent, true);
+      if (locked) throw new Error('Wallet locked');
+      return { accounts: [other] };
+    };
+    try {
+      await f.controller.restoreWalletSession();
+      assert.equal(f.controller.currentWalletSession().status, 'authenticated');
+      assert.equal(f.controller.currentWalletSession().wallet, f.account.address);
+      assert.equal(f.controller.currentWalletSession().signingReady, false);
+      assert.equal(f.controller.currentWalletSession().restoringProvider, false);
+      assert.equal(f.stored.has(sessionKey), true);
+      assert.equal(f.signedMessages.length, 0);
+      await assert.rejects(f.controller.signAndSendPrepared(prepared), /Reconnect/);
+    } finally {
+      f.dispose();
+    }
+  }
+});
+
+test('restoration waits for delayed wallet registration without adding duplicate wallet listeners', async () => {
+  const f = fixture({ stored: await savedLogin(), registered: false });
+  try {
+    const pending = f.controller.restoreWalletSession();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(f.controller.currentWalletSession().restoringProvider, true);
+    f.register();
+    await pending;
+    assert.equal(f.controller.currentWalletSession().signingReady, true);
+    assert.equal(f.eventCount(), 1);
+  } finally {
+    f.dispose();
+  }
+});
+
+test('logout during silent wallet restoration cancels pending work and cannot resurrect the session', async () => {
+  const f = fixture({ stored: await savedLogin() });
+  const pending = deferred<{ accounts: WalletAccount[] }>();
+  const entered = deferred<void>();
+  f.setAccounts([]);
+  f.features['standard:connect'].connect = () => {
+    entered.resolve();
+    return pending.promise;
+  };
+  try {
+    const restoring = f.controller.restoreWalletSession();
+    await entered.promise;
+    await f.controller.disconnectWallet();
+    await restoring;
+    pending.resolve({ accounts: [f.account] });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+    assert.equal(f.stored.has(sessionKey), false);
+    assert.equal(f.tokens.at(-1), null);
+    assert.equal(f.eventCount(), 0);
+  } finally {
+    f.dispose();
+  }
+});
+
+test('temporary network failure preserves a saved credential for retry but definitive rejection clears it', async () => {
+  const stored = await savedLogin();
+  const offline = fixture({
+    stored,
+    request: async () => {
+      throw new ApiError('Unavailable', 503);
+    },
+  });
+  try {
+    await assert.rejects(offline.controller.restoreWalletSession(), /Unavailable/);
+    assert.equal(offline.controller.currentWalletSession().status, 'anonymous');
+    assert.equal(offline.tokens.includes(token), false);
+    assert.equal(stored.has(sessionKey), true);
+  } finally {
+    offline.dispose();
+  }
+  const retry = fixture({ stored });
+  try {
+    await retry.controller.restoreWalletSession();
+    assert.equal(retry.controller.currentWalletSession().status, 'authenticated');
+  } finally {
+    retry.dispose();
+  }
+  const revoked = fixture({
+    stored,
+    request: async () => {
+      throw new ApiError('Expired', 401);
+    },
+  });
+  try {
+    await assert.rejects(revoked.controller.restoreWalletSession(), /Expired/);
+    assert.equal(revoked.controller.currentWalletSession().status, 'anonymous');
+    assert.equal(stored.has(sessionKey), false);
+  } finally {
+    revoked.dispose();
+  }
+});
+
+test('unavailable session storage does not prevent normal sign-in or logout', async () => {
+  const f = fixture({ storageUnavailable: true });
+  try {
+    await f.controller.connectWallet('Phantom');
+    assert.equal(f.controller.currentWalletSession().status, 'authenticated');
+    assert.equal(f.controller.currentWalletSession().signingReady, true);
+    await f.controller.disconnectWallet();
+    assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+  } finally {
     f.dispose();
   }
 });

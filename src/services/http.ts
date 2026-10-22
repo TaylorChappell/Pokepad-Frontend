@@ -35,7 +35,7 @@ export type ApiRequestOptions = RequestInit & {
   timeoutMs?: number;
 };
 
-/** Shared live transport. Bearers exist in memory only; secrets never enter Vite configuration. */
+/** Shared live transport. The wallet controller validates restored sessions before installing a bearer. */
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const { json, base = API_BASE, auth = true, timeoutMs = 15000, ...init } = options;
   if (!base) throw new ApiError('The backend is not configured. This is a local demo.', 503);

@@ -60,7 +60,14 @@ export function WalletConnection({ compact = false }: { compact?: boolean }) {
         <Button
           type="button"
           className={compact ? 'header-connect' : 'trainer-connect-button'}
-          aria-label={session.status === 'authenticated' ? 'Reconnect wallet' : 'Connect wallet'}
+          disabled={session.status === 'checking' || session.restoringProvider}
+          aria-label={
+            session.restoringProvider
+              ? 'Restoring wallet'
+              : session.status === 'authenticated'
+                ? 'Reconnect wallet'
+                : 'Connect wallet'
+          }
           onClick={() => {
             setError('');
             setOpen(true);
@@ -68,7 +75,11 @@ export function WalletConnection({ compact = false }: { compact?: boolean }) {
         >
           <Pokeball size={21} />
           <span>
-            {session.status === 'authenticated' ? 'Reconnect' : 'Connect'}
+            {session.restoringProvider
+              ? 'Restoring'
+              : session.status === 'authenticated'
+                ? 'Reconnect'
+                : 'Connect'}
             <span className="wallet-button-extra"> wallet</span>
           </span>
           <Icon name="ChevronRight" size={17} />

@@ -229,9 +229,11 @@ function PrivacyContent() {
         <p>
           Kanto uses browser storage for settings, watchlists, local demo progress, saved teams,
           dismissed prompts and pending transaction recovery. A connected backend can issue a
-          secure, HTTP-only session cookie. Where cookie-based sign-in is unavailable, the frontend
-          keeps a temporary session token in memory; wallet connection information may also last for
-          the browser tab.
+          secure, HTTP-only session cookie. Kanto also saves a temporary sign-in token and your
+          chosen wallet in this tab’s session storage so refreshing can restore your sign-in,
+          including when cross-site cookies are blocked. The server validates the session before
+          restoring it. Disconnecting clears the saved sign-in. Wallet private keys are never stored
+          by Kanto.
         </p>
         <p>
           Clearing browser data removes locally stored preferences and demo progress, but does not

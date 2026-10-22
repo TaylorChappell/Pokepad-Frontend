@@ -11,7 +11,14 @@ import type {
   SolanaSignTransactionFeature,
 } from '@solana/wallet-standard-features';
 import bs58 from 'bs58';
-import { apiRequest, onUnauthorized, setAccessToken, setSessionEnabled } from './http';
+import {
+  API_BASE,
+  apiRequest,
+  ApiError,
+  onUnauthorized,
+  setAccessToken,
+  setSessionEnabled,
+} from './http';
 
 export type WalletName = 'Phantom' | 'MetaMask';
 export interface WalletSession {
@@ -19,8 +26,9 @@ export interface WalletSession {
   wallet: string | null;
   provider: WalletName | null;
   expiresAt: string | null;
-  /** Cookie restoration authenticates browsing, but a provider must reconnect before signing. */
+  /** Signing is enabled only after the authenticated account matches the wallet provider. */
   signingReady?: boolean;
+  restoringProvider?: boolean;
   step?: 'opening' | 'signing' | 'verifying';
 }
 type SolanaWallet = Wallet & {
@@ -32,6 +40,13 @@ type SolanaWallet = Wallet & {
     >;
 };
 const signedOutKey = 'kanto.explicitly-signed-out';
+const savedSessionKey = `kanto.wallet-session:v1:${API_BASE}`;
+interface SavedSession {
+  wallet: string;
+  provider: WalletName | null;
+  expiresAt: string;
+  token?: string;
+}
 const anonymous = (): WalletSession => ({
   status: 'anonymous',
   wallet: null,
@@ -43,8 +58,11 @@ let metamaskReady: Promise<void> | undefined;
 async function ensureMetaMask() {
   metamaskReady ??= import('@metamask/connect-solana')
     .then(async ({ createSolanaClient }) => {
-      // The installed SDK registers its Wallet Standard adapter before resolving.
-      await createSolanaClient({ dapp: { name: 'Kanto', url: window.location.origin } });
+      const client = await createSolanaClient({
+        dapp: { name: 'Kanto', url: window.location.origin },
+      });
+      // Adapter registration is delayed by the SDK; explicitly await it before discovery.
+      await client.registerWallet();
     })
     .catch((error) => {
       metamaskReady = undefined;
@@ -79,6 +97,57 @@ function validAccount(account: WalletAccount) {
     account.features.includes('solana:signMessage')
   );
 }
+function withRestoreTimeout<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const stop = () => finish(() => reject(new Error('Wallet restoration interrupted.')));
+    const timer = setTimeout(
+      () => finish(() => reject(new Error('Wallet restoration timed out.'))),
+      3000,
+    );
+    const finish = (done: () => void) => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', stop);
+      done();
+    };
+    signal.addEventListener('abort', stop, { once: true });
+    if (signal.aborted) stop();
+    promise.then(
+      (value) => finish(() => resolve(value)),
+      (error) => finish(() => reject(error)),
+    );
+  });
+}
+async function findRestoringWallet(
+  registry: ReturnType<typeof getWallets>,
+  name: WalletName,
+  signal: AbortSignal,
+) {
+  const find = () =>
+    registry
+      .get()
+      .find(
+        (wallet) =>
+          wallet.name.toLowerCase() === name.toLowerCase() && isSupportedSolanaWallet(wallet),
+      ) as SolanaWallet | undefined;
+  const available = find();
+  if (available) return available;
+  let off: (() => void) | undefined;
+  try {
+    return await withRestoreTimeout(
+      new Promise<SolanaWallet>((resolve) => {
+        const check = () => {
+          const wallet = find();
+          if (wallet) resolve(wallet);
+        };
+        off = registry.on('register', check);
+        check();
+      }),
+      signal,
+    );
+  } finally {
+    off?.();
+  }
+}
 export interface PreparedTransaction {
   intentId: string;
   transactionBase64: string;
@@ -111,6 +180,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
   let session: WalletSession = { ...anonymous(), status: 'checking' };
   let connected: { wallet: SolanaWallet; account: WalletAccount } | null = null;
   let stopWalletEvents: (() => void) | undefined;
+  let restoringProvider: AbortController | undefined;
   let generation = 0;
   let disconnecting: Promise<void> | undefined;
   const listeners = new Set<(session: WalletSession) => void>();
@@ -126,15 +196,47 @@ export function createWalletController(overrides: Partial<ControllerDependencies
     session = next;
     listeners.forEach((listener) => listener(next));
   }
+  function saveSession(value: SavedSession | null) {
+    try {
+      if (value) deps.storage()?.setItem(savedSessionKey, JSON.stringify(value));
+      else deps.storage()?.removeItem(savedSessionKey);
+    } catch {
+      // Storage-disabled browsers can still use the HttpOnly cookie or in-memory session.
+    }
+  }
+  function readSavedSession(): SavedSession | null {
+    try {
+      const value = JSON.parse(deps.storage()?.getItem(savedSessionKey) || 'null');
+      if (
+        value &&
+        validAddress(value.wallet) &&
+        (value.provider === null ||
+          value.provider === 'Phantom' ||
+          value.provider === 'MetaMask') &&
+        typeof value.expiresAt === 'string' &&
+        Date.parse(value.expiresAt) > Date.now() &&
+        (value.token === undefined ||
+          (typeof value.token === 'string' && /^[A-Za-z0-9_-]{43}$/.test(value.token)))
+      )
+        return value;
+    } catch {
+      /* Ignore malformed or unavailable browser storage. */
+    }
+    saveSession(null);
+    return null;
+  }
   function clearConnection() {
+    restoringProvider?.abort();
+    restoringProvider = undefined;
     connected = null;
     stopWalletEvents?.();
     stopWalletEvents = undefined;
   }
-  function clearSession(explicit: boolean) {
+  function clearSession(explicit: boolean, forget = true) {
     clearConnection();
     deps.setAccessToken(null);
     deps.setSessionEnabled(false);
+    if (forget) saveSession(null);
     if (explicit) rememberSignedOut(true);
     emit(anonymous());
   }
@@ -142,8 +244,66 @@ export function createWalletController(overrides: Partial<ControllerDependencies
     generation++;
     clearSession(true);
   });
+  function attachProvider(wallet: SolanaWallet, account: WalletAccount) {
+    clearConnection();
+    connected = { wallet, account };
+    stopWalletEvents = wallet.features['standard:events'].on('change', (change) => {
+      if (
+        change.accounts &&
+        !change.accounts.some((item) => item.address === account.address && validAccount(item))
+      )
+        void disconnectWallet().catch(() => {});
+    });
+  }
+  async function restoreProvider(attempt: number, preferred: WalletName | null, address: string) {
+    const restore = new AbortController();
+    restoringProvider = restore;
+    try {
+      const registry = deps.wallets();
+      if (preferred === 'MetaMask') await withRestoreTimeout(deps.ensureMetaMask(), restore.signal);
+      if (attempt !== generation) return;
+      const wallet = preferred
+        ? await findRestoringWallet(registry, preferred, restore.signal)
+        : (registry
+            .get()
+            .find(
+              (item) =>
+                isSupportedSolanaWallet(item) &&
+                item.accounts.some(
+                  (account) => validAccount(account) && account.address === address,
+                ),
+            ) as SolanaWallet | undefined);
+      if (!wallet || attempt !== generation) return;
+      let account = wallet.accounts.find((item) => validAccount(item) && item.address === address);
+      // Phantom implements silent authorization. The MetaMask adapter ignores the
+      // silent flag, so only reuse accounts restored by its existing SDK session.
+      if (!account && wallet.name.toLowerCase() === 'phantom') {
+        const result = await withRestoreTimeout(
+          wallet.features['standard:connect'].connect({ silent: true }),
+          restore.signal,
+        );
+        account = result.accounts.find((item) => validAccount(item) && item.address === address);
+      }
+      if (!account || attempt !== generation) return;
+      attachProvider(wallet, account);
+      const provider: WalletName = wallet.name.toLowerCase() === 'phantom' ? 'Phantom' : 'MetaMask';
+      const saved = readSavedSession();
+      if (saved?.wallet === address) saveSession({ ...saved, provider });
+      emit({ ...session, provider, signingReady: true, restoringProvider: false });
+    } catch {
+      // A locked/unavailable extension must not discard a valid Kanto sign-in.
+    } finally {
+      if (restoringProvider === restore) restoringProvider = undefined;
+      if (attempt === generation && session.status === 'authenticated' && session.restoringProvider)
+        emit({ ...session, restoringProvider: false });
+    }
+  }
   async function restoreWalletSession() {
     const attempt = ++generation;
+    clearConnection();
+    deps.setAccessToken(null);
+    deps.setSessionEnabled(false);
+    emit({ ...anonymous(), status: 'checking' });
     try {
       if (deps.storage()?.getItem(signedOutKey)) {
         clearSession(false);
@@ -152,12 +312,17 @@ export function createWalletController(overrides: Partial<ControllerDependencies
     } catch {
       /* Cookies may still restore the session. */
     }
+    const saved = readSavedSession();
     try {
       const value = await deps.request<{
         authenticated: boolean;
         wallet: string | null;
         expiresAt: string | null;
-      }>('/v1/auth/session', { auth: false, credentials: 'include' });
+      }>('/v1/auth/session', {
+        auth: false,
+        credentials: saved?.token ? 'omit' : 'include',
+        ...(saved?.token ? { headers: { Authorization: `Bearer ${saved.token}` } } : {}),
+      });
       if (attempt !== generation) return;
       clearConnection();
       deps.setAccessToken(null);
@@ -165,19 +330,31 @@ export function createWalletController(overrides: Partial<ControllerDependencies
         value?.authenticated === true &&
         validAddress(value.wallet) &&
         typeof value.expiresAt === 'string' &&
-        Number.isFinite(Date.parse(value.expiresAt))
+        Date.parse(value.expiresAt) > Date.now() &&
+        (!saved?.token || saved.wallet === value.wallet)
       ) {
+        const provider = saved?.wallet === value.wallet ? saved.provider : null;
+        deps.setAccessToken(saved?.token || null);
         deps.setSessionEnabled(true);
+        saveSession({
+          wallet: value.wallet!,
+          provider,
+          expiresAt: value.expiresAt,
+          ...(saved?.token ? { token: saved.token } : {}),
+        });
         emit({
           status: 'authenticated',
           wallet: value.wallet,
-          provider: null,
+          provider,
           expiresAt: value.expiresAt,
           signingReady: false,
+          restoringProvider: true,
         });
+        await restoreProvider(attempt, provider, value.wallet!);
       } else clearSession(false);
     } catch (error) {
-      if (attempt === generation) clearSession(false);
+      if (attempt === generation)
+        clearSession(false, error instanceof ApiError && [401, 403].includes(error.status));
       throw error;
     }
   }
@@ -190,6 +367,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
     deps.setAccessToken(null);
     deps.setSessionEnabled(false);
     rememberSignedOut(true);
+    saveSession(null);
     emit(anonymous());
     const work = (async () => {
       try {
@@ -244,15 +422,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
         throw new Error(
           'Select a valid Solana account in your wallet. Ethereum accounts cannot sign in to Kanto.',
         );
-      clearConnection();
-      connected = { wallet, account };
-      stopWalletEvents = wallet.features['standard:events'].on('change', (change) => {
-        if (
-          change.accounts &&
-          !change.accounts.some((item) => item.address === account.address && validAccount(item))
-        )
-          void disconnectWallet().catch(() => {});
-      });
+      attachProvider(wallet, account);
       const challenge = await deps.request<{
         challengeId: string;
         message: string;
@@ -310,7 +480,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
         throw new Error('Wallet verification did not match the connected account.');
       deps.setAccessToken(verified.token);
       deps.setSessionEnabled(true);
-      // Verify the memory bearer independently of third-party cookies before announcing success.
+      // Verify the bearer independently of third-party cookies before announcing success.
       const confirmed = await deps.request<{ authenticated: boolean; wallet: string | null }>(
         '/v1/auth/session',
         { credentials: 'omit' },
@@ -321,6 +491,12 @@ export function createWalletController(overrides: Partial<ControllerDependencies
           'Your signature was accepted, but Kanto couldn’t keep you signed in. Please try connecting again.',
         );
       rememberSignedOut(false);
+      saveSession({
+        wallet: verified.wallet,
+        provider: name,
+        expiresAt: verified.expiresAt,
+        token: verified.token,
+      });
       emit({
         status: 'authenticated',
         wallet: verified.wallet,
