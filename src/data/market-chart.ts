@@ -13,29 +13,33 @@ const DEMO_CHART_COINS = new Set([
 
 export interface MarketCapHistory {
   values: number[];
-  currency: 'USD' | 'SOL';
+  currency: 'USD';
   source: 'recorded' | 'demo';
 }
 
 /** Untimed price samples stay untimed. USD values use the supplied current quote, never a guessed rate. */
 export function marketCapHistory(coin: Coin, demo: boolean): MarketCapHistory | null {
+  const quotedCap = usdMarketCap(coin);
   const usdRate =
-    Number.isFinite(coin.marketCapUsd) && coin.marketCapUsd! >= 0 && coin.marketCap > 0
-      ? coin.marketCapUsd! / coin.marketCap
-      : null;
-  const multiplier = usdRate ?? 1;
-  if (coin.priceHistory !== undefined) {
+    Number.isFinite(coin.solUsd) && coin.solUsd! > 0
+      ? coin.solUsd!
+      : quotedCap !== null && quotedCap > 0 && Number.isFinite(coin.marketCap) && coin.marketCap > 0
+        ? quotedCap / coin.marketCap
+        : null;
+  if (usdRate === null) return null;
+  const samples = coin.marketCapHistory ?? coin.priceHistory;
+  if (samples !== undefined) {
     if (
-      coin.priceHistory.length < 2 ||
-      !Number.isFinite(coin.totalSupply) ||
-      coin.totalSupply <= 0 ||
-      !coin.priceHistory.every((value) => Number.isFinite(value) && value >= 0)
+      samples.length < 2 ||
+      !samples.every((value) => Number.isFinite(value) && value >= 0) ||
+      (coin.marketCapHistory === undefined &&
+        (!Number.isFinite(coin.totalSupply) || coin.totalSupply <= 0))
     )
       return null;
-    const values = coin.priceHistory.map((value) => value * coin.totalSupply * multiplier);
-    return values.every(Number.isFinite)
-      ? { values, currency: usdRate === null ? 'SOL' : 'USD', source: 'recorded' }
-      : null;
+    // Explicit market-cap samples already include token supply. Legacy price samples do not.
+    const supply = coin.marketCapHistory === undefined ? coin.totalSupply : 1;
+    const values = samples.map((value) => value * supply * usdRate);
+    return values.every(Number.isFinite) ? { values, currency: 'USD', source: 'recorded' } : null;
   }
   if (
     !demo ||
@@ -45,12 +49,12 @@ export function marketCapHistory(coin: Coin, demo: boolean): MarketCapHistory | 
   )
     return null;
   const seed = [...coin.id].reduce((sum, character) => sum + character.charCodeAt(0), 0);
-  const last = coin.marketCap * multiplier;
+  const last = coin.marketCap * usdRate;
   const change = Number.isFinite(coin.change) ? Math.max(-90, coin.change) / 100 : 0;
   const first = last / (1 + change);
   return {
     source: 'demo',
-    currency: usdRate === null ? 'SOL' : 'USD',
+    currency: 'USD',
     values: Array.from({ length: 96 }, (_, index) => {
       const progress = index / 95;
       const movement =
@@ -63,12 +67,21 @@ export function marketCapHistory(coin: Coin, demo: boolean): MarketCapHistory | 
   };
 }
 
-export function marketCapLabel(value: number, currency: 'USD' | 'SOL', precise = false): string {
-  const formatted = Intl.NumberFormat(
-    'en',
-    precise
-      ? { maximumFractionDigits: currency === 'USD' ? 2 : 4 }
-      : { notation: 'compact', maximumFractionDigits: 2 },
-  ).format(value);
-  return currency === 'USD' ? '$' + formatted : formatted + ' SOL';
+export function usdMarketCap(coin: Coin): number | null {
+  return typeof coin.marketCapUsd === 'number' &&
+    Number.isFinite(coin.marketCapUsd) &&
+    coin.marketCapUsd >= 0
+    ? coin.marketCapUsd
+    : null;
+}
+
+export function marketCapLabel(value: number | null | undefined, precise = false): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return '—';
+  return (
+    '$' +
+    Intl.NumberFormat(
+      'en',
+      precise ? { maximumFractionDigits: 2 } : { notation: 'compact', maximumFractionDigits: 2 },
+    ).format(value)
+  );
 }

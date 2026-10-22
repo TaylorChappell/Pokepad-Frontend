@@ -20,6 +20,7 @@ import type { Coin, RewardMode } from '../types';
 import { compact, navigate, relativeTime, sol } from '../utils';
 import { useCoinWatchlist } from '../state/watchlist';
 import { MarketCapChart } from '../components/MarketCapChart';
+import { marketCapLabel, usdMarketCap } from '../data/market-chart';
 import { DEMO_TRAINERS } from '../services/trainers';
 import {
   decimalToRaw,
@@ -46,7 +47,15 @@ function WatchStar({ filled = false }: { filled?: boolean }) {
   );
 }
 function MarketValue({ coin, field }: { coin: Coin; field: 'marketCap' | 'volume' }) {
-  const usd = field === 'marketCap' ? coin.marketCapUsd : coin.volumeUsd;
+  if (field === 'marketCap') {
+    const value = usdMarketCap(coin);
+    return (
+      <span title={value === null ? 'Dollar price temporarily unavailable' : undefined}>
+        {marketCapLabel(value)}
+      </span>
+    );
+  }
+  const usd = coin.volumeUsd;
   return (
     <>
       {typeof usd === 'number' && Number.isFinite(usd)

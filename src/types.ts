@@ -33,6 +33,11 @@ export interface Coin {
   /** Optional USD quotes from the market-data service; base figures above are SOL. */
   marketCapUsd?: number;
   volumeUsd?: number;
+  /** Current display-only SOL/USD quote and retrieval time. */
+  solUsd?: number;
+  usdQuotedAt?: number;
+  /** Recorded market-cap samples in SOL, before USD conversion. */
+  marketCapHistory?: number[];
   launchedAt?: number;
   /** Ordered price samples for the compact, unlabelled card trend. Never inferred in live mode. */
   priceHistory?: number[];

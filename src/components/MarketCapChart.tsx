@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import type { Coin } from '../types';
-import { marketCapHistory, marketCapLabel } from '../data/market-chart';
+import { marketCapHistory, marketCapLabel, usdMarketCap } from '../data/market-chart';
 
 export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
   const gradient = useId();
@@ -21,9 +21,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
     .join(' ');
   const active = hover === null ? null : Math.min(hover, values.length - 1);
   const rising = values.length > 0 && values.at(-1)! >= values[0];
-  const currency = history?.currency || 'SOL';
-  const currentValue = Number.isFinite(coin.marketCapUsd) ? coin.marketCapUsd! : coin.marketCap;
-  const currentCurrency = Number.isFinite(coin.marketCapUsd) ? 'USD' : 'SOL';
+  const currentValue = usdMarketCap(coin);
   return (
     <section
       className={'kanto-market-chart ' + (rising ? 'is-rising' : 'is-falling')}
@@ -33,9 +31,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
         <div>
           <span className="kanto-market-label">Market cap</span>
           <div className="kanto-market-price-row">
-            <strong className="kanto-market-price">
-              {marketCapLabel(currentValue, currentCurrency)}
-            </strong>
+            <strong className="kanto-market-price">{marketCapLabel(currentValue)}</strong>
             <span className={'kanto-market-change ' + (coin.change >= 0 ? 'positive' : 'negative')}>
               {coin.change >= 0 ? '+' : ''}
               {coin.change.toFixed(1)}% <small>24h</small>
@@ -74,7 +70,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
             aria-valuemin={1}
             aria-valuemax={values.length}
             aria-valuenow={(active ?? values.length - 1) + 1}
-            aria-valuetext={`Sample ${(active ?? values.length - 1) + 1} of ${values.length}: ${marketCapLabel(values[active ?? values.length - 1], currency, true)}`}
+            aria-valuetext={`Sample ${(active ?? values.length - 1) + 1} of ${values.length}: ${marketCapLabel(values[active ?? values.length - 1], true)}`}
             aria-describedby={description}
             onFocus={() => setHover(values.length - 1)}
             onBlur={() => setHover(null)}
@@ -151,7 +147,7 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
                 const value = ceiling - ((ceiling - floor) * tick) / 4;
                 return (
                   <span key={tick} style={{ top: (y(value) / 290) * 100 + '%' }}>
-                    {marketCapLabel(value, currency)}
+                    {marketCapLabel(value)}
                   </span>
                 );
               })}
@@ -168,16 +164,16 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
                 <span>
                   Sample {active + 1} / {values.length}
                 </span>
-                <strong>{marketCapLabel(values[active], currency, true)}</strong>
+                <strong>{marketCapLabel(values[active], true)}</strong>
               </div>
             )}
           </div>
           <p id={description} className="kanto-market-chart-source">
             <span className="kanto-market-source-dot" aria-hidden="true" />
-            {history.source === 'demo' ? 'Demo market history' : 'Recorded price × token supply'}
+            {history.source === 'demo' ? 'Demo market history' : 'Recorded market cap'}
             <span>
               {values.length} samples
-              {history.currency === 'USD' ? ' · current USD quote' : ' · SOL market cap'}
+              {' · current USD quote'}
             </span>
           </p>
         </>
@@ -186,8 +182,16 @@ export function MarketCapChart({ coin, demo }: { coin: Coin; demo: boolean }) {
           <svg viewBox="0 0 180 56" aria-hidden="true">
             <path d="M2 44h28l16-19 19 9 25-23 23 15 21-8 19 6h25" />
           </svg>
-          <strong>Market history is on its way</strong>
-          <p>A line chart will appear when price samples are available.</p>
+          <strong>
+            {currentValue === null
+              ? 'Dollar price temporarily unavailable'
+              : 'Market history is on its way'}
+          </strong>
+          <p>
+            {currentValue === null
+              ? 'Please try again shortly.'
+              : 'A line chart will appear when price samples are available.'}
+          </p>
         </div>
       )}
     </section>
