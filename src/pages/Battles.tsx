@@ -244,9 +244,7 @@ export function BattlesPage() {
   const [mode, setMode] = useState<'offline' | 'online' | 'gym'>(() =>
     new URLSearchParams(window.location.hash.split('?')[1]).has('gym')
       ? 'gym'
-      : new URLSearchParams(window.location.hash.split('?')[1]).has('room')
-        ? 'online'
-        : 'offline',
+      : 'online',
   );
   const online = useOnlineBattle(mode === 'online');
   const gymId = new URLSearchParams(window.location.hash.split('?')[1]).get('gym') || '';
