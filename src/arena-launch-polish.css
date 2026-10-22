@@ -12,7 +12,8 @@
 }
 @media (min-width: 1281px) {
   .market-section .coin-grid {
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    /* Keep empty columns so a short result list retains the normal card width. */
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   }
 }
 /* The rival card keeps its natural height instead of stretching with the arena. */
