@@ -563,7 +563,9 @@ export function PokemonDetailPage({ id }: { id: string }) {
               <p className="summary-starter-note">
                 Your starter can be sold after its first funded evolution.
                 {mode === 'live' &&
-                  ' Until then, it earns Rare Candy only from your main-token holding.'}
+                  (p.originCoin
+                    ? ` Until then, it earns Rare Candy from holding $${origin?.ticker || 'its originating coin'}.`
+                    : ' Hold an active coin to begin earning funded Rare Candy.')}
               </p>
             )}
           </div>

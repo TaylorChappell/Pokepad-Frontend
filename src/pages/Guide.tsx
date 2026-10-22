@@ -33,7 +33,7 @@ const topics: GuideTopic[] = [
       {
         title: 'Choose a starter',
         text: [
-          'Holding the main Kanto token unlocks one starter choice: Bulbasaur, Charmander, or Squirtle. A balance strictly above 1% of the main token’s supply also unlocks Pikachu. On your first eligible wallet connection, the choice opens automatically and remains until you choose.',
+          'Before the main Kanto token launches, all four starters are free to choose, including Pikachu. Once it launches, holding it unlocks one starter choice: Bulbasaur, Charmander, or Squirtle. A balance strictly above 1% of the main token’s supply also unlocks Pikachu. On your first eligible wallet connection, the choice opens automatically and remains until you choose.',
           'Your chosen starter is saved to your account, so connecting again does not give another choice. It appears in My PC, starts with no redemption value, and can become a funded Pokémon through its first funded evolution.',
         ],
       },
@@ -398,7 +398,7 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
   const replacements: Record<string, string[]> = {
     'Rare Candy and active holdings': [
       'Your equipped Pokémon earns Rare Candy from verified holdings in active coins. Selling can reset holding progress; inactive coins do not keep generating candy.',
-      'Each Candy grant is covered by reserved evolution funding, so progress pauses if the next grant cannot be funded. A free starter with no SOL backing earns candy only from its originating main-token holding; after its first funded evolution, it can train from any eligible active coin.',
+      'Each Candy grant is covered by reserved evolution funding, so progress pauses if the next grant cannot be funded. Starters chosen before the main token launches can begin training with any eligible active coin. The first funded Candy grant links that starter to that coin’s reward pool. Until its first evolution, a starter earns Candy only from the coin funding it; afterwards, any eligible active coin counts.',
     ],
     'Complete the launch wizard': [
       'The four steps are Details, Partner, Rewards, and Review. Add your coin image, name, ticker and description. Website, X, Telegram and Discord fields stay visible below the description. Choose an available Pokémon or your trainer and a reward mode; Review lets you return to edit without losing entries.',

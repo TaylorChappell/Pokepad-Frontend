@@ -467,9 +467,9 @@ export function applyAction(
   if (action.type === 'starter.choose') {
     if (s.profile.starterChosen) throw new Error('Your starter has already been chosen.');
     if (![1, 4, 7, 25].includes(action.speciesId)) throw new Error('Choose a starter.');
-    const main = s.coins.find((c) => c.main);
-    if (!main || main.holding <= 0) throw new Error('Hold the main token to choose a starter.');
-    if (action.speciesId === 25 && main.holding / main.totalSupply <= 0.01)
+    const main = s.coins.find((c) => c.main && c.totalSupply > 0);
+    if (main && main.holding <= 0) throw new Error('Hold the main token to choose a starter.');
+    if (action.speciesId === 25 && main && main.holding / main.totalSupply <= 0.01)
       throw new Error('Pikachu needs a holding above 1% of the main token.');
     s.profile.starterChosen = true;
     const id = 'starter-' + crypto.randomUUID();
@@ -481,7 +481,7 @@ export function applyAction(
       backing: 0,
       evolutionReserve: 0,
       moveOffers: [],
-      originCoin: main.id,
+      originCoin: main?.id || '',
       rarity: '',
       shiny: false,
       health: getPokemonStats({ speciesId: action.speciesId, level: 5 }).hp,
@@ -573,6 +573,12 @@ export function applyAction(
     s.demoCandyUpdatedAt = now;
     const partner = s.pokemon.find((p) => p.id === s.profile.equippedId);
     if (partner) {
+      if (partner.starter && !partner.originCoin) {
+        const funding = s.coins.find(
+          (c) => c.active && c.holding > 0 && c.totalSupply > 0 && c.vault > 0,
+        );
+        if (funding) partner.originCoin = funding.id;
+      }
       const rate = s.coins
         .filter(
           (c) =>

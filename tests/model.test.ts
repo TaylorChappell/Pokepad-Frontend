@@ -594,3 +594,20 @@ test('all 151 Kanto species and offered moves resolve to catalogue entries', () 
         name,
       );
 });
+
+test('pre-launch starters require no token and do not create a funded claim', () => {
+  const initial = createInitialState(now);
+  initial.profile.starterChosen = false;
+  initial.profile.equippedId = null;
+  initial.pokemon = [];
+  initial.coins = [];
+  for (const speciesId of [1, 4, 7, 25]) {
+    const next = applyAction(initial, { type: 'starter.choose', speciesId }, now);
+    assert.equal(next.pokemon.length, 1);
+    assert.equal(next.profile.equippedId, next.pokemon[0].id);
+    assert.equal(next.pokemon[0].backing, 0);
+    assert.equal(next.pokemon[0].evolutionReserve, 0);
+    assert.equal(next.pokemon[0].originCoin, '');
+    assert.throws(() => applyAction(next, { type: 'starter.choose', speciesId }, now), /already/);
+  }
+});

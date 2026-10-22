@@ -372,3 +372,28 @@ test('locked, future, declined, already-known and unfunded opportunities are nev
   assert.notEqual(promptStorageKey('api-a', 'wallet'), promptStorageKey('api-b', 'wallet'));
   assert.equal(readDeferredPrompts({ getItem: () => '{broken' }, 'key').size, 0);
 });
+
+test('pre-launch eligibility opens a free starter choice including Pikachu and never repeats it', async () => {
+  const h = await harness();
+  try {
+    await h.update((s) => {
+      s.profile.starterChosen = false;
+      s.coins = [];
+      s.starterEligibility = { canChoose: true, canChoosePikachu: true, requiresMainToken: false };
+    });
+    assert.match(document.querySelector('.starter-intro')!.textContent!, /No main token is needed/);
+    const cards = [...document.querySelectorAll<HTMLButtonElement>('.starter-card')];
+    assert.equal(cards.length, 4);
+    assert.ok(cards.every((card) => !card.disabled));
+    await h.click(cards.find((card) => card.querySelector('h2')?.textContent === 'Pikachu')!);
+    await h.click(h.button('I choose Pikachu!'));
+    assert.equal(h.state().pokemon[0].speciesId, 25);
+    assert.equal(h.state().profile.equippedId, h.state().pokemon[0].id);
+    assert.equal(h.state().pokemon[0].backing, 0);
+    assert.equal(h.state().pokemon[0].evolutionReserve, 0);
+    await h.remount();
+    assert.equal(document.querySelector('.starter-grid'), null);
+  } finally {
+    await h.close();
+  }
+});

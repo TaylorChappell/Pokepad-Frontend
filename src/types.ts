@@ -179,7 +179,12 @@ export interface AppSnapshot {
   demoCandyRemainder?: number;
   discoveredVariants?: VariantDiscoveries;
   pokemonCatalogue?: PokemonCatalogue;
-  starterEligibility?: { canChoose: boolean; canChoosePikachu: boolean; reason?: string };
+  starterEligibility?: {
+    canChoose: boolean;
+    canChoosePikachu: boolean;
+    requiresMainToken?: boolean;
+    reason?: string;
+  };
   redemptions?: {
     id: string;
     pokemonId: string;

@@ -177,7 +177,9 @@ export function PortfolioPage() {
                   <h2>{pokemonById(p.speciesId).name}</h2>
                   <p>
                     {mode === 'live' && p.starter && p.backing === 0
-                      ? 'Rare Candy from your main-token holding until the first funded evolution.'
+                      ? p.originCoin
+                        ? `Rare Candy from holding $${state.coins.find((c) => c.id === p.originCoin)?.ticker || 'your starter’s coin'} until its first evolution.`
+                        : 'Hold an active coin to begin earning funded Rare Candy.'
                       : 'Rare Candy from holding active coins.'}
                   </p>
                   <Progress value={p.rareCandy / 10} color="#e5ba4c" />
@@ -764,20 +766,21 @@ export function StarterPage() {
 export function StarterChoice({ onChosen }: { onChosen?: () => void }) {
   const { state, act, busy, toast, mode } = useApp(),
     [choice, setChoice] = useState(4),
-    main = state.coins.find((c) => c.main),
+    main = state.coins.find((c) => c.main && c.totalSupply > 0),
+    freeAccess = mode === 'live' ? state.starterEligibility?.requiresMainToken === false : !main,
     pikachu =
       mode === 'live'
         ? state.starterEligibility?.canChoosePikachu === true
-        : !!main && main.holding / main.totalSupply > 0.01;
+        : freeAccess || (!!main && main.holding / main.totalSupply > 0.01);
   return (
     <>
       <div className="starter-intro">
         <Icon name="Heart" size={22} />
         <span>
-          Choose your first partner with your ${main?.ticker || 'KANTO'} holding. Your first partner
-          stays with you, with no redemption value.
-          {mode === 'live' &&
-            ' Until its first funded evolution, your starter earns Rare Candy only from your main-token holding.'}
+          {freeAccess
+            ? 'Your first partner is on us! Choose any of the four starters. No main token is needed before it launches.'
+            : `Choose your first partner with your $${main?.ticker || 'KANTO'} holding.`}
+          {' Your starter begins with no SOL value.'}
         </span>
       </div>
       <div className="starter-grid">
@@ -834,7 +837,7 @@ export function StarterChoice({ onChosen }: { onChosen?: () => void }) {
             busy ||
             state.profile.starterChosen ||
             (choice === 25 && !pikachu) ||
-            (mode === 'live' ? !state.starterEligibility?.canChoose : !main?.holding)
+            (mode === 'live' ? !state.starterEligibility?.canChoose : !freeAccess && !main?.holding)
           }
           onClick={async () => {
             if (await act({ type: 'starter.choose', speciesId: choice })) {
