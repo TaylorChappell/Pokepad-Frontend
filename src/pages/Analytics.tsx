@@ -175,7 +175,7 @@ export function AnalyticsPage() {
   };
 
   return (
-    <div className="analytics-page">
+    <div className="analytics-page trainer-theme">
       <header className="analytics-heading">
         <div>
           <h1>Analytics</h1>
@@ -187,60 +187,61 @@ export function AnalyticsPage() {
         </span>
       </header>
 
-      <section className="analytics-metrics" aria-label="Platform totals">
-        {initialLoading ? (
-          <ContentSkeleton label="Loading platform totals" />
-        ) : (
-          <>
-            <div className="analytics-metric rewards">
-              <span className="analytics-metric-icon">
-                <Icon name="Candy" size={24} />
-              </span>
-              <div className="analytics-metric-copy">
-                <span>Total rewards</span>
-                <strong aria-label={metrics ? undefined : 'Total rewards unavailable'}>
-                  {metrics ? sol(metrics.totalRewardsSol) : '—'}
-                  <em>
-                    <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
-                    SOL
-                  </em>
-                </strong>
-                <small>Distributed to trainers · all time</small>
+      <section className="analytics-observatory" aria-label="Platform totals">
+        <header className="trainer-device-heading">
+          <h2>Kanto in numbers</h2>
+          <span className="device-lights" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </header>
+        <div className="analytics-metrics">
+          {initialLoading ? (
+            <ContentSkeleton label="Loading platform totals" />
+          ) : (
+            <>
+              <div className="analytics-metric rewards">
+                <div className="analytics-metric-copy">
+                  <span>Total rewards</span>
+                  <strong aria-label={metrics ? undefined : 'Total rewards unavailable'}>
+                    {metrics ? sol(metrics.totalRewardsSol) : '—'}
+                    <em>
+                      <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
+                      SOL
+                    </em>
+                  </strong>
+                  <small>Distributed to trainers · all time</small>
+                </div>
               </div>
-            </div>
-            <div className="analytics-metric volume">
-              <span className="analytics-metric-icon">
-                <Icon name="TrendingUp" size={24} />
-              </span>
-              <div className="analytics-metric-copy">
-                <span>Platform trading volume</span>
-                <strong
-                  aria-label={metrics ? undefined : 'Platform trading volume unavailable'}
-                  title={metrics ? sol(metrics.platformTradingVolumeSol) + ' SOL' : undefined}
-                >
-                  {metrics ? compact(metrics.platformTradingVolumeSol) : '—'}
-                  <em>
-                    <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
-                    SOL
-                  </em>
-                </strong>
-                <small>Across all Kanto coins · all time</small>
+              <div className="analytics-metric volume">
+                <div className="analytics-metric-copy">
+                  <span>Platform trading volume</span>
+                  <strong
+                    aria-label={metrics ? undefined : 'Platform trading volume unavailable'}
+                    title={metrics ? sol(metrics.platformTradingVolumeSol) + ' SOL' : undefined}
+                  >
+                    {metrics ? compact(metrics.platformTradingVolumeSol) : '—'}
+                    <em>
+                      <img src={asset('brand/solana.svg')} width="16" height="13" alt="" />
+                      SOL
+                    </em>
+                  </strong>
+                  <small>Across all Kanto coins · all time</small>
+                </div>
               </div>
-            </div>
-            <div className="analytics-metric trainers">
-              <span className="analytics-metric-icon">
-                <Icon name="Users" size={24} />
-              </span>
-              <div className="analytics-metric-copy">
-                <span>Active users</span>
-                <strong aria-label={metrics ? undefined : 'Active users unavailable'}>
-                  {metrics ? metrics.activeUsers24h.toLocaleString('en-US') : '—'}
-                </strong>
-                <small>Unique active trainers · past 24 hours</small>
+              <div className="analytics-metric trainers">
+                <div className="analytics-metric-copy">
+                  <span>Active users</span>
+                  <strong aria-label={metrics ? undefined : 'Active users unavailable'}>
+                    {metrics ? metrics.activeUsers24h.toLocaleString('en-US') : '—'}
+                  </strong>
+                  <small>Unique active trainers · past 24 hours</small>
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </section>
       <div className="analytics-data-caption">
         <p>

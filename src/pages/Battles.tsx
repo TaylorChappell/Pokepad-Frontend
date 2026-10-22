@@ -242,9 +242,7 @@ function useBattleBody(speciesId: number) {
 export function BattlesPage() {
   const { state, now, reload } = useApp();
   const [mode, setMode] = useState<'offline' | 'online' | 'gym'>(() =>
-    new URLSearchParams(window.location.hash.split('?')[1]).has('gym')
-      ? 'gym'
-      : 'online',
+    new URLSearchParams(window.location.hash.split('?')[1]).has('gym') ? 'gym' : 'online',
   );
   const online = useOnlineBattle(mode === 'online');
   const gymId = new URLSearchParams(window.location.hash.split('?')[1]).get('gym') || '';
@@ -1230,7 +1228,7 @@ export function BattlesPage() {
     );
 
   return (
-    <div className="battle-v8 battle-screen arena-lobby">
+    <div className="battle-v8 battle-screen arena-lobby trainer-theme">
       {heading}
       {mode === 'offline' ? (
         <div className="classic-lobby-grid lobby-workspace">

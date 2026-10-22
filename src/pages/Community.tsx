@@ -116,7 +116,7 @@ export function GymsPage() {
       (filter === 'My gym' && g.coinId === state.profile.supportedGym),
   );
   return (
-    <div className="gyms-refresh">
+    <div className="gyms-refresh trainer-theme">
       <header className="gyms-heading">
         <div>
           <h1>Gyms</h1>
@@ -127,32 +127,42 @@ export function GymsPage() {
           Move manuals
         </button>
       </header>
-      <section className="gym-passport">
-        <div className="gym-passport-total">
-          <Icon name="Gym" size={32} />
-          <strong>
-            {Math.max(state.gymProgress?.badges || 0, new Set(state.badges).size)}
-            <small>Badges earned</small>
-          </strong>
-        </div>
-        <div className="gym-passport-collection">
-          <span>Your badge case</span>
-          <div>
-            {state.badges.map((id) => {
-              const coin = coinForBadge(state.coins, id);
-              return coin ? (
-                <a key={id} href={'#/gym/' + coin.id} title={coin.name}>
-                  <GymBadge coin={coin} size={42} />
-                </a>
-              ) : null;
-            })}
-            {!state.badges.length && <p>Defeat your first away gym to start collecting.</p>}
+      <section className="gym-badge-case">
+        <header className="trainer-device-heading">
+          <h2>Your badge case</h2>
+          <span className="device-lights" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+        </header>
+        <div className="gym-passport">
+          <div className="gym-passport-total">
+            <Icon name="Gym" size={32} />
+            <strong>
+              {Math.max(state.gymProgress?.badges || 0, new Set(state.badges).size)}
+              <small>Badges earned</small>
+            </strong>
           </div>
-        </div>
-        <div className="gym-passport-points">
-          <strong>{(state.gymProgress?.points || 0).toLocaleString()}</strong>
-          <span>Career points</span>
-          <small>{state.gymProgress?.claimedToday.length || 0}/5 rewards today</small>
+          <div className="gym-passport-collection">
+            <span>Your collection</span>
+            <div>
+              {state.badges.map((id) => {
+                const coin = coinForBadge(state.coins, id);
+                return coin ? (
+                  <a key={id} href={'#/gym/' + coin.id} title={coin.name}>
+                    <GymBadge coin={coin} size={42} />
+                  </a>
+                ) : null;
+              })}
+              {!state.badges.length && <p>Defeat your first away gym to start collecting.</p>}
+            </div>
+          </div>
+          <div className="gym-passport-points">
+            <strong>{(state.gymProgress?.points || 0).toLocaleString()}</strong>
+            <span>Career points</span>
+            <small>{state.gymProgress?.claimedToday.length || 0}/5 rewards today</small>
+          </div>
         </div>
       </section>
       {state.gymProgress?.activeChallengeId && (
@@ -166,7 +176,12 @@ export function GymsPage() {
       <div className="gym-directory-toolbar">
         <div className="gym-filter-row">
           {['All gyms', 'Ready to challenge', 'My gym'].map((f) => (
-            <button key={f} className={filter === f ? 'active' : ''} onClick={() => setFilter(f)}>
+            <button
+              key={f}
+              className={filter === f ? 'active' : ''}
+              aria-pressed={filter === f}
+              onClick={() => setFilter(f)}
+            >
               {f}
             </button>
           ))}
@@ -192,21 +207,29 @@ export function GymsPage() {
                 </p>
               </div>
             </div>
-            <GymDefenders defenders={g.defenders} compact />
-            <div className="gym-directory-stat">
-              <strong>{g.strength.toLocaleString()}</strong>
-              <span>Team strength</span>
-              <small>
-                {g.prize.manualChance
-                  ? Math.round(g.prize.manualChance * 100) + '% manual chance'
-                  : 'No manual drops'}
-              </small>
+            <div className="gym-card-team">
+              <span className="gym-card-label">Defending team</span>
+              <GymDefenders defenders={g.defenders} compact />
             </div>
-            <div className="gym-directory-stat">
-              <strong>{g.weeklyPoints.toLocaleString()}</strong>
-              <span>Weekly points</span>
+            <div className="gym-card-record">
+              <div className="gym-directory-stat">
+                <strong>{g.strength.toLocaleString()}</strong>
+                <span>Team strength</span>
+                <small>
+                  {g.prize.manualChance
+                    ? Math.round(g.prize.manualChance * 100) + '% manual chance'
+                    : 'No manual drops'}
+                </small>
+              </div>
+              <div className="gym-directory-stat">
+                <strong>{g.weeklyPoints.toLocaleString()}</strong>
+                <span>Weekly points</span>
+              </div>
             </div>
-            <Icon name="ChevronRight" size={22} />
+            <div className="gym-card-footer">
+              <span>{g.defenders.length ? 'View challenge' : 'View gym'}</span>
+              <Icon name="ArrowRight" size={18} />
+            </div>
           </a>
         ))}
       </div>
@@ -242,7 +265,10 @@ export function GymDetailPage({ id }: { id: string }) {
     claimed = state.gymProgress?.claimedToday.includes(id),
     cap = (state.gymProgress?.claimedToday.length || 0) >= 5;
   return (
-    <div className="gym-detail-refresh" style={{ '--gym-color': gym.color } as CSSProperties}>
+    <div
+      className="gym-detail-refresh trainer-theme"
+      style={{ '--gym-color': gym.color } as CSSProperties}
+    >
       <a className="pokemon-back-button" href="#/gyms">
         <Icon name="ArrowLeft" />
         Back to gyms

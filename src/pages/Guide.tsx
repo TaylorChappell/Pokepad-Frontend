@@ -504,7 +504,14 @@ export function GuideManual({ embedded = false }: { embedded?: boolean }) {
               onClick={() => choose(topic.id)}
               aria-pressed={topic.id === current?.id}
             >
-              <Icon name={topic.icon} size={17} />
+              <span
+                className="handbook-chapter"
+                aria-hidden="true"
+                data-chapter={String(topics.findIndex((item) => item.id === topic.id) + 1).padStart(
+                  2,
+                  '0',
+                )}
+              />
               <span>{topic.label}</span>
               <Icon name="ChevronRight" size={12} />
             </button>
@@ -520,7 +527,11 @@ export function GuideManual({ embedded = false }: { embedded?: boolean }) {
               style={{ '--guide-color': current.color } as CSSProperties}
             >
               <div>
-                <span>{current.label}</span>
+                <span className="handbook-page-label">
+                  Chapter{' '}
+                  {String(topics.findIndex((item) => item.id === current.id) + 1).padStart(2, '0')}{' '}
+                  · {current.label}
+                </span>
                 <h2>{current.title}</h2>
                 <p>{current.intro}</p>
               </div>
@@ -571,10 +582,9 @@ export function GuideManual({ embedded = false }: { embedded?: boolean }) {
 }
 export function GuidePage() {
   return (
-    <div className="howto-page">
+    <div className="howto-page trainer-theme">
       <header className="howto-page-heading">
         <div>
-          <span className="howto-kicker">TRAINER HANDBOOK</span>
           <h1>How Kanto works</h1>
           <p>From your first starter to a fully trained team. Find the details here.</p>
         </div>

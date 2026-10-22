@@ -11,6 +11,9 @@ import { ACCENT_COLORS, CHARACTERS } from '../data/demo';
 import { pokemonById } from '../data/pokemon';
 import {
   Avatar,
+  EggArt,
+  PackArt,
+  RareCandyIcon,
   Button,
   CoinAvatar,
   EmptyState,
@@ -34,46 +37,56 @@ export function PortfolioPage() {
     syncing = held.some((c) => c.holdingStatus === 'syncing'),
     value = held.reduce((n, c) => n + c.holding * c.price, 0);
   return (
-    <>
-      <PageHeading
-        eyebrow="A LITTLE PROGRESS, EVERY DAY"
-        title="My portfolio"
-        description="Your coins, your communities, your next adventure."
-      >
+    <div className="portfolio-page trainer-theme">
+      <PageHeading title="My portfolio">
         <a className="button secondary" href="#/activity">
           <Icon name="Activity" />
           View activity
         </a>
       </PageHeading>
-      <div className="stats-grid">
-        <div className="stat-card lavender">
-          <span>
-            <Icon name="Wallet" />
-            Token holdings
+      <section className="portfolio-ledger" aria-label="Portfolio totals">
+        <header className="trainer-device-heading">
+          <span className="ledger-trainer">
+            <Avatar profile={state.profile} size={38} />
+            <strong>{profileName(state)}</strong>
+            <small>Trainer ledger</small>
           </span>
-          <strong>
-            {sol(value)} <small>SOL</small>
-          </strong>
-        </div>
-        <div className="stat-card pale-green">
-          <span>
-            <Icon name="Pokeball" />
-            Pokémon value
+          <span className="device-lights" aria-hidden="true">
+            <i />
+            <i />
+            <i />
           </span>
-          <strong>
-            {sol(collectionValue(state))} <small>SOL</small>
-          </strong>
+        </header>
+        <div className="stats-grid">
+          <div className="stat-card lavender">
+            <span>
+              <Icon name="Wallet" />
+              Token holdings
+            </span>
+            <strong>
+              {sol(value)} <small>SOL</small>
+            </strong>
+          </div>
+          <div className="stat-card pale-green">
+            <span>
+              <Icon name="Pokeball" />
+              Pokémon value
+            </span>
+            <strong>
+              {sol(collectionValue(state))} <small>SOL</small>
+            </strong>
+          </div>
+          <div className="stat-card pale-yellow">
+            <span>
+              <Icon name="Flame" />
+              Longest hold streak
+            </span>
+            <strong>
+              {Math.floor(Math.max(0, ...held.map((c) => c.holdingDays)))} <small>days</small>
+            </strong>
+          </div>
         </div>
-        <div className="stat-card pale-yellow">
-          <span>
-            <Icon name="Flame" />
-            Longest hold streak
-          </span>
-          <strong>
-            {Math.floor(Math.max(0, ...held.map((c) => c.holdingDays)))} <small>days</small>
-          </strong>
-        </div>
-      </div>
+      </section>
       {mode === 'live' && !!state.redemptions?.length && (
         <section className="panel inset panels-margin">
           <h2>Redemptions</h2>
@@ -138,6 +151,20 @@ export function PortfolioPage() {
             </tr>
           </thead>
           <tbody>
+            {!held.length && (
+              <tr>
+                <td colSpan={6}>
+                  <EmptyState
+                    title="Your holdings start here"
+                    description="Coins you hold will appear here once your wallet balance is confirmed."
+                  >
+                    <a className="button secondary" href="#/discover">
+                      Explore coins
+                    </a>
+                  </EmptyState>
+                </td>
+              </tr>
+            )}
             {held.map((c) => (
               <tr key={c.id}>
                 <td>
@@ -176,7 +203,8 @@ export function PortfolioPage() {
                 </td>
                 <td data-label="Last 24h" className={c.change >= 0 ? 'positive' : 'negative'}>
                   {c.change > 0 ? '+' : ''}
-                  {c.change}%<Sparkline seed={c.pokemonId} negative={c.change < 0} />
+                  {Number.isFinite(c.change) ? c.change.toFixed(2) : '—'}%
+                  <Sparkline seed={c.pokemonId} negative={c.change < 0} />
                 </td>
               </tr>
             ))}
@@ -186,8 +214,8 @@ export function PortfolioPage() {
       <div className="two-column panels-margin">
         <div className="panel inset">
           <div className="section-heading">
-            <h3>Equipped Pokémon</h3>
-            <Icon name="Sparkles" />
+            <h3>Your partner</h3>
+            <RareCandyIcon size={26} />
           </div>
           {(() => {
             const p = state.pokemon.find((p) => p.id === state.profile.equippedId);
@@ -221,7 +249,10 @@ export function PortfolioPage() {
           })()}
         </div>
         <div className="panel inset holding-tip">
-          <Icon name="Heart" size={28} />
+          <div className="portfolio-reward-art" aria-hidden="true">
+            <EggArt tier="Rare" />
+            <PackArt tier="Standard" />
+          </div>
           <h2>Holding rewards</h2>
           <p>
             Your balance and uninterrupted holding time help determine your reward tier. Inactive
@@ -233,7 +264,7 @@ export function PortfolioPage() {
           </a>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

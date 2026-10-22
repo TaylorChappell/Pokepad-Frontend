@@ -113,3 +113,66 @@ test('the party picker puts favourites first, keeps slots in sync, opens slots, 
     dom.window.close();
   }
 });
+
+test('PC party tabs swap selected members without duplication and clear only the chosen slot', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'https://example.test' });
+  Object.assign(globalThis, {
+    window: dom.window,
+    document: dom.window.document,
+    HTMLElement: dom.window.HTMLElement,
+    Image: dom.window.Image,
+    localStorage: dom.window.localStorage,
+    IS_REACT_ACT_ENVIRONMENT: true,
+  });
+  const root = createRoot(document.getElementById('root')!);
+  const pokemon = createInitialState()
+    .pokemon.slice(0, 4)
+    .map((p) => ({ ...p, health: undefined, locked: false }));
+  let selected: string[] = [];
+  function Probe() {
+    const [ids, setIds] = useState([pokemon[0].id, pokemon[1].id, pokemon[2].id]);
+    selected = ids;
+    return React.createElement(BattleTeamPicker, { pokemon, selected: ids, onChange: setIds });
+  }
+  const click = async (element: Element | null) => {
+    assert.ok(element);
+    await act(async () => (element as HTMLButtonElement).click());
+  };
+  try {
+    await act(async () => root.render(React.createElement(Probe)));
+    await click(document.querySelector('[aria-label="Choose Pokémon for slot 1"]'));
+    assert.equal(document.querySelectorAll('.pc-party-targets > button').length, 3);
+    await click(document.querySelectorAll('.pc-party-targets > button')[2]);
+    assert.equal(
+      document.querySelectorAll('.pc-party-targets > button')[2].getAttribute('aria-pressed'),
+      'true',
+    );
+    await click(
+      [...document.querySelectorAll('.battle-picker-pokemon')].find(
+        (button) =>
+          button.getAttribute('aria-label') === 'Choose ' + pokemonById(pokemon[0].speciesId).name,
+      )!,
+    );
+    assert.deepEqual(selected, [pokemon[2].id, pokemon[1].id, pokemon[0].id]);
+    assert.equal(document.querySelector('.party-picker-modal'), null);
+    assert.equal(document.querySelectorAll('.battle-party-slot.filled .party-hp').length, 3);
+    await click(document.querySelector('[aria-label="Choose Pokémon for slot 2"]'));
+    await click(
+      [...document.querySelectorAll('.modal-actions button')].find(
+        (button) => button.textContent === 'Clear this slot',
+      )!,
+    );
+    assert.deepEqual(selected, [pokemon[2].id, pokemon[0].id]);
+    assert.equal(document.querySelectorAll('.battle-party-slot.filled').length, 2);
+    await click(
+      [...document.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Clear team',
+      )!,
+    );
+    assert.deepEqual(selected, []);
+    assert.equal(document.querySelectorAll('.battle-party-slot.filled').length, 0);
+  } finally {
+    await act(async () => root.unmount());
+    dom.window.close();
+  }
+});

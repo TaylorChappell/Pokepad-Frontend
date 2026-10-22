@@ -50,6 +50,7 @@ import './pokemon-recovery.css';
 import './trainer-notices.css';
 import './wallet-trainer.css';
 import './create-coin-refined.css';
+import './trainer-pages.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')!).render(<App />);

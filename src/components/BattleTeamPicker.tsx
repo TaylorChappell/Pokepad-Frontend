@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { PokemonBattleInfo } from './PokemonBattleInfo';
 import type { OwnedPokemon } from '../types';
 import { pokemonById } from '../data/pokemon';
@@ -86,6 +86,7 @@ export function BattleTeamPicker({
     i < limit && ids.includes(slotOrder[i]) ? slotOrder[i] : '',
   );
   for (const id of ids) if (!slots.includes(id)) slots[slots.indexOf('')] = id;
+  const leadSlot = Math.max(0, slots.findIndex(Boolean));
   const previous = previousTeam(app?.state.profile.wallet || 'demo');
   const previousIds = battleSelection(
     pokemon,
@@ -115,21 +116,30 @@ export function BattleTeamPicker({
     setSlot(null);
   };
   return (
-    <section className="battle-party-desk slot-party-desk" aria-label="Choose your battle team">
+    <section
+      className="battle-party-desk slot-party-desk party-console"
+      aria-label="Choose your battle team"
+    >
       <header className="battle-party-heading">
         <div>
-          <small>Your party</small>
-          <h2>
-            Choose your team{' '}
-            <span>
-              {ids.length}/{limit}
-            </span>
-          </h2>
+          <h2>Choose your team</h2>
+          <p>Your first Pokémon leads the battle.</p>
         </div>
+        <span className="party-count" aria-label={`${ids.length} of ${limit} Pokémon selected`}>
+          {Array.from({ length: limit }, (_, i) => (
+            <span key={i} className={i < ids.length ? 'occupied' : ''}>
+              <Pokeball size={18} />
+            </span>
+          ))}
+          <b>
+            {ids.length}/{limit}
+          </b>
+        </span>
       </header>
       <div className="battle-party-slots">
         {Array.from({ length: 3 }, (_, index) => {
           const p = pokemon.find((p) => p.id === slots[index]);
+          const hp = p ? getPokemonHealth(p) : null;
           return (
             <button
               type="button"
@@ -143,23 +153,60 @@ export function BattleTeamPicker({
               }}
             >
               <span className="party-slot-number">
-                {index === 0 ? 'Lead' : 'Partner ' + (index + 1)}
+                {index === leadSlot ? 'Lead' : '0' + (index + 1)}
               </span>
-              {p ? (
-                <>
+              <span className="party-slot-art">
+                {p ? (
                   <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
-                  <strong>{pokemonById(p.speciesId).name}</strong>
-                  <small>
-                    Lv. {p.level} · {getPokemonHealth(p).current}/{getPokemonHealth(p).max} HP
-                  </small>
-                </>
-              ) : (
-                <>
-                  <Pokeball size={42} />
-                  <strong>{index >= limit ? 'Not used' : 'Choose Pokémon'}</strong>
-                  <small>{index >= limit ? 'Room limit' : 'Open My PC'}</small>
-                </>
-              )}
+                ) : (
+                  <Pokeball size={38} />
+                )}
+              </span>
+              <span className="party-slot-copy">
+                <strong>
+                  {p
+                    ? pokemonById(p.speciesId).name
+                    : index >= limit
+                      ? 'Not used'
+                      : 'Choose Pokémon'}
+                  {p && <em>Lv. {p.level}</em>}
+                </strong>
+                {p && hp ? (
+                  <>
+                    <span className="type-row">
+                      {pokemonById(p.speciesId).types.map((type) => (
+                        <TypeChip key={type} type={type} />
+                      ))}
+                    </span>
+                    <span className="party-hp">
+                      <b>HP</b>
+                      <span className="party-hp-track">
+                        <i
+                          style={
+                            {
+                              width: `${(hp.current / hp.max) * 100}%`,
+                              '--hp-color':
+                                hp.current / hp.max > 0.5
+                                  ? '#60ae84'
+                                  : hp.current / hp.max > 0.2
+                                    ? '#d4ae4a'
+                                    : '#d86b60',
+                            } as CSSProperties
+                          }
+                        />
+                      </span>
+                      <small>
+                        {hp.current}/{hp.max}
+                      </small>
+                    </span>
+                  </>
+                ) : (
+                  <small>{index >= limit ? 'Room limit' : 'Choose from your PC'}</small>
+                )}
+              </span>
+              <span className="party-slot-action" aria-hidden="true">
+                <Icon name={p ? 'ChevronRight' : 'Plus'} size={20} />
+              </span>
             </button>
           );
         })}
@@ -189,18 +236,38 @@ export function BattleTeamPicker({
           <button
             className="button secondary"
             disabled={disabled || !previousIds.length}
-            onClick={() => onChange(previousIds)}
+            onClick={() => {
+              setSlotOrder(previousIds);
+              onChange(previousIds);
+            }}
           >
             Use previous team
           </button>
         </div>
       )}
       <footer>
-        <p>Favourites appear first. Choose your lead carefully.</p>
+        <p>
+          {ids.length ? (
+            <>
+              <strong>
+                {pokemon
+                  .filter((p) => ids.includes(p.id))
+                  .reduce((total, p) => total + pokemonStrength(p), 0)
+                  .toLocaleString()}
+              </strong>{' '}
+              team strength
+            </>
+          ) : (
+            'Up to 3 Pokémon'
+          )}
+        </p>
         <button
           className="text-link"
           disabled={disabled || !ids.length}
-          onClick={() => onChange([])}
+          onClick={() => {
+            setSlotOrder([]);
+            onChange([]);
+          }}
         >
           Clear team
         </button>
@@ -209,8 +276,26 @@ export function BattleTeamPicker({
         <Modal
           title={'Choose ' + (slot === 0 ? 'your lead' : 'partner ' + (slot + 1))}
           onClose={() => setSlot(null)}
-          className="party-picker-modal"
+          className="party-picker-modal pc-party-browser"
         >
+          <nav className="pc-party-targets" aria-label="Team slots">
+            {Array.from({ length: limit }, (_, index) => {
+              const member = pokemon.find((p) => p.id === slots[index]);
+              return (
+                <button key={index} aria-pressed={slot === index} onClick={() => setSlot(index)}>
+                  {member ? (
+                    <PokemonArt id={member.speciesId} shiny={member.shiny} animated={false} />
+                  ) : (
+                    <Pokeball size={22} />
+                  )}
+                  <span>
+                    <small>{index === 0 ? 'Lead' : 'Slot ' + (index + 1)}</small>
+                    <strong>{member ? pokemonById(member.speciesId).name : 'Empty'}</strong>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
           <div className="party-picker-tools">
             <label className="small-search">
               <Icon name="Search" />
@@ -254,20 +339,39 @@ export function BattleTeamPicker({
                       'Choose ' + pokemonById(p.speciesId).name + (reason ? ', ' + reason : '')
                     }
                   >
-                    <span className="picker-level">
-                      Lv. {p.level}
-                      {p.favourite ? ' ♥' : ''}
+                    <span className="picker-sprite">
+                      <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
                     </span>
-                    <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
-                    <strong>{pokemonById(p.speciesId).name}</strong>
-                    <span className="type-row">
-                      {pokemonById(p.speciesId).types.map((t) => (
-                        <TypeChip key={t} type={t} />
-                      ))}
+                    <span className="picker-copy">
+                      <strong>
+                        {pokemonById(p.speciesId).name}
+                        {p.favourite && <Icon name="Heart" size={12} />}
+                      </strong>
+                      <span className="picker-level">
+                        Lv. {p.level} · {pokemonStrength(p)} strength
+                      </span>
+                      <span className="type-row">
+                        {pokemonById(p.speciesId).types.map((t) => (
+                          <TypeChip key={t} type={t} />
+                        ))}
+                      </span>
+                      <span className="party-hp">
+                        <b>HP</b>
+                        <span className="party-hp-track">
+                          <i style={{ width: `${(hp.current / hp.max) * 100}%` }} />
+                        </span>
+                        <small>
+                          {hp.current}/{hp.max}
+                        </small>
+                      </span>
+                      {reason ? (
+                        <small className="picker-unavailable">{reason}</small>
+                      ) : (
+                        ids.includes(p.id) && (
+                          <small className="picker-in-team">In your team · tap to swap</small>
+                        )
+                      )}
                     </span>
-                    <small>
-                      {reason || `${hp.current}/${hp.max} HP · ${pokemonStrength(p)} strength`}
-                    </small>
                   </button>
                   <button
                     className="picker-info move-info-button"

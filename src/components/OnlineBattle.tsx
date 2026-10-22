@@ -766,20 +766,36 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
           Match setup <Icon name="ArrowRight" size={14} />
         </button>
       </nav>
-      <BattleTeamPicker
-        pokemon={state.pokemon}
-        selected={ids}
-        onChange={changeSelection}
-        pokemonWager={activeWager === 'pokemon'}
-        teamSize={desk === 'join' ? preview?.teamSize : undefined}
-        disabled={online.pending}
-      />
+      <div className="online-team-workspace">
+        <BattleTeamPicker
+          pokemon={state.pokemon}
+          selected={ids}
+          onChange={changeSelection}
+          pokemonWager={activeWager === 'pokemon'}
+          teamSize={desk === 'join' ? preview?.teamSize : undefined}
+          disabled={online.pending}
+        />
+        <div className="link-room-note">
+          <Icon name="Users" size={20} />
+          <div>
+            <strong>A fair match starts here</strong>
+            <p>Review both teams, agree on items and stakes, then both trainers accept.</p>
+          </div>
+        </div>
+        <button className="button primary party-next-step" onClick={() => setMobilePanel('match')}>
+          Match settings <Icon name="ArrowRight" size={16} />
+        </button>
+      </div>
       <aside className="online-match-desk">
         <header className="online-battle-title">
           <div>
-            <span className="battle-desk-label">LINK ARENA</span>
-            <h2>Find your rival</h2>
+            <h2>Link battle</h2>
           </div>
+          <span className="device-lights" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
         </header>
         <div className="online-desk-tabs" role="tablist" aria-label="Room action">
           <button
@@ -865,9 +881,11 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
               </div>
               {mode !== 'demo' && (caps?.sol !== true || caps?.token !== true) && (
                 <p className="online-escrow-note">
-                  {caps?.monetaryWagerReason ||
-                    online.capabilitiesError ||
-                    'Checking on-chain wager availability…'}
+                  {caps
+                    ? 'SOL and token wagers are not available right now. You can still choose an available format above.'
+                    : online.capabilitiesError
+                      ? 'We couldn’t check wager availability. Please try again shortly.'
+                      : 'Checking wager availability…'}
                 </p>
               )}
               {(wager === 'sol' || wager === 'token') && (

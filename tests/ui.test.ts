@@ -1699,3 +1699,22 @@ test('a fainted card without Revives counts down and restores full HP without na
     await app.close();
   }
 });
+
+test('portfolio daily changes round to two decimals for losses, gains and unchanged prices', async () => {
+  const app = await mountApp('/portfolio', (state) => {
+    state.coins[0].holding = 1;
+    state.coins[0].change = -37.34787634312735;
+    state.coins[1].holding = 1;
+    state.coins[1].change = 12.346;
+    state.coins[2].holding = 1;
+    state.coins[2].change = 0;
+  });
+  try {
+    const changes = [...app.document.querySelectorAll('[data-label="Last 24h"]')].map((cell) =>
+      cell.textContent?.trim(),
+    );
+    assert.deepEqual(changes.slice(0, 3), ['-37.35%', '+12.35%', '0.00%']);
+  } finally {
+    await app.close();
+  }
+});
