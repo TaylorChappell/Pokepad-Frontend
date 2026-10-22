@@ -21,6 +21,7 @@ export interface WalletSession {
   expiresAt: string | null;
   /** Cookie restoration authenticates browsing, but a provider must reconnect before signing. */
   signingReady?: boolean;
+  step?: 'opening' | 'signing' | 'verifying';
 }
 type SolanaWallet = Wallet & {
   features: StandardConnectFeature &
@@ -219,6 +220,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
       status: 'connecting',
       wallet: null,
       provider: name,
+      step: 'opening',
       expiresAt: null,
       signingReady: false,
     });
@@ -247,7 +249,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
       stopWalletEvents = wallet.features['standard:events'].on('change', (change) => {
         if (
           change.accounts &&
-          (change.accounts[0]?.address !== account.address || !validAccount(change.accounts[0]))
+          !change.accounts.some((item) => item.address === account.address && validAccount(item))
         )
           void disconnectWallet().catch(() => {});
       });
@@ -270,6 +272,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
         challenge.message.length > 8192
       )
         throw new Error('The server returned an invalid sign-in challenge.');
+      emit({ ...session, step: 'signing' });
       const message = new TextEncoder().encode(challenge.message);
       const [proof] = await wallet.features['solana:signMessage'].signMessage({ account, message });
       current();
@@ -283,6 +286,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
         throw new Error('The wallet signed a different message. Please reconnect.');
       if (connected?.account.address !== account.address)
         throw new Error('Your wallet account changed. Please connect again.');
+      emit({ ...session, step: 'verifying' });
       const verified = await deps.request<{
         authenticated: true;
         wallet: string;
@@ -299,11 +303,23 @@ export function createWalletController(overrides: Partial<ControllerDependencies
         verified?.authenticated !== true ||
         verified.wallet !== account.address ||
         typeof verified.token !== 'string' ||
-        !/^[A-Za-z0-9_-]{43}$/.test(verified.token)
+        !/^[A-Za-z0-9_-]{43}$/.test(verified.token) ||
+        !Number.isFinite(Date.parse(verified.expiresAt)) ||
+        Date.parse(verified.expiresAt) <= Date.now()
       )
         throw new Error('Wallet verification did not match the connected account.');
       deps.setAccessToken(verified.token);
       deps.setSessionEnabled(true);
+      // Verify the memory bearer independently of third-party cookies before announcing success.
+      const confirmed = await deps.request<{ authenticated: boolean; wallet: string | null }>(
+        '/v1/auth/session',
+        { credentials: 'omit' },
+      );
+      current();
+      if (!confirmed?.authenticated || confirmed.wallet !== account.address)
+        throw new Error(
+          'Your signature was accepted, but Kanto couldn’t keep you signed in. Please try connecting again.',
+        );
       rememberSignedOut(false);
       emit({
         status: 'authenticated',

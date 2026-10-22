@@ -71,7 +71,12 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
       >
         Skip to content
       </a>
-      <header className="topbar" ref={header}>
+      <header
+        className={
+          'topbar' + (mode === 'live' && session.status !== 'authenticated' ? ' is-signed-out' : '')
+        }
+        ref={header}
+      >
         <div className="brand-area">
           <button
             className="icon-button mobile-menu"
@@ -123,7 +128,8 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
             {unread > 0 && <span className="unread-dot" />}
           </button>
           <div className="header-separator" />
-          {mode === 'live' && session.status !== 'authenticated' ? (
+          {mode === 'live' &&
+          (session.status !== 'authenticated' || state.profile.wallet !== session.wallet) ? (
             <WalletConnection compact />
           ) : (
             <button

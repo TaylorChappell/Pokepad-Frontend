@@ -134,7 +134,7 @@ const topics: GuideTopic[] = [
         title: 'My PC is your current inventory',
         text: [
           'Select a Pokémon to open its summary. Stats and Moves are separate tabs. The circular i button opens collection details; Use item and Teach move are direct actions. An obvious Evolve button appears when its evolution is ready.',
-          'Your partner appears in the sidebar. My PC starts with your partner, then favourites, then strongest to weakest. Change the sort for SOL value, readiness or other views. Move and evolution markers highlight available actions. The three-dot menu beside Favourite gives quick access to items and manuals.',
+          'Your first Pokémon automatically becomes your partner and appears in the sidebar. Choose a different partner in My PC whenever you like. You always have a partner while you own a Pokémon; if yours leaves your collection, another takes its place. My PC starts with your partner, then favourites, then strongest to weakest. Change the sort for SOL value, readiness or other views. Move and evolution markers highlight available actions. The three-dot menu beside Favourite gives quick access to items and manuals.',
         ],
       },
       {

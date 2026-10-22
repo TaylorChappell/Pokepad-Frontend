@@ -330,7 +330,7 @@ test('selling redeems only funded value once, keeps discoveries and returns unus
     redeemed.pokemon.find((p) => p.id === before.id),
     undefined,
   );
-  assert.equal(redeemed.profile.equippedId, null);
+  assert.equal(redeemed.profile.equippedId, 'partner');
   assert.ok(redeemed.discovered.includes(before.speciesId));
   assert.equal(redeemed.coins.find((c) => c.id === 'bulb')!.vault, 5.64);
   assert.equal(totalFunded(initial) - totalFunded(redeemed), Math.round(before.backing * 1e9));

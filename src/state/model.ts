@@ -1,3 +1,4 @@
+import { ensureDemoPartner } from './partner';
 import { DEMO_RECOVERY_MS, normalizeDemoRecovery } from './recovery';
 import { pcItemHealth, GYM_MANUALS, drawGymManual } from '../game/gym-policy';
 import type { Action, AppSnapshot, Activity, OwnedPokemon, CoinSocials, Reward } from '../types';
@@ -181,6 +182,7 @@ export function applyAction(
   assertSupportedAction(action);
   if (action.type === 'demo.reset') return { ...createInitialState(now), demoPromptEpoch: now };
   const s = structuredClone(original);
+  ensureDemoPartner(s);
   s.pokemon.forEach((p) => normalizeDemoRecovery(p, now));
   s.discoveredVariants = variantDiscoveries(s);
   const activity = (entry: Omit<Activity, 'id' | 'createdAt'>) =>
@@ -489,7 +491,7 @@ export function applyAction(
     };
     reserveNextEvolution(s, p);
     s.pokemon.push(p);
-    s.profile.equippedId = id;
+    ensureDemoPartner(s);
     recordVariantDiscovery(s, action.speciesId, false);
     activity({
       title: 'You chose ' + pokemonById(action.speciesId).name + '!',
@@ -636,5 +638,6 @@ export function applyAction(
       });
   }
   s.pokemon.forEach((p) => normalizeDemoRecovery(p, now));
+  ensureDemoPartner(s);
   return s;
 }

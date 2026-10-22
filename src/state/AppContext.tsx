@@ -2,7 +2,7 @@ import { PageSkeleton } from '../components/Loading';
 import { useSoundEffects } from '../audio/sound';
 import { MOVE_LEARN_SOUND } from '../audio/catalog';
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { api } from '../services/api';
+import { api as defaultApi, type KantoApi } from '../services/api';
 import { createAccountUpdates } from '../services/account-updates';
 import type { Action, AppSnapshot } from '../types';
 import { dismissBootScreen } from '../components/BootScreen';
@@ -28,7 +28,29 @@ interface ContextValue {
   reload: () => Promise<AppSnapshot | null>;
 }
 export const AppContext = createContext<ContextValue | null>(null);
-export function AppProvider({ children }: { children: ReactNode }) {
+const defaultWallet = {
+  connectWallet,
+  disconnectWallet,
+  currentWalletSession,
+  restoreWalletSession,
+  subscribeWalletSession,
+};
+export function AppProvider({
+  children,
+  api = defaultApi,
+  wallet = defaultWallet,
+}: {
+  children: ReactNode;
+  api?: KantoApi;
+  wallet?: typeof defaultWallet;
+}) {
+  const {
+    connectWallet,
+    disconnectWallet,
+    currentWalletSession,
+    restoreWalletSession,
+    subscribeWalletSession,
+  } = wallet;
   const [state, setState] = useState<AppSnapshot | null>(null),
     [error, setError] = useState(''),
     [message, setMessage] = useState(''),
@@ -47,13 +69,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const sessionEpoch = useRef(0),
     loadId = useRef(0),
     initialized = useRef(false),
-    foregroundLoads = useRef(0);
+    foregroundLoads = useRef(0),
+    sessionRefresh = useRef<Promise<AppSnapshot | null> | null>(null);
   const toast = (text: string) => {
     setMessage(text);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setMessage(''), 4500);
   };
-  const load = async (): Promise<AppSnapshot | null> => {
+  const load = async (keepScreen = false): Promise<AppSnapshot | null> => {
     const requestId = ++loadId.current;
     foregroundLoads.current++;
     setError('');
@@ -62,7 +85,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (requestId === loadId.current) setState(next);
       return next;
     } catch (e) {
-      if (requestId === loadId.current)
+      if (requestId === loadId.current && !keepScreen)
         setError(e instanceof Error ? e.message : 'The backend is unavailable.');
       return null;
     } finally {
@@ -71,12 +94,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   useEffect(() => {
     let active = true;
+    let previousWallet = currentWalletSession().wallet;
     const stop = subscribeWalletSession((next) => {
       setSession(next);
-      if (initialized.current && next.status !== 'connecting' && next.status !== 'checking') {
+      if (next.status === 'connecting' || next.status === 'checking') return;
+      const changedAccount = previousWallet !== next.wallet;
+      const previousAccount = previousWallet;
+      const wasSignedIn = previousAccount !== null;
+      previousWallet = next.wallet;
+      if (initialized.current && changedAccount) {
         sessionEpoch.current++;
-        setState(null);
-        void load();
+        // Keep the public screen and connection dialog alive during sign-in.
+        // A real sign-out/account switch still removes the old private snapshot immediately.
+        if (wasSignedIn)
+          setState((current) => (current?.profile.wallet === previousAccount ? null : current));
+        sessionRefresh.current = load(next.status === 'authenticated' && !wasSignedIn);
       }
     });
     void (async () => {
@@ -194,7 +226,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         <div className="pokeball-mark" />
         <h1>Let’s try that again</h1>
         <p>{error}</p>
-        <button className="button primary" onClick={load}>
+        <button className="button primary" onClick={() => void load()}>
           Retry connection
         </button>
       </div>
@@ -210,9 +242,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         now,
         busy,
         session,
-        connectWallet,
+        connectWallet: async (name) => {
+          await connectWallet(name);
+          const next = await sessionRefresh.current;
+          if (!next || next.profile.wallet !== currentWalletSession().wallet)
+            throw new Error(
+              'You’re signed in, but your trainer couldn’t load. Please try reconnecting.',
+            );
+        },
         disconnectWallet,
-        reload: load,
+        reload: () => load(),
       }}
     >
       {children}

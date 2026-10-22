@@ -1,5 +1,6 @@
 import { Component, useEffect, useState, type ReactNode } from 'react';
 import { LoadingCoordinator } from './components/Loading';
+import { WalletGate } from './components/WalletGate';
 import { AppProvider } from './state/AppContext';
 import { Layout } from './components/Layout';
 import { TrainerPrompts } from './components/TrainerPrompts';
@@ -93,7 +94,9 @@ function Routes() {
   }, [path]);
   return (
     <>
-      <Layout path={path}>{page}</Layout>
+      <Layout path={path}>
+        <WalletGate path={path}>{page}</WalletGate>
+      </Layout>
       {!['/terms', '/privacy'].includes(path) && <TrainerPrompts />}
     </>
   );

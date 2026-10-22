@@ -3,7 +3,7 @@ import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { PokemonArt, RareCandyIcon } from './UI';
 export function SidebarBuddy({ path }: { path: string }) {
-  const { state } = useApp(),
+  const { state, mode, session } = useApp(),
     partner = state.pokemon.find((p) => p.id === state.profile.equippedId),
     [reaction, setReaction] = useState('idle'),
     [message, setMessage] = useState(''),
@@ -42,12 +42,12 @@ export function SidebarBuddy({ path }: { path: string }) {
       clearTimeout(timer.current);
     };
   }, []);
-  if (!partner)
-    return (
-      <a className="buddy-empty" href="#/pokemon">
-        Equip a Pokémon in your PC.
-      </a>
-    );
+  if (
+    !partner ||
+    (mode === 'live' &&
+      (session.status !== 'authenticated' || session.wallet !== state.profile.wallet))
+  )
+    return null;
   const name = pokemonById(partner.speciesId).name;
   return (
     <section className={'sidebar-buddy buddy-v2 mood-' + reaction}>

@@ -1,0 +1,440 @@
+/* Match the red Pokédex search device while keeping wallet identity unmistakable. */
+.modal-panel.wallet-device {
+  width: min(500px, 100%);
+  padding: 0;
+  border: 1px solid #ba504a;
+  border-radius: 24px;
+  background: #e7645c;
+  box-shadow:
+    0 24px 80px #14283c40,
+    0 5px 0 #b64c46,
+    inset 0 1px #ffffff66;
+  overflow: auto;
+}
+.wallet-device > .modal-header {
+  padding: 19px 20px 8px;
+  border: 0;
+  background: none;
+}
+.wallet-device > .modal-header h2 {
+  font:
+    800 20px Nunito,
+    sans-serif;
+  color: #fff9ed;
+}
+.wallet-device > .modal-header .icon-button {
+  background: #d65b54;
+  border: 1px solid #f08a80;
+  color: #fff9ed;
+  border-radius: 10px;
+}
+.wallet-device-lights {
+  padding: 0 20px 13px;
+}
+.wallet-device-lights .search-device-lens {
+  width: 25px;
+  height: 25px;
+}
+.wallet-device-screen {
+  margin: 0 13px;
+  padding: 24px;
+  border: 1px solid #a34d44;
+  border-radius: 15px;
+  background: #fffdf5;
+  box-shadow: inset 0 2px 4px #4d393c0c;
+}
+.wallet-device-screen > header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.wallet-device-screen > header > svg {
+  flex-shrink: 0;
+}
+.wallet-device-screen h3 {
+  font:
+    800 20px/1.3 Nunito,
+    sans-serif;
+  color: #30434c;
+  margin: 0 0 5px;
+}
+.wallet-device-screen p {
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  color: #6c7777;
+}
+.wallet-provider-list {
+  display: grid;
+  gap: 12px;
+}
+.wallet-provider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #d9dcd3;
+  border-bottom-width: 3px;
+  border-radius: 13px;
+  background: white;
+  color: #344751;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 0.18s,
+    border-color 0.18s,
+    background 0.18s;
+}
+.wallet-provider:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: #9c89dc;
+  background: #faf7ff;
+}
+.wallet-provider.metamask:hover:not(:disabled) {
+  border-color: #e59e75;
+  background: #fff8f1;
+}
+.wallet-provider:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.wallet-provider-logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #f8eee6;
+  overflow: hidden;
+}
+.wallet-provider.phantom .wallet-provider-logo {
+  background: #ab9ff2;
+}
+.wallet-provider-logo img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  image-rendering: auto;
+}
+.wallet-provider-copy {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+.wallet-provider-copy strong {
+  font:
+    800 17px Nunito,
+    sans-serif;
+}
+.wallet-provider-copy small {
+  font:
+    600 12px Nunito,
+    sans-serif;
+  color: #7a8186;
+}
+.wallet-signature-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #677974;
+  line-height: 1.5;
+}
+.wallet-signature-note svg {
+  flex-shrink: 0;
+}
+.wallet-device-help {
+  margin: 13px 20px 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  color: #fff8ec;
+}
+.wallet-connection-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px;
+  background: #edf5ee;
+  color: #426858;
+  border: 1px solid #cddfd1;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.wallet-connection-progress > svg {
+  flex-shrink: 0;
+  animation: wallet-ball-rock 1.5s ease-in-out infinite;
+}
+.wallet-device .wallet-error {
+  margin-top: 16px;
+}
+.wallet-device .wallet-error strong {
+  display: block;
+  margin-bottom: 4px;
+}
+.wallet-device .wallet-error p {
+  color: inherit;
+}
+@keyframes wallet-ball-rock {
+  0%,
+  100% {
+    transform: rotate(-15deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
+}
+.trainer-gate {
+  width: min(900px, 100%);
+  min-height: min(600px, 70vh);
+  margin: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 62px);
+  padding: 60px 20px;
+}
+.trainer-pass {
+  background: #fffdf5;
+  border: 2px solid #315365;
+  border-radius: 18px;
+  box-shadow:
+    0 8px 0 #d9e5e0,
+    0 22px 45px #30545612;
+  transform: rotate(-3deg);
+  overflow: hidden;
+}
+.trainer-pass-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #e5645c;
+  color: #fff9ef;
+  padding: 14px 15px;
+  font:
+    900 11px/1.4 Nunito,
+    sans-serif;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #315365;
+}
+.trainer-pass-heading img {
+  width: 24px;
+  height: 24px;
+}
+.trainer-pass-chip {
+  margin-left: auto;
+  width: 21px;
+  height: 17px;
+  border: 1px solid #996f34;
+  background: repeating-linear-gradient(0deg, #eaca75 0 4px, #b68c44 4px 5px);
+  border-radius: 4px;
+}
+.trainer-pass-screen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px;
+  padding: 16px 9px 0;
+  border: 1px solid #bed0c5;
+  border-radius: 9px;
+  background: repeating-linear-gradient(0deg, #e8f1e7 0 3px, #e2eddf 3px 4px);
+  min-height: 174px;
+  overflow: hidden;
+}
+.trainer-pass-screen > .trainer-avatar {
+  flex-shrink: 0;
+  background: transparent;
+  border: 0;
+}
+.trainer-pass-screen > div:last-child {
+  align-self: center;
+  display: grid;
+  gap: 7px;
+  padding-bottom: 16px;
+}
+.trainer-pass-screen small {
+  font:
+    800 10px Nunito,
+    sans-serif;
+  letter-spacing: 1.5px;
+  color: #63816c;
+}
+.trainer-pass-screen strong {
+  font:
+    700 30px 'Pixelify Sans',
+    monospace;
+  color: #35584a;
+}
+.trainer-pass-screen span {
+  font-size: 11px;
+  color: #6f8278;
+}
+.trainer-pass-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 2px 18px 19px;
+  font:
+    800 11px Nunito,
+    sans-serif;
+  color: #73847a;
+}
+.trainer-pass-footer > div {
+  display: flex;
+  gap: 6px;
+  opacity: 0.5;
+}
+.trainer-gate-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 17px;
+}
+.trainer-gate-item img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.trainer-gate-copy h1 {
+  font:
+    900 clamp(25px, 2.6vw, 34px) / 1.18 Nunito,
+    sans-serif;
+  letter-spacing: -0.7px;
+  color: #304b53;
+  margin: 0 0 14px;
+}
+.trainer-gate-copy > p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #74817f;
+  margin: 0 0 24px;
+}
+.trainer-connect-button {
+  min-height: 46px;
+  gap: 10px;
+  padding: 12px 19px;
+}
+.trainer-gate-explore {
+  display: flex;
+  gap: 9px;
+  width: fit-content;
+  margin-top: 21px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #6a8176;
+}
+.trainer-gate-explore:hover {
+  color: #de6258;
+}
+@media (max-width: 720px) {
+  .trainer-gate {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 35px;
+    padding: 35px 14px;
+    min-height: 0;
+  }
+  .trainer-pass {
+    width: min(330px, 95%);
+    transform: rotate(-2deg);
+  }
+  .trainer-gate-copy {
+    max-width: 420px;
+    text-align: center;
+  }
+  .trainer-gate-item {
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+  .trainer-gate-item img {
+    width: 38px;
+    height: 38px;
+  }
+  .trainer-gate-copy .trainer-connect-button {
+    margin: auto;
+  }
+  .trainer-gate-explore {
+    margin-inline: auto;
+  }
+  .wallet-device-screen {
+    padding: 19px 16px;
+  }
+  .wallet-device-screen h3 {
+    font-size: 18px;
+  }
+}
+@media (max-width: 360px) {
+  .trainer-pass-screen {
+    margin: 12px;
+    padding-inline: 0;
+  }
+  .trainer-pass-screen > .trainer-avatar {
+    width: 125px !important;
+    height: 125px !important;
+  }
+  .wallet-provider {
+    padding: 12px 10px;
+    gap: 10px;
+  }
+  .wallet-device-screen {
+    padding: 17px 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wallet-provider {
+    transition: none;
+  }
+  .wallet-connection-progress > svg {
+    animation: none;
+  }
+}
+[data-motion='reduced'] .wallet-connection-progress > svg,
+[data-motion='reduced'] .wallet-device-lights > i {
+  animation: none;
+}
+@media (max-width: 720px) {
+  .trainer-pass-screen {
+    min-height: 125px;
+    margin: 12px;
+    padding: 6px 12px 0;
+  }
+  .trainer-pass-screen > .trainer-avatar {
+    width: 110px !important;
+    height: 110px !important;
+  }
+  .trainer-pass-heading {
+    padding: 11px 14px;
+  }
+  .trainer-pass-footer {
+    padding: 1px 16px 15px;
+  }
+  .trainer-gate {
+    gap: 27px;
+    padding-block: 26px;
+  }
+}
+@media (max-width: 600px) {
+  .topbar.is-signed-out .notification-button {
+    display: none;
+  }
+  .header-connect {
+    gap: 6px;
+    padding-inline: 10px;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+  .header-connect > svg:last-child,
+  .header-connect .wallet-button-extra {
+    display: none;
+  }
+  .header-connect > .pokeball {
+    width: 18px;
+    height: 18px;
+  }
+}

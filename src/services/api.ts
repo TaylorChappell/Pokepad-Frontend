@@ -1,3 +1,4 @@
+import { ensureDemoPartner } from '../state/partner';
 import { normalizeDemoRecovery } from '../state/recovery';
 import { promptStorageKey } from '../state/trainer-prompts';
 import type { Action, AppSnapshot, OwnedPokemon, Reward, Profile } from '../types';
@@ -119,6 +120,7 @@ export function migrateSnapshot(input: unknown, now = Date.now()): AppSnapshot |
     detail: currentCopy(a.detail),
     href: a.href.startsWith('/marketplace') ? '/pokemon' : a.href,
   }));
+  ensureDemoPartner(s);
   return s;
 }
 const readLocal = (): AppSnapshot => {

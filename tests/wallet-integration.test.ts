@@ -102,7 +102,10 @@ function fixture(
         return { challengeId: 'challenge-1', message, expiresAt: expiresAt() };
       if (path.endsWith('/verify'))
         return { authenticated: true, wallet: account.address, token, expiresAt: expiresAt() };
-      if (path.endsWith('/session')) return { authenticated: false, wallet: null, expiresAt: null };
+      if (path.endsWith('/session'))
+        return tokens.at(-1) === token
+          ? { authenticated: true, wallet: account.address, expiresAt: expiresAt() }
+          : { authenticated: false, wallet: null, expiresAt: null };
       if (path.endsWith('/submit')) return { signature: bs58.encode(new Uint8Array(64).fill(4)) };
       return {};
     }) as typeof apiRequest,
@@ -455,6 +458,49 @@ test('sign-only escrow transactions use the scoped battle submit route with the 
       /Invalid transaction submission/,
     );
   } finally {
+    f.dispose();
+  }
+});
+
+test('sign-in confirms the bearer without cookies, reports progress and tolerates account reordering', async () => {
+  const f = fixture();
+  const steps: string[] = [];
+  const stop = f.controller.subscribeWalletSession((s) => {
+    if (s.step) steps.push(s.step);
+  });
+  try {
+    await f.controller.connectWallet('Phantom');
+    assert.deepEqual(steps.slice(0, 3), ['opening', 'signing', 'verifying']);
+    const check = f.requests.find((r) => r.path.endsWith('/session'))!;
+    assert.equal(check.init.credentials, 'omit');
+    f.emitAccounts([{ ...f.account, address: 'another-account' }, f.account]);
+    assert.equal(f.controller.currentWalletSession().status, 'authenticated');
+  } finally {
+    stop();
+    f.dispose();
+  }
+});
+
+test('an accepted signature without a usable server session never announces a successful login', async () => {
+  let address = '';
+  const f = fixture({
+    request: async (path) => {
+      if (path.endsWith('/challenge'))
+        return { challengeId: 'id', message, expiresAt: expiresAt() };
+      if (path.endsWith('/verify'))
+        return { authenticated: true, wallet: address, token, expiresAt: expiresAt() };
+      return { authenticated: false, wallet: null };
+    },
+  });
+  address = f.account.address;
+  const statuses: string[] = [];
+  const stop = f.controller.subscribeWalletSession((s) => statuses.push(s.status));
+  try {
+    await assert.rejects(f.controller.connectWallet('Phantom'), /couldn’t keep you signed in/);
+    assert.ok(!statuses.includes('authenticated'));
+    assert.equal(f.tokens.at(-1), null);
+  } finally {
+    stop();
     f.dispose();
   }
 });

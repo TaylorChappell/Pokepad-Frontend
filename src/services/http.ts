@@ -80,7 +80,10 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
         408,
       );
     if (error instanceof TypeError)
-      throw new ApiError('Cannot reach the backend. Check your connection and try again.', 0);
+      throw new ApiError(
+        'Kanto couldn’t connect. Check your internet connection and try again.',
+        0,
+      );
     throw error;
   } finally {
     clearTimeout(timeout);

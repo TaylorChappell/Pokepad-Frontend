@@ -1,0 +1,123 @@
+/* A compact message from the Kanto terminal, with room for readable mobile copy. */
+.backend-status.trainer-notice {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 16px;
+  padding: 17px 20px;
+  margin-bottom: 24px;
+  color: #5a4930;
+  background: linear-gradient(115deg, #fff9e7, #fffdf5);
+  border: 1px solid #e8d5a9;
+  border-left: 4px solid #d6a64e;
+  border-radius: 6px 16px 16px 6px;
+  box-shadow:
+    0 3px 0 #eadfc038,
+    inset 0 1px 0 #fff;
+}
+.trainer-notice-emblem {
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+}
+.trainer-notice-emblem img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+.trainer-notice-copy {
+  flex: 1;
+  min-width: 0;
+}
+.trainer-notice-copy h2 {
+  font:
+    800 15px/1.35 Nunito,
+    sans-serif;
+  margin: 0 0 4px;
+  color: #493b27;
+}
+.trainer-notice-copy p {
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.trainer-notice-retry {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+  border: 1px solid #dec794;
+  border-radius: 9px;
+  padding: 9px 12px;
+  background: #fffdf7;
+  color: #715220;
+  font:
+    800 12px Nunito,
+    sans-serif;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    transform 0.18s;
+}
+.trainer-notice-retry:hover {
+  background: #f9ebc8;
+  transform: translateY(-1px);
+}
+.trainer-notice-retry:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+.trainer-notice-retry span {
+  font-size: 19px;
+  line-height: 1;
+}
+.notice,
+.wallet-error,
+.transaction-error {
+  border: 1px solid #e4d5b2;
+  border-left: 4px solid #d6a64e;
+  border-radius: 6px 12px 12px 6px;
+  background: #fff9e9;
+  color: #655032;
+  padding: 14px 16px;
+  line-height: 1.6;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.wallet-error,
+.transaction-error {
+  background: #fff1ec;
+  border-color: #edc2b4;
+  border-left-color: #cf7560;
+  color: #8b4234;
+}
+@media (max-width: 600px) {
+  .backend-status.trainer-notice {
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 14px;
+    margin-bottom: 18px;
+  }
+  .trainer-notice-emblem {
+    flex-basis: 30px;
+    align-self: flex-start;
+  }
+  .trainer-notice-emblem img {
+    width: 30px;
+    height: 30px;
+  }
+  .trainer-notice-copy {
+    flex-basis: calc(100% - 44px);
+  }
+  .trainer-notice-retry {
+    margin-left: 42px;
+    padding: 7px 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trainer-notice-retry {
+    transition: none;
+  }
+}
