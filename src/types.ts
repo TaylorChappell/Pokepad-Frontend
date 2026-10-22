@@ -86,6 +86,8 @@ export interface OwnedPokemon {
   shiny?: boolean;
   /** Current HP. Missing on older saves means full health. */
   health?: number;
+  /** Server recovery deadline in Unix milliseconds; unlocked Pokémon heal fully at this time. */
+  recoverAt?: number | null;
   starter?: boolean;
   moves: string[];
   acquiredAt: number;

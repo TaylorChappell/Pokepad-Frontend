@@ -142,6 +142,7 @@ const topics: GuideTopic[] = [
         text: [
           'Use item in the summary or the PC’s three-dot menu opens your supplies. Sitrus Berries restore 25% of maximum HP, Potions restore 30%, and Revives bring a fainted Pokémon back at 50% HP. Each use consumes one item.',
           'Only usable items are enabled. Berries and Potions cannot revive a fainted Pokémon, and a Revive needs a fainted target. Locked Pokémon cannot use PC items during a battle.',
+          'Fainted Pokémon appear grey with a red outline in My PC. Their countdown ends with full HP after ten minutes of recovery. If you own a Revive, use it directly on the card to restore 50% HP immediately; the remaining recovery timer still restores full HP.',
         ],
       },
       {

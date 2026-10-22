@@ -109,6 +109,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state, error]);
   useEffect(() => {
     if (!state || api.mode !== 'demo') return;
+    const recovered = state.pokemon.some(
+      (p) => !p.locked && typeof p.recoverAt === 'number' && p.recoverAt <= now,
+    );
     const ready = state.rewards.some(
       (r) =>
         r.kind === 'egg' &&
@@ -117,7 +120,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         !state.notifications.some((n) => n.id === 'ready-' + r.id),
     );
     if (
-      ((ready && state.profile.rewardNotifications) ||
+      (recovered ||
+        (ready && state.profile.rewardNotifications) ||
         now - (state.demoCandyUpdatedAt || now) >= 60000) &&
       !inFlight.current
     ) {

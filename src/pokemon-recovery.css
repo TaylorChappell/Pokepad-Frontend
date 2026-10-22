@@ -1,0 +1,159 @@
+/* Fainted Pokémon stay inspectable; recovery and care remain active controls. */
+.pc-slot-wrapper.is-fainted {
+  flex-direction: column;
+  border-radius: 18px;
+  outline: 2px solid #c65360;
+  background: #fff7f4;
+  box-shadow: 0 4px 0 #eed6d5;
+}
+.pc-grid .pc-slot-wrapper.is-fainted > .pc-slot {
+  flex: 1;
+  height: auto;
+  border-color: transparent;
+  border-radius: 17px 17px 0 0;
+  box-shadow: none;
+  background: #f6f6f2;
+}
+.pc-grid .pc-fainted .pokemon-card-image,
+.summary-v25 .is-fainted .summary-pokemon-stage {
+  background: repeating-linear-gradient(0deg, #e9edeb 0 3px, #e5eae8 3px 4px);
+}
+.pc-grid .pc-fainted .pokemon-card-image .pokemon-art,
+.summary-v25 .is-fainted .summary-pokemon-stage .pokemon-art {
+  filter: grayscale(1);
+  opacity: 0.46;
+}
+.pokemon-recovery {
+  container-type: inline-size;
+  min-width: 0;
+  padding: 12px;
+  color: #8f3d49;
+  background: #fff3ee;
+  border-top: 1px solid #e8c9c5;
+  border-radius: 0 0 17px 17px;
+}
+.pokemon-recovery-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 12px;
+}
+.pokemon-recovery-status > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 850;
+}
+.fainted-status-mark {
+  padding: 3px 5px;
+  color: white;
+  background: #b84957;
+  border-radius: 4px;
+  box-shadow: inset 0 -2px #923a49;
+  font:
+    500 15px/1 Pixelify,
+    monospace;
+  letter-spacing: 0.5px;
+}
+.pokemon-recovery-timer {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.pokemon-recovery-timer > span {
+  white-space: nowrap;
+}
+.pokemon-recovery-timer b {
+  color: #793440;
+  font:
+    800 14px/1.3 ui-monospace,
+    monospace;
+  font-variant-numeric: tabular-nums;
+}
+.pokemon-revive-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border: 2px solid #b48b39;
+  border-radius: 7px;
+  color: #60461a;
+  background: #fff0bc;
+  box-shadow:
+    inset 0 2px #fffbed,
+    0 2px #d7b572;
+  font:
+    850 13px/1.2 Nunito,
+    sans-serif;
+  cursor: pointer;
+  transition:
+    background 150ms,
+    transform 150ms;
+}
+.pokemon-revive-button small {
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #e9cd8e;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.pokemon-revive-button:hover:not(:disabled) {
+  background: #ffe8a0;
+}
+.pokemon-revive-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.pokemon-revive-button:focus-visible {
+  outline: 3px solid #406ea9;
+  outline-offset: 3px;
+}
+.pokemon-revive-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+.pokemon-revive-empty {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #805a61;
+}
+@container (max-width: 150px) {
+  .pokemon-revive-button {
+    display: grid;
+    grid-template-columns: 26px auto;
+    justify-content: center;
+    gap: 3px 6px;
+    padding: 7px 4px;
+  }
+  .pokemon-revive-button > span {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .pokemon-revive-button > small {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+.summary-v25 .summary-mon-screen.is-fainted {
+  border-color: #c65360;
+  box-shadow:
+    0 3px 0 #e0b7bd,
+    inset 0 0 0 2px #fff3ee;
+}
+.summary-v25 .is-fainted .summary-screen-heading {
+  background: #aa5966;
+  border-color: #8c4550;
+  box-shadow: inset 0 2px #d5959e;
+}
+.summary-v25 .summary-mon-body > .pokemon-recovery {
+  grid-column: 1 / -1;
+  margin-top: 12px;
+  border: 1px solid #dfb6b6;
+  border-radius: 7px;
+}

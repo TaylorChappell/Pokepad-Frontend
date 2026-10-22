@@ -172,11 +172,28 @@ export function getPokemonStats(p: Pick<OwnedPokemon, 'speciesId' | 'level'>) {
     speed: stat(base[5]),
   };
 }
-export function getPokemonHealth(p: Pick<OwnedPokemon, 'speciesId' | 'level' | 'health'>) {
+export function getPokemonHealth(
+  p: Pick<OwnedPokemon, 'speciesId' | 'level' | 'health' | 'recoverAt' | 'locked'>,
+  now = Date.now(),
+) {
   const max = getPokemonStats(p).hp;
-  const current =
+  const stored =
     p.health === undefined || !Number.isFinite(p.health)
       ? max
       : Math.max(0, Math.min(max, Math.floor(p.health)));
-  return { current, max, percent: (current / max) * 100 };
+  const recoverAt =
+    stored < max &&
+    !p.locked &&
+    typeof p.recoverAt === 'number' &&
+    Number.isFinite(p.recoverAt) &&
+    p.recoverAt > 0
+      ? p.recoverAt
+      : null;
+  const current = recoverAt !== null && recoverAt <= now ? max : stored;
+  return {
+    current,
+    max,
+    percent: (current / max) * 100,
+    remainingMs: recoverAt === null ? null : Math.max(0, recoverAt - now),
+  };
 }

@@ -1,3 +1,4 @@
+import { normalizeDemoRecovery } from '../state/recovery';
 import { promptStorageKey } from '../state/trainer-prompts';
 import type { Action, AppSnapshot, OwnedPokemon, Reward, Profile } from '../types';
 import { COINS, createInitialState } from '../data/demo';
@@ -7,7 +8,6 @@ import {
   evolutionValueIncrease,
   STORAGE_KEY,
 } from '../state/model';
-import { getPokemonHealth } from '../data/stats';
 import { decorateDemoCoins } from '../data/coin-presentation';
 import {
   variantDiscoveries,
@@ -20,7 +20,7 @@ export interface KantoApi {
   load(): Promise<AppSnapshot>;
   dispatch(action: Action): Promise<AppSnapshot>;
 }
-export function migrateSnapshot(input: unknown): AppSnapshot | null {
+export function migrateSnapshot(input: unknown, now = Date.now()): AppSnapshot | null {
   if (!input || typeof input !== 'object') return null;
   const raw = input as Record<string, unknown>;
   if (![1, 2].includes(Number(raw.version)) || !raw.profile || typeof raw.profile !== 'object')
@@ -71,7 +71,7 @@ export function migrateSnapshot(input: unknown): AppSnapshot | null {
       p.rareCandy = Math.min(p.rareCandy, Math.floor((p.evolutionReserve / evoCost) * 1000));
     delete p.baseMoves;
     delete p.gymManual;
-    p.health = getPokemonHealth(p).current;
+    normalizeDemoRecovery(p, now);
     return p;
   });
   s.discoveredVariants = variantDiscoveries(s);

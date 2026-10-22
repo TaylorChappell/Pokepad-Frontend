@@ -149,7 +149,12 @@ test('HP and battle stats derive from all 151 species bases and health clamps sa
     specialDefense: 70,
     speed: 110,
   });
-  assert.deepEqual(getPokemonHealth(p), { current: 110, max: 110, percent: 100 });
+  assert.deepEqual(getPokemonHealth(p), {
+    current: 110,
+    max: 110,
+    percent: 100,
+    remainingMs: null,
+  });
   assert.equal(getPokemonHealth({ ...p, health: 55 }).percent, 50);
   assert.equal(getPokemonHealth({ ...p, health: -5 }).current, 0);
   assert.equal(getPokemonHealth({ ...p, health: 10000 }).current, 110);

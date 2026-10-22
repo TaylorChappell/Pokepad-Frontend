@@ -122,3 +122,9 @@ Visible authenticated accounts poll bootstrap every 10 seconds and refresh on wi
 - Item commands are `{kind:"item",item:"potion"|"revive"|"full-heal",index}` with the ordinary turn, phase and retry UUID. `index` targets the trainer’s own team. Remaining supplies are perspective-correct `state.bags.player` and `.rival`.
 
 The standard bag is two Potions, one Revive and one Full Heal per side. Items consume a turn with priority above switching/attacks. They cannot be used with no eligible target, during charge/recharge, during a required replacement or after defeat. A wiped-out party cannot revive after the result. Bag supplies exist only within the match, cannot be topped up from personal inventory, and never affect funded redemption value. Equal levels affect battle snapshots only; settlement maps health back to the Pokémon’s real maximum HP.
+
+## PC recovery deadlines
+
+Owned Pokémon expose `recoverAt` as Unix milliseconds, or `null` when no recovery is pending. Battle settlement sets a ten-minute deadline. The client displays the server deadline and projects full HP at expiry only when unlocked; the API and worker independently enforce recovery. Missing live deadlines never cause the browser to invent a heal time. Demo saves use the same duration and persist their deadline across reloads.
+
+A fainted PC card and summary show grey artwork, a red outline and a full-HP countdown. `pokemon.item` with `item: "revive"` is offered only when the trainer owns a Revive. It consumes one item and restores 50% HP immediately, retaining the existing recovery deadline. The server rejects locked targets, unavailable items and already-recovered targets. Offline practice still leaves collection HP unchanged.

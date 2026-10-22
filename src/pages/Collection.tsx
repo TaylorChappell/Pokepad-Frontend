@@ -1,3 +1,4 @@
+import { PokemonRecovery } from '../components/PokemonRecovery';
 import { PokemonMoveSet } from '../components/PokemonMoveSet';
 import { ItemSprite } from '../components/ItemSprite';
 import { PokemonBag } from '../components/PokemonBag';
@@ -47,7 +48,8 @@ function SpeciesDistinction({ id }: { id: number }) {
   return <span className="species-distinction">{id === 151 ? 'Mythical' : 'Legendary'}</span>;
 }
 function HealthMeter({ pokemon, compact = false }: { pokemon: OwnedPokemon; compact?: boolean }) {
-  const hp = getPokemonHealth(pokemon);
+  const { now } = useApp();
+  const hp = getPokemonHealth(pokemon, now);
   return (
     <div className={'pokemon-health ' + (compact ? 'compact' : '')}>
       <div className="health-caption">
@@ -203,7 +205,8 @@ function PokemonActions({ pokemon: p }: { pokemon: OwnedPokemon }) {
   );
 }
 export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
-  const { state } = useApp(),
+  const { state, now } = useApp(),
+    fainted = getPokemonHealth(pokemon, now).current === 0,
     species = pokemonById(pokemon.speciesId),
     equipped = state.profile.equippedId === pokemon.id,
     offer = pendingMove(pokemon),
@@ -211,7 +214,7 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
     canLearn = !!offer && !pokemon.locked,
     needsAttention = evolution.canEvolve || canLearn;
   return (
-    <div className="pc-slot-wrapper">
+    <div className={'pc-slot-wrapper' + (fainted ? ' is-fainted' : '')}>
       <div className="pc-card-actions">
         <FavouriteButton pokemon={pokemon} />
         <PokemonActions pokemon={pokemon} />
@@ -224,7 +227,8 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
           (pokemon.shiny ? 'variant-glow ' : '') +
           (needsAttention ? 'pc-attention ' : '') +
           (evolution.canEvolve ? 'pc-evolution-ready ' : '') +
-          (canLearn ? 'pc-move-ready' : '')
+          (canLearn ? 'pc-move-ready ' : '') +
+          (fainted ? 'pc-fainted' : '')
         }
         style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
         data-variant={pokemon.shiny ? 'shiny' : 'original'}
@@ -243,7 +247,7 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
         <div className="pokemon-card-image">
           <span className="pc-index">No. {String(species.id).padStart(3, '0')}</span>
           <span className="level-tag">Lv. {pokemon.level}</span>
-          <PokemonArt id={species.id} shiny={pokemon.shiny} />
+          <PokemonArt id={species.id} shiny={pokemon.shiny} animated={!fainted} />
           {equipped && (
             <span className="pc-partner">
               <span aria-hidden="true">●</span> Partner
@@ -288,11 +292,12 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
           </div>
         </div>
       </a>
+      <PokemonRecovery pokemon={pokemon} />
     </div>
   );
 }
 export function InventoryPage() {
-  const { state } = useApp(),
+  const { state, now } = useApp(),
     [filter, setFilter] = useState('All'),
     [sort, setSort] = useState('Strongest first'),
     [search, setSearch] = useState('');
@@ -303,7 +308,7 @@ export function InventoryPage() {
           (filter === 'Shiny' && !!p.shiny) ||
           (filter === 'Favourites' && !!p.favourite) ||
           (filter === 'Partner' && p.id === state.profile.equippedId) ||
-          (filter === 'Battle ready' && !p.locked && getPokemonHealth(p).current > 0) ||
+          (filter === 'Battle ready' && !p.locked && getPokemonHealth(p, now).current > 0) ||
           (filter === 'Can evolve' && getEvolutionStatus(state, p).canEvolve) ||
           (filter === 'New move' && !!pendingMove(p) && !p.locked)) &&
         pokemonById(p.speciesId).name.toLowerCase().includes(search.toLowerCase()),
@@ -394,7 +399,7 @@ export function InventoryPage() {
   );
 }
 export function PokemonDetailPage({ id }: { id: string }) {
-  const { state, mode, act, busy, toast } = useApp(),
+  const { state, mode, act, busy, toast, now } = useApp(),
     p = state.pokemon.find((p) => p.id === id),
     [dialog, setDialog] = useState<
       'learn' | 'evolve' | 'sell' | 'details' | 'items' | 'manuals' | null
@@ -451,7 +456,11 @@ export function PokemonDetailPage({ id }: { id: string }) {
       </div>
       <div className="summary-workspace">
         <section
-          className={'summary-mon-screen ' + (p.shiny ? 'variant-glow' : '')}
+          className={
+            'summary-mon-screen ' +
+            (p.shiny ? 'variant-glow ' : '') +
+            (getPokemonHealth(p, now).current === 0 ? 'is-fainted' : '')
+          }
           style={{ '--pokemon-color': TYPE_COLORS[species.types[0]] } as CSSProperties}
           aria-label={species.name + ' summary'}
         >
@@ -478,7 +487,12 @@ export function PokemonDetailPage({ id }: { id: string }) {
             </header>
             <div className="summary-pokemon-stage">
               <div className="summary-pokeball-watermark" aria-hidden="true" />
-              <PokemonArt id={p.speciesId} shiny={p.shiny} eager />
+              <PokemonArt
+                id={p.speciesId}
+                shiny={p.shiny}
+                eager
+                animated={getPokemonHealth(p, now).current > 0}
+              />
               <div className="summary-ground" />
             </div>
             <div className="summary-species-line">
@@ -496,6 +510,7 @@ export function PokemonDetailPage({ id }: { id: string }) {
               <SpeciesDistinction id={species.id} />
             </div>
             <HealthMeter pokemon={p} />
+            <PokemonRecovery pokemon={p} />
             <div className="summary-care-actions">
               <button onClick={() => setDialog('items')}>
                 <ItemSprite item="potion" size={28} />

@@ -17,8 +17,8 @@ export function PokemonBag({
   pokemon: OwnedPokemon;
   section?: 'items' | 'manuals' | 'all';
 }) {
-  const { state, act, busy, toast } = useApp(),
-    health = getPokemonHealth(p),
+  const { state, act, busy, toast, now } = useApp(),
+    health = getPokemonHealth(p, now),
     bag = state.bag || { berry: 0, potion: 0, revive: 0 };
   const [teach, setTeach] = useState<string | null>(null),
     [info, setInfo] = useState<string | null>(null),

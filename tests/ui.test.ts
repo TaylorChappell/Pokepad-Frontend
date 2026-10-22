@@ -1637,3 +1637,63 @@ test('reward opening preloads its artwork, waits for decoding, and retries witho
     await app.close();
   }
 });
+
+test('fainted PC cards show recovery, consume an owned Revive and retain summary access', async () => {
+  const app = await mountApp('/pokemon', (state) => {
+    state.pokemon.forEach((p) => (p.moveOffers = []));
+    const p = state.pokemon[0];
+    Object.assign(p, { health: 0, recoverAt: Date.now() + 600000, locked: false, rareCandy: 0 });
+    state.bag!.revive = 1;
+  });
+  try {
+    const card = app.document.querySelector('.pc-slot-wrapper.is-fainted')!;
+    assert.ok(card);
+    assert.match(card.textContent || '', /FNTFaintedFull HP in 10:00/);
+    assert.equal(
+      card.querySelectorAll('a button').length,
+      0,
+      'Revive is not nested in the summary link',
+    );
+    await app.click(card.querySelector('a.pc-slot'));
+    await app.go('/pokemon/' + app.initial.pokemon[0].id);
+    assert.ok(app.document.querySelector('.summary-mon-screen.is-fainted .pokemon-recovery'));
+    await app.go('/pokemon');
+    await app.click(app.document.querySelector('.pokemon-revive-button'));
+    assert.equal(app.saved().bag!.revive, 0);
+    assert.equal(
+      app.saved().pokemon[0].health,
+      Math.floor(getPokemonHealth(app.initial.pokemon[0]).max / 2),
+    );
+    assert.equal(app.document.querySelector('.pc-slot-wrapper.is-fainted'), null);
+    assert.equal(app.document.querySelector('.pokemon-recovery'), null);
+  } finally {
+    await app.close();
+  }
+});
+
+test('a fainted card without Revives counts down and restores full HP without navigation', async () => {
+  const app = await mountApp('/pokemon', (state) => {
+    state.pokemon.forEach((p) => (p.moveOffers = []));
+    Object.assign(state.pokemon[0], {
+      health: 0,
+      recoverAt: Date.now() + 2200,
+      locked: false,
+      rareCandy: 0,
+    });
+    state.bag!.revive = 0;
+  });
+  try {
+    assert.ok(app.document.querySelector('.pc-slot-wrapper.is-fainted [role="timer"]'));
+    assert.equal(app.document.querySelector('.pokemon-revive-button'), null);
+    assert.match(
+      app.document.querySelector('.pokemon-recovery')!.textContent || '',
+      /No Revives in your bag/,
+    );
+    await app.wait(3200);
+    assert.equal(app.document.querySelector('.pc-slot-wrapper.is-fainted'), null);
+    assert.equal(app.saved().pokemon[0].health, getPokemonHealth(app.initial.pokemon[0]).max);
+    assert.equal(app.saved().pokemon[0].recoverAt, undefined);
+  } finally {
+    await app.close();
+  }
+});

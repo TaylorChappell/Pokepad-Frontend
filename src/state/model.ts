@@ -1,3 +1,4 @@
+import { DEMO_RECOVERY_MS, normalizeDemoRecovery } from './recovery';
 import { pcItemHealth, GYM_MANUALS, drawGymManual } from '../game/gym-policy';
 import type { Action, AppSnapshot, Activity, OwnedPokemon, CoinSocials, Reward } from '../types';
 import { createInitialState, ACCENT_COLORS, CHARACTERS } from '../data/demo';
@@ -180,6 +181,7 @@ export function applyAction(
   assertSupportedAction(action);
   if (action.type === 'demo.reset') return { ...createInitialState(now), demoPromptEpoch: now };
   const s = structuredClone(original);
+  s.pokemon.forEach((p) => normalizeDemoRecovery(p, now));
   s.discoveredVariants = variantDiscoveries(s);
   const activity = (entry: Omit<Activity, 'id' | 'createdAt'>) =>
     s.activity.unshift({ ...entry, id: crypto.randomUUID(), createdAt: now });
@@ -192,7 +194,7 @@ export function applyAction(
   s.gymProgress ||= { badges: 0, points: 0, wins: 0, manuals: {}, claimedToday: [] };
   if (action.type === 'pokemon.item') {
     const p = owned(action.id),
-      hp = getPokemonHealth(p),
+      hp = getPokemonHealth(p, now),
       next = pcItemHealth(action.item, hp.current, hp.max);
     if (p.locked) throw new Error('Finish its battle first.');
     if (!s.bag[action.item] || next === null)
@@ -222,10 +224,6 @@ export function applyAction(
     delete p.gymManual;
   }
   if (action.type === 'gym.demo.finish') {
-    for (const h of action.health) {
-      const p = s.pokemon.find((p) => p.id === h.id);
-      if (p && !p.locked) p.health = h.hp;
-    }
     const day = new Date(now).toISOString().slice(0, 10),
       progress = s.gymProgress as typeof s.gymProgress & {
         day?: string;
@@ -238,6 +236,12 @@ export function applyAction(
     }
     progress.processed ||= [];
     if (!progress.processed.includes(action.id)) {
+      for (const h of action.health) {
+        const p = s.pokemon.find((p) => p.id === h.id);
+        if (!p || p.locked) continue;
+        p.health = Math.max(0, Math.min(getPokemonStats(p).hp, h.hp));
+        p.recoverAt = p.health < getPokemonStats(p).hp ? now + DEMO_RECOVERY_MS : null;
+      }
       progress.processed.push(action.id);
       progress.processed = progress.processed.slice(-100);
       if (
@@ -344,7 +348,7 @@ export function applyAction(
     const index = options.length === 1 ? 0 : randomIndex(options.length);
     if (!Number.isInteger(index) || index < 0 || index >= options.length)
       throw new Error('The evolution result was invalid. Please retry.');
-    const previousHealth = getPokemonHealth(p);
+    const previousHealth = getPokemonHealth(p, now);
     const target = options[index],
       coin = s.coins.find((c) => c.id === p.originCoin);
     if (status.fundingNeeded > 0 && coin)
@@ -631,5 +635,6 @@ export function applyAction(
         createdAt: now,
       });
   }
+  s.pokemon.forEach((p) => normalizeDemoRecovery(p, now));
   return s;
 }
