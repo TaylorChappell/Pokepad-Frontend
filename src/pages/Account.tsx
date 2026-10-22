@@ -1,3 +1,4 @@
+import { holdingStreakLabel } from '../services/holdings';
 import { TrainerBanner, TrainerImageEditor } from '../components/TrainerImages';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useSoundPreference } from '../audio/sound';
@@ -30,6 +31,7 @@ import type { Profile } from '../types';
 export function PortfolioPage() {
   const { state, mode } = useApp(),
     held = state.coins.filter((c) => c.holding > 0),
+    syncing = held.some((c) => c.holdingStatus === 'syncing'),
     value = held.reduce((n, c) => n + c.holding * c.price, 0);
   return (
     <>
@@ -68,7 +70,7 @@ export function PortfolioPage() {
             Longest hold streak
           </span>
           <strong>
-            {Math.max(0, ...held.map((c) => c.holdingDays))} <small>days</small>
+            {Math.floor(Math.max(0, ...held.map((c) => c.holdingDays)))} <small>days</small>
           </strong>
         </div>
       </div>
@@ -111,6 +113,18 @@ export function PortfolioPage() {
           <Icon name="ArrowRight" size={15} />
         </a>
       </div>
+      {syncing && (
+        <p className="holding-sync-note" role="status">
+          <Icon name="Clock" size={16} />
+          Your token balance is confirmed. We’re checking your holding history for rewards.
+        </p>
+      )}
+      {!held.length && state.coins.some((c) => c.holdingStatus === 'unavailable') && (
+        <p className="holding-sync-note" role="status">
+          <Icon name="Clock" size={16} />
+          Your wallet balances couldn’t be refreshed. We’ll try again shortly.
+        </p>
+      )}
       <div className="panel table-wrap portfolio-holdings">
         <table>
           <thead>
@@ -142,8 +156,15 @@ export function PortfolioPage() {
                 <td data-label="Est. value">{sol(c.holding * c.price)} SOL</td>
                 <td data-label="Hold streak">
                   <span className="streak-chip">
-                    <Icon name="Flame" size={14} />
-                    {c.holdingDays} days
+                    <Icon
+                      name={
+                        c.holdingStatus === 'syncing' || c.holdingStatus === 'unavailable'
+                          ? 'Clock'
+                          : 'Flame'
+                      }
+                      size={14}
+                    />
+                    {holdingStreakLabel(c)}
                   </span>
                 </td>
                 <td data-label="Rewards">

@@ -49,6 +49,8 @@ export interface Coin {
   active: boolean;
   holding: number;
   holdingDays: number;
+  holdingStatus?: 'verified' | 'syncing' | 'unavailable';
+  balanceCheckedAt?: number;
 }
 export interface Move {
   name: string;

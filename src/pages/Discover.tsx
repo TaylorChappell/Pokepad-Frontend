@@ -1,3 +1,4 @@
+import { holdingStreakLabel } from '../services/holdings';
 import { useId, useMemo, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { POKEMON } from '../data/pokemon';
@@ -994,8 +995,8 @@ export function CoinPage({ id }: { id: string }) {
                 {compact(coin.holding)} <small>{coin.ticker}</small>
               </strong>
               <span>
-                {coin.holding > 0
-                  ? `${coin.holdingDays} day${coin.holdingDays === 1 ? '' : 's'} held`
+                {coin.holding > 0 || coin.holdingStatus === 'unavailable'
+                  ? holdingStreakLabel(coin)
                   : 'No holding yet'}
               </span>
             </div>

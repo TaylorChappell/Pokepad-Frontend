@@ -130,3 +130,9 @@ The standard bag is two Potions, one Revive and one Full Heal per side. Items co
 Owned Pokémon expose `recoverAt` as Unix milliseconds, or `null` when no recovery is pending. Battle settlement sets a ten-minute deadline. The client displays the server deadline and projects full HP at expiry only when unlocked; the API and worker independently enforce recovery. Missing live deadlines never cause the browser to invent a heal time. Demo saves use the same duration and persist their deadline across reloads.
 
 A fainted PC card and summary show grey artwork, a red outline and a full-HP countdown. `pokemon.item` with `item: "revive"` is offered only when the trainer owns a Revive. It consumes one item and restores 50% HP immediately, retaining the existing recovery deadline. The server rejects locked targets, unavailable items and already-recovered targets. Offline practice still leaves collection HP unchanged.
+
+### Connected-wallet balances
+
+Authenticated bootstrap reads now refresh a cached, finalized balance across both SPL Token programs and all token accounts owned by that wallet. `coin.holding` can therefore reflect a purchase before historical indexing catches up. `holdingStatus` is `verified` when holding history also matches, `syncing` while history is catching up, or `unavailable` after a failed balance check. `balanceCheckedAt` identifies the last verified snapshot. A failed lookup does not invent a zero balance; short-lived cached amounts remain visibly delayed. Anonymous requests never perform wallet balance lookups.
+
+The portfolio shows `Checking history` while syncing, rather than an invented holding streak. These display snapshots never grant reward eligibility, candy, or holding age; those still use chronological finalized history.
