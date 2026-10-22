@@ -50,7 +50,7 @@ Public queries are `GET /v1/trainers?query=...`, `GET /v1/trainers/:wallet` and 
 
 Uploads accept PNG/JPEG/WebP up to 2 MiB, with UTF-8 limits of 32 bytes for names and 13 for symbols. Prepared transactions include `intentId`, `transactionBase64`, `mint`, `blockhash`, `lastValidBlockHeight` and `chain`. Amounts use exact integer strings, converted with the mint's decimals; no floating-point token-unit arithmetic.
 
-The frontend saves a stable request UUID and reviewed body before preparation. Retrying that operation uses the same ID and body; changed terms conflict. Wallet sign-and-send is preferred, with the submit endpoint for sign-only wallets. HTTP 202, disconnects and ambiguous send errors stay pending and are recovered before requesting another signature. A possibly signed transaction cannot be treated as cancelled merely because a dialog closed.
+Each attempt uses a request UUID and the reviewed body. Preparation failures, explicit wallet rejections, and definitive failed/expired outcomes clear the browser's pending request; retrying creates a fresh UUID with the current details. Older unsigned saved requests are discarded on load. Wallet sign-and-send is preferred, with the submit endpoint for sign-only wallets. HTTP 202 and ambiguous send outcomes are checked automatically while the launch/trade screen is open, and tracking resumes after reload. There is no continue button or manual signature entry. Checks only query/confirm an existing intent and never prepare or sign again. A possibly submitted transaction is retained until its outcome is known, so an interrupted wallet response cannot cause a duplicate payment.
 
 ## Walking
 
@@ -94,7 +94,7 @@ After both trainers join, the room enters `review`. Only after both accept the s
 
 The room's `escrow` includes asset, mint, raw amount, address, chain, initialization, each seat's deposit, deadlines, refund availability and settlement signature. Status is `awaiting-opponent`, `funding`, `funded`, `settling`, `settled`, `refund-available` or `refunded`. Decimal/symbol display comes from the room's top-level wager terms.
 
-Funding recovery is scoped to API, wallet and room. It preserves request IDs and signing state across retries and reloads. An ambiguous wallet submission is checked rather than signed again. Winning the game does not mean funds were paid: the result remains pending until confirmed settlement, and refunds follow their own wallet/confirmation flow.
+Funding tracking is scoped to API, wallet and room. Failed preparations and wallet cancellations are discarded; another attempt gets a fresh request ID. Potentially submitted deposits/refunds retain their signing state across reloads and are checked automatically while the room is open, never signed again. Confirmed failures and expiry clear that state. Winning the game does not mean funds were paid: the result remains pending until confirmed settlement, and refunds follow their own wallet/confirmation flow.
 
 ## Funding policy and activation
 

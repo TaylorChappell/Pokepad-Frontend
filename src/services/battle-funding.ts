@@ -1,5 +1,4 @@
-import bs58 from 'bs58';
-import { API_BASE, apiRequest, ApiError } from './http';
+import { API_BASE, apiRequest } from './http';
 import { signAndSendPrepared, type PreparedTransaction } from './wallet';
 import type { BattleRoom } from './battles';
 export type EscrowAction = 'deposit' | 'refund';
@@ -57,7 +56,7 @@ const storage: Pick<FundingDependencies, 'load' | 'save'> = {
     else localStorage.removeItem(storageKey(wallet, room));
   },
 };
-/** A reviewed escrow operation survives reloads and interrupted wallet responses. */
+/** Discard failed attempts while tracking potentially submitted deposits and refunds. */
 export class BattleFundingController {
   state: FundingState;
   private listeners = new Set<(state: FundingState) => void>();
@@ -69,6 +68,8 @@ export class BattleFundingController {
   ) {
     this.deps = { request: apiRequest, sign: signAndSendPrepared, ...storage, ...dependencies };
     this.state = { pending: this.deps.load(wallet, roomId), busy: false, message: '', error: '' };
+    if (this.state.pending && !this.state.pending.signingStarted && !this.state.pending.signature)
+      this.discard();
   }
   subscribe(listener: (state: FundingState) => void) {
     this.listeners.add(listener);
@@ -84,42 +85,41 @@ export class BattleFundingController {
     this.deps.save(this.wallet, this.roomId, pending);
     this.update({ pending });
   }
+  private discard() {
+    try {
+      this.deps.save(this.wallet, this.roomId, null);
+    } catch {
+      // Keep the current page usable even if the browser has disabled storage.
+    }
+    this.update({ pending: null });
+  }
   async run(action: EscrowAction): Promise<FundingResult | null> {
-    if (this.state.busy) return null;
-    if (!this.state.pending) {
-      try {
-        this.remember({
-          wallet: this.wallet,
-          roomId: this.roomId,
-          action,
-          requestId: crypto.randomUUID(),
-        });
-      } catch {
-        this.update({
-          error:
-            'Enable browser storage before funding a battle, so an interrupted transaction can be recovered.',
-        });
-        return null;
-      }
-    } else if (this.state.pending.action !== action) {
+    if (this.state.busy || this.state.pending || !this.wallet) return null;
+    try {
+      this.remember({
+        wallet: this.wallet,
+        roomId: this.roomId,
+        action,
+        requestId: crypto.randomUUID(),
+      });
+    } catch {
       this.update({
-        error: 'Resolve your saved transaction before starting another escrow action.',
+        error:
+          'Enable browser storage before funding a battle, so an interrupted transaction can be recovered.',
       });
       return null;
     }
-    return this.check();
+    return this.process(true);
   }
-  async check(suppliedSignature?: string): Promise<FundingResult | null> {
+  async check(): Promise<FundingResult | null> {
+    return this.process(false);
+  }
+  private async process(allowSigning: boolean): Promise<FundingResult | null> {
     let record = this.state.pending;
     if (!record || this.state.busy) return null;
-    if (suppliedSignature) {
-      try {
-        if (bs58.decode(suppliedSignature.trim()).length !== 64) throw new Error();
-      } catch {
-        this.update({ error: 'Enter the complete Solana transaction signature from your wallet.' });
-        return null;
-      }
-      record = { ...record, signature: suppliedSignature.trim() };
+    if (!allowSigning && (!record.intentId || (!record.signature && !record.signingStarted))) {
+      this.discard();
+      return null;
     }
     this.update({
       busy: true,
@@ -143,10 +143,13 @@ export class BattleFundingController {
         intentId: intent.intentId,
         chain: intent.chain,
         ...(intent.signature ? { signature: intent.signature } : {}),
+        ...(['submitted', 'confirmed'].includes(intent.status || '')
+          ? { signingStarted: true }
+          : {}),
       };
       this.remember(record);
       if (intent.status === 'failed' || intent.status === 'expired') {
-        this.remember(null);
+        this.discard();
         this.update({
           message: '',
           error:
@@ -156,10 +159,21 @@ export class BattleFundingController {
         });
         return null;
       }
+      if (intent.status === 'confirmed') {
+        this.discard();
+        this.update({
+          message:
+            record.action === 'deposit'
+              ? 'Your wager is confirmed in escrow.'
+              : 'Your escrow refund is confirmed.',
+        });
+        return { status: 'confirmed', signature: record.signature };
+      }
       if (
+        allowSigning &&
         !record.signature &&
         !record.signingStarted &&
-        !['submitted', 'confirmed'].includes(intent.status || '')
+        intent.status !== 'submitted'
       ) {
         this.update({
           message:
@@ -170,8 +184,9 @@ export class BattleFundingController {
         const signature = await this.deps.sign(
           { ...intent, mint: intent.mint || '' },
           () => {
-            record = { ...record!, signingStarted: true };
-            this.remember(record);
+            const signing = { ...record!, signingStarted: true };
+            this.remember(signing);
+            record = signing;
           },
           `${prefix(this.roomId)}/submit`,
         );
@@ -180,8 +195,7 @@ export class BattleFundingController {
       }
       if (!record.signature) {
         this.update({
-          message:
-            'Your wallet response was interrupted. Check the saved transaction or paste its signature; Kanto will not send a second deposit.',
+          message: 'Checking whether your wallet sent the transaction. This updates automatically.',
         });
         return { status: 'pending' };
       }
@@ -190,7 +204,7 @@ export class BattleFundingController {
         json: { intentId: record.intentId, signature: record.signature },
       });
       if (result.status === 'confirmed') {
-        this.remember(null);
+        this.discard();
         this.update({
           message:
             record.action === 'deposit'
@@ -200,19 +214,25 @@ export class BattleFundingController {
       } else this.update({ message: 'Submitted. Waiting for confirmation on Solana.' });
       return result;
     } catch (error) {
-      if (typeof error === 'object' && error && 'code' in error && error.code === 4001)
-        this.remember({ ...record, signingStarted: false });
-      if (
-        !record.intentId &&
-        error instanceof ApiError &&
-        [400, 403, 404, 422].includes(error.status)
-      )
-        this.remember(null);
+      const rejected =
+        typeof error === 'object' &&
+        error &&
+        'code' in error &&
+        String(error.code) === '4001' &&
+        !record.signature;
+      const mayBeSubmitted = !rejected && Boolean(record.signingStarted || record.signature);
+      if (!mayBeSubmitted) this.discard();
       this.update({
-        error:
-          error instanceof Error
+        message: mayBeSubmitted
+          ? 'Checking whether your transaction completed. This updates automatically.'
+          : rejected
+            ? 'Cancelled in your wallet.'
+            : '',
+        error: rejected
+          ? ''
+          : error instanceof Error
             ? error.message
-            : 'Escrow is temporarily unavailable. Your transaction is saved.',
+            : 'The transaction failed. Please try again.',
       });
       return null;
     } finally {

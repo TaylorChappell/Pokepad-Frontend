@@ -407,6 +407,7 @@ test('zero HP remains visible through real faint frames and stays hidden after t
     await act(async () =>
       root.render(React.createElement(AppProvider, null, React.createElement(BattlesPage))),
     );
+    await click('.arena-mode-tabs > button:first-child');
     await click('[aria-label="Master difficulty"]');
     await click('[aria-label="Choose Pokémon for slot 1"]');
     await click('.battle-picker-pokemon:not(:disabled)');

@@ -563,6 +563,7 @@ test('eggs hatch, packs open, equipped sprites update, and a free battle advance
     await click(document.querySelector('button[aria-label="Close dialog"]'));
     assert.equal(document.querySelectorAll('.reward-v3-card').length, 1);
     await go('/battles');
+    await click(app.button('Offline'));
     await click(document.querySelector('[aria-label="Choose Pokémon for slot 1"]'));
     await click(document.querySelector('.battle-picker-pokemon:not(:disabled)'));
     await click(document.querySelector('.classic-lobby-actions>.button'));
@@ -1089,6 +1090,7 @@ test('a faint opens mandatory party selection and the chosen reserve enters with
   });
   try {
     const { document, click } = app;
+    await click(app.button('Offline'));
     await click(document.querySelector('[aria-label="Master difficulty"]'));
     for (const [index, name] of ['Magikarp', 'Mewtwo', 'Dragonite'].entries()) {
       await click(

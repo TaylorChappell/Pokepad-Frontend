@@ -535,7 +535,7 @@ export function CoinPage({ id }: { id: string }) {
   const [amount, setAmount] = useState('0.1');
   const [review, setReview] = useState(false);
   const [slippageBps, setSlippageBps] = useState(100);
-  const transaction = useTransactionFlow(state.profile.wallet, 'trade:' + id);
+  const transaction = useTransactionFlow(state.profile.wallet, 'trade:' + id, finishTrade);
   const tabsId = useId();
   const watchlist = useCoinWatchlist(state.profile.wallet);
   if (!coin)
@@ -588,10 +588,7 @@ export function CoinPage({ id }: { id: string }) {
   }
   async function submitTrade() {
     if (!coin || !validTrade || session.status !== 'authenticated') return;
-    if (transaction.pending) {
-      await finishTrade(await transaction.confirm());
-      return;
-    }
+    if (transaction.pending || transaction.busy) return;
     if (side === 'Sell' && coin.decimals === undefined) {
       toast('Token precision is unavailable. Refresh the coin before selling.');
       return;
@@ -1028,11 +1025,8 @@ export function CoinPage({ id }: { id: string }) {
           </section>
         </aside>
       </div>
-      {!isDemo && !review && transaction.pending && (
-        <TransactionStatus
-          {...transaction}
-          onCheck={(signature) => void transaction.confirm(undefined, signature).then(finishTrade)}
-        />
+      {!isDemo && !review && (transaction.pending || transaction.error) && (
+        <TransactionStatus {...transaction} />
       )}
       {review && (
         <Modal
@@ -1092,23 +1086,23 @@ export function CoinPage({ id }: { id: string }) {
                 ) : (
                   <Button
                     className="full-width"
-                    disabled={transaction.busy || !validTrade || state.features?.trading === false}
+                    disabled={
+                      transaction.busy ||
+                      Boolean(transaction.pending) ||
+                      !validTrade ||
+                      state.features?.trading === false
+                    }
                     onClick={() => void submitTrade()}
                   >
                     {transaction.busy
                       ? 'Waiting for confirmation…'
                       : transaction.pending
-                        ? 'Check confirmation'
+                        ? 'Confirming…'
                         : 'Review in wallet'}
                   </Button>
                 )}
                 {state.features?.trading === false && <p>Trading is currently unavailable.</p>}
-                <TransactionStatus
-                  {...transaction}
-                  onCheck={(signature) =>
-                    void transaction.confirm(undefined, signature).then(finishTrade)
-                  }
-                />
+                <TransactionStatus {...transaction} />
               </>
             )}
           </div>

@@ -321,7 +321,6 @@ export function EscrowFunding({
     [session.wallet, room.id],
   );
   const [funding, setFunding] = useState(controller.state);
-  const [signature, setSignature] = useState('');
   const [consent, setConsent] = useState(false);
   useEffect(() => {
     setFunding(controller.state);
@@ -461,17 +460,6 @@ export function EscrowFunding({
               </span>
             </label>
           )}
-          {funding.pending && !funding.pending.signature && funding.pending.signingStarted && (
-            <label className="battle-funding-signature">
-              Wallet transaction signature
-              <input
-                value={signature}
-                onChange={(event) => setSignature(event.target.value)}
-                placeholder="Paste from wallet history if needed"
-                autoComplete="off"
-              />
-            </label>
-          )}
           {funding.pending?.signature && (
             <a
               href={`https://solscan.io/tx/${encodeURIComponent(funding.pending.signature)}${funding.pending.chain === 'solana:devnet' ? '?cluster=devnet' : ''}`}
@@ -485,26 +473,16 @@ export function EscrowFunding({
             className="full-width"
             disabled={
               funding.busy ||
-              (!funding.pending && (!session.signingReady || (canDeposit && !consent))) ||
-              Boolean(
-                funding.pending &&
-                  !funding.pending.signingStarted &&
-                  !funding.pending.signature &&
-                  !session.signingReady,
-              )
+              Boolean(funding.pending) ||
+              !session.signingReady ||
+              (canDeposit && !consent)
             }
-            onClick={() =>
-              void (
-                funding.pending ? controller.check(signature || undefined) : controller.run(action)
-              ).then(accept)
-            }
+            onClick={() => void controller.run(action).then(accept)}
           >
             {funding.busy
               ? 'Checking wallet transaction…'
               : funding.pending
-                ? funding.pending.signingStarted || funding.pending.signature
-                  ? 'Check transaction'
-                  : 'Continue transaction'
+                ? 'Confirming…'
                 : canRefund
                   ? 'Reclaim my deposit'
                   : 'Fund ' + amount}

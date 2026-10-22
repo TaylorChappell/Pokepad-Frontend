@@ -31,7 +31,7 @@ function validSocial(value: string) {
 
 export function CreateCoinPage() {
   const { state, act, busy: actionBusy, toast, mode: appMode, session, reload } = useApp();
-  const transaction = useTransactionFlow(state.profile.wallet, 'launch');
+  const transaction = useTransactionFlow(state.profile.wallet, 'launch', finishLaunch);
   const [uploading, setUploading] = useState(false);
   const upload = useRef<{ body: string; requestId: string; assetId?: string } | null>(null);
   const uploadingNow = useRef(false);
@@ -103,18 +103,10 @@ export function CreateCoinPage() {
       if (stepValid[step]) setStep(step + 1);
       return;
     }
-    if (isLive && transaction.pending && !busy) {
-      await finishLaunch(await transaction.confirm());
-      return;
-    }
-    if (!canCreate || busy || uploadingNow.current) return;
+    if (!canCreate || busy || transaction.pending || uploadingNow.current) return;
     if (isLive) {
       if (session.status !== 'authenticated') {
         toast('Connect your Solana wallet before launching.');
-        return;
-      }
-      if (transaction.pending) {
-        await finishLaunch(await transaction.confirm());
         return;
       }
       let asset: { assetId: string };
@@ -214,11 +206,8 @@ export function CreateCoinPage() {
           <p>A coin, a partner, and a community of your own.</p>
         </div>
       </header>
-      {isLive && transaction.pending && step !== 3 && (
-        <TransactionStatus
-          {...transaction}
-          onCheck={(signature) => void transaction.confirm(undefined, signature).then(finishLaunch)}
-        />
+      {isLive && (transaction.pending || transaction.error) && step !== 3 && (
+        <TransactionStatus {...transaction} />
       )}
       <nav className="wizard-progress" aria-label="Launch steps">
         {steps.map((label, index) => (
@@ -639,14 +628,7 @@ export function CreateCoinPage() {
                 {isLive && state.features?.launching === false && (
                   <p role="status">Coin launches are currently unavailable.</p>
                 )}
-                {isLive && (
-                  <TransactionStatus
-                    {...transaction}
-                    onCheck={(signature) =>
-                      void transaction.confirm(undefined, signature).then(finishLaunch)
-                    }
-                  />
-                )}
+                {isLive && <TransactionStatus {...transaction} />}
               </>
             )}
           </section>
@@ -676,7 +658,8 @@ export function CreateCoinPage() {
                 busy ||
                 (isLive &&
                   step === 3 &&
-                  (session.status !== 'authenticated' ||
+                  (Boolean(transaction.pending) ||
+                    session.status !== 'authenticated' ||
                     !session.signingReady ||
                     state.features?.launching === false))
               }
@@ -689,7 +672,7 @@ export function CreateCoinPage() {
                   ? nextLabels[step]
                   : isLive
                     ? transaction.pending
-                      ? 'Check confirmation'
+                      ? 'Confirming…'
                       : 'Launch coin'
                     : 'Create coin draft'}
               <Icon name={step === 3 ? 'Check' : 'ArrowRight'} size={16} />

@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import bs58 from 'bs58';
-import { API_BASE, apiRequest, ApiError } from './http';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { API_BASE, apiRequest } from './http';
 import { signAndSendPrepared, type PreparedTransaction } from './wallet';
 
 export interface TransactionRequest {
@@ -80,7 +79,7 @@ interface TransactionDependencies {
   read: (wallet: string, kind: string) => PendingTransaction | null;
   save: (wallet: string, kind: string, value: PendingTransaction | null) => void;
 }
-/** Persists the reviewed request before preparation and never re-signs an ambiguous send. */
+/** Failed attempts are discarded; potentially submitted transactions are only checked, never re-signed. */
 export class TransactionController {
   state: TransactionState;
   private listeners = new Set<(state: TransactionState) => void>();
@@ -98,6 +97,8 @@ export class TransactionController {
       ...deps,
     };
     this.state = { pending: this.deps.read(wallet, kind), busy: false, status: '', error: '' };
+    if (this.state.pending && !this.state.pending.signingStarted && !this.state.pending.signature)
+      this.discard();
   }
   subscribe(listener: (state: TransactionState) => void) {
     this.listeners.add(listener);
@@ -112,6 +113,14 @@ export class TransactionController {
   private remember(pending: PendingTransaction | null) {
     this.deps.save(this.wallet, this.kind, pending);
     this.update({ pending });
+  }
+  private discard() {
+    try {
+      this.deps.save(this.wallet, this.kind, null);
+    } catch {
+      // Keep the current page usable even if the browser has disabled storage.
+    }
+    this.update({ pending: null });
   }
   async execute(input: TransactionRequest): Promise<TransactionConfirmation | null> {
     if (this.state.busy || this.state.pending || !this.wallet) return null;
@@ -129,26 +138,24 @@ export class TransactionController {
       });
       return null;
     }
-    return this.confirm();
+    return this.process(true);
   }
-  async confirm(suppliedSignature?: string): Promise<TransactionConfirmation | null> {
+  async confirm(): Promise<TransactionConfirmation | null> {
+    return this.process(false);
+  }
+  private async process(allowSigning: boolean): Promise<TransactionConfirmation | null> {
     let record = this.state.pending;
     if (!record || this.state.busy) return null;
-    if (suppliedSignature) {
-      try {
-        if (bs58.decode(suppliedSignature.trim()).length !== 64) throw new Error();
-      } catch {
-        this.update({ error: 'Enter a valid Solana transaction signature.' });
-        return null;
-      }
-      record = { ...record, signature: suppliedSignature.trim() };
+    if (!allowSigning && (!record.intentId || (!record.signature && !record.signingStarted))) {
+      this.discard();
+      return null;
     }
     this.update({
       busy: true,
       error: '',
       status: record.intentId
-        ? 'Checking your saved transaction…'
-        : 'Preparing your reviewed transaction…',
+        ? 'Waiting for confirmation on Solana…'
+        : 'Preparing your transaction…',
     });
     try {
       this.remember(record);
@@ -167,37 +174,50 @@ export class TransactionController {
         mint: intent.mint,
         chain: intent.chain,
         ...(intent.signature ? { signature: intent.signature } : {}),
+        ...(['submitted', 'confirmed'].includes(intent.status || '')
+          ? { signingStarted: true }
+          : {}),
       };
       this.remember(record);
       if (intent.status === 'expired' || intent.status === 'failed') {
-        this.remember(null);
+        this.discard();
         this.update({
           status: '',
           error:
             intent.status === 'expired'
-              ? 'This transaction expired without completing. You can review a new transaction.'
-              : 'The transaction failed on Solana. You can review a new transaction.',
+              ? 'This transaction expired. Please try again.'
+              : 'The transaction failed on Solana. Please try again.',
         });
         return null;
       }
+      if (intent.status === 'confirmed') {
+        this.discard();
+        this.update({ status: 'Confirmed on Solana.' });
+        return {
+          status: 'confirmed',
+          signature: record.signature,
+          mint: record.mint,
+          ...(this.kind === 'launch' ? { coinId: record.mint } : {}),
+        };
+      }
       if (
+        allowSigning &&
         !record.signature &&
         !record.signingStarted &&
-        intent.status !== 'submitted' &&
-        intent.status !== 'confirmed'
+        intent.status !== 'submitted'
       ) {
         this.update({ status: 'Review and approve the transaction in your wallet.' });
         const signature = await this.deps.sign(intent, () => {
-          record = { ...record!, signingStarted: true };
-          this.remember(record);
+          const signing = { ...record!, signingStarted: true };
+          this.remember(signing);
+          record = signing;
         });
         record = { ...record, signature };
         this.remember(record);
       }
       if (!record.signature) {
         this.update({
-          status:
-            'The wallet response was interrupted. Check again to recover the submission, or paste its signature from your wallet history. This will not send another transaction.',
+          status: 'Checking whether your wallet sent the transaction. This updates automatically.',
         });
         return { status: 'pending', mint: record.mint };
       }
@@ -207,39 +227,33 @@ export class TransactionController {
         headers: { 'Idempotency-Key': record.intentId! },
       });
       if (result.status === 'confirmed') {
-        this.remember(null);
+        this.discard();
         this.update({ status: 'Confirmed on Solana.' });
       } else
         this.update({
-          status:
-            'Submitted. Waiting for final confirmation. You can check again without sending another transaction.',
+          status: 'Submitted. Waiting for confirmation on Solana…',
         });
       return result;
     } catch (error) {
-      if (
+      const rejected =
         typeof error === 'object' &&
         error &&
         'code' in error &&
-        error.code === 4001 &&
-        record.intentId
-      ) {
-        this.remember({ ...record, signingStarted: false });
-        this.update({
-          status: 'Cancelled in your wallet. Continue this same transaction, or let it expire.',
-        });
-      }
-      // Prepare validation failures never created a chain intent. An ambiguous error always remains recoverable.
-      if (
-        !record.intentId &&
-        error instanceof ApiError &&
-        [400, 401, 403, 404, 422].includes(error.status)
-      )
-        this.remember(null);
+        String(error.code) === '4001' &&
+        !record.signature;
+      const mayBeSubmitted = !rejected && Boolean(record.signingStarted || record.signature);
+      if (!mayBeSubmitted) this.discard();
       this.update({
-        error:
-          error instanceof Error
+        status: mayBeSubmitted
+          ? 'Checking whether your transaction completed. This updates automatically.'
+          : rejected
+            ? 'Cancelled in your wallet.'
+            : '',
+        error: rejected
+          ? ''
+          : error instanceof Error
             ? error.message
-            : 'This request could not finish. Your transaction is saved for recovery.',
+            : 'The transaction failed. Please try again.',
       });
       return null;
     } finally {
@@ -247,17 +261,41 @@ export class TransactionController {
     }
   }
 }
-export function useTransactionFlow(wallet: string, kind: string) {
+export function useTransactionFlow(
+  wallet: string,
+  kind: string,
+  onConfirmed?: (result: TransactionConfirmation) => void | Promise<void>,
+) {
   const controller = useMemo(() => new TransactionController(wallet, kind), [wallet, kind]);
   const [state, setState] = useState(controller.state);
+  const confirmed = useRef(onConfirmed);
+  confirmed.current = onConfirmed;
   useEffect(() => {
     setState(controller.state);
     return controller.subscribe(setState);
   }, [controller]);
+  useEffect(() => {
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const check = async () => {
+      try {
+        const { pending, busy } = controller.state;
+        if (!busy && (pending?.signingStarted || pending?.signature)) {
+          const result = await controller.confirm();
+          if (active && result?.status === 'confirmed') await confirmed.current?.(result);
+        }
+      } finally {
+        if (active) timer = setTimeout(() => void check().catch(() => {}), 4000);
+      }
+    };
+    timer = setTimeout(() => void check().catch(() => {}), 4000);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [controller]);
   return {
     ...state,
     execute: (input: TransactionRequest) => controller.execute(input),
-    confirm: (_record?: PendingTransaction | null, signature?: string) =>
-      controller.confirm(signature),
   };
 }

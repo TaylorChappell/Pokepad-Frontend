@@ -79,14 +79,14 @@ test('room previews send a private invitation without guessing the host’s stak
   assert.equal(calls[0].options?.signal, abort.signal);
   assert.equal(calls[0].options?.json, undefined);
 });
-test('worker escrow initialization waits retain one request id and cannot submit funds early', async () => {
+test('failed escrow preparation is discarded and a new attempt cannot submit funds early', async () => {
   const storage = memory(),
-    bodies: unknown[] = [];
+    bodies: Record<string, unknown>[] = [];
   let initialized = false,
     signs = 0;
   const request = (async (path, options) => {
     if (path.endsWith('/prepare')) {
-      bodies.push(options?.json);
+      bodies.push(options?.json as Record<string, unknown>);
       if (!initialized) throw new ApiError('Preparing the escrow', 409, 'ESCROW_INITIALIZING');
       return prepared;
     }
@@ -101,11 +101,12 @@ test('worker escrow initialization waits retain one request id and cannot submit
   const first = new BattleFundingController('wallet-1', 'room-1', { ...storage, request, sign });
   await first.run('deposit');
   assert.equal(signs, 0);
-  assert.ok(storage.load()?.requestId);
+  assert.equal(storage.load(), null);
   initialized = true;
   const resumed = new BattleFundingController('wallet-1', 'room-1', { ...storage, request, sign });
-  assert.equal((await resumed.check())?.status, 'confirmed');
-  assert.deepEqual(bodies[0], bodies[1]);
+  assert.equal(await resumed.check(), null);
+  assert.equal((await resumed.run('deposit'))?.status, 'confirmed');
+  assert.notEqual(bodies[0].requestId, bodies[1].requestId);
   assert.equal(signs, 1);
   assert.equal(storage.load(), null);
 });
@@ -134,23 +135,69 @@ test('an unknown deposit submission is never sent twice and recovers its signatu
   assert.equal((await controller.check())?.status, 'confirmed');
   assert.equal(signs, 1);
 });
-test('refunds use a distinct persisted action and pending deposits cannot turn into another payment', async () => {
+test('an uncertain deposit blocks another payment until expiry, then permits a fresh refund', async () => {
   const storage = memory();
-  let fail = true;
+  let expired = false;
   const payloads: any[] = [];
   const request = (async (_path, options) => {
     payloads.push(options?.json);
-    if (fail) throw new ApiError('Offline', 0);
-    return { ...prepared, status: 'expired' };
+    return { ...prepared, status: expired ? 'expired' : 'prepared' };
   }) as typeof apiRequest;
-  const controller = new BattleFundingController('wallet-1', 'room-1', { ...storage, request });
+  const controller = new BattleFundingController('wallet-1', 'room-1', {
+    ...storage,
+    request,
+    sign: async (_intent, onSigning) => {
+      onSigning?.();
+      throw new Error('Wallet response lost');
+    },
+  });
   await controller.run('deposit');
   await controller.run('refund');
   assert.equal(payloads.length, 1);
-  assert.match(controller.state.error, /Resolve your saved/);
-  fail = false;
+  assert.equal(controller.state.pending?.action, 'deposit');
+  expired = true;
   await controller.check();
   assert.equal(controller.state.pending, null);
   await controller.run('refund');
   assert.equal(payloads.at(-1)?.action, 'refund');
+});
+test('escrow server errors and wallet rejection are discarded', async () => {
+  for (const failure of ['prepare', 'wallet']) {
+    const storage = memory();
+    const controller = new BattleFundingController('wallet-1', 'room-1', {
+      ...storage,
+      request: (async () => {
+        if (failure === 'prepare') throw new ApiError('Could not prepare', 500);
+        return prepared;
+      }) as typeof apiRequest,
+      sign: async (_intent, onSigning) => {
+        onSigning?.();
+        throw Object.assign(new Error('Rejected'), { code: 4001 });
+      },
+    });
+    await controller.run('deposit');
+    assert.equal(controller.state.pending, null);
+    assert.equal(storage.load(), null);
+    assert.equal(await controller.check(), null);
+    assert.equal(controller.state.busy, false);
+  }
+});
+test('old unsigned escrow drafts are discarded without being resumed', async () => {
+  const storage = memory();
+  storage.save('wallet-1', 'room-1', {
+    wallet: 'wallet-1',
+    roomId: 'room-1',
+    requestId: 'old',
+    action: 'deposit',
+    intentId: prepared.intentId,
+  });
+  const controller = new BattleFundingController('wallet-1', 'room-1', {
+    ...storage,
+    request: async () => {
+      assert.fail('Do not resume old unsigned deposits');
+    },
+  });
+  assert.equal(controller.state.pending, null);
+  assert.equal(storage.load(), null);
+  assert.equal(await controller.check(), null);
 });

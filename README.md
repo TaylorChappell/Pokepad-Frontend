@@ -81,7 +81,7 @@ Repository: [TaylorChappell/Pokepad-Frontend](https://github.com/TaylorChappell/
 
 Phantom and MetaMask Solana use Wallet Standard sign-in. Secure cookies can restore the session, with a memory-only bearer fallback; browsers blocking the cookie require a fresh sign-in after reload. A restored session must reconnect its wallet before signing transactions. Disconnecting or switching accounts clears stale private state. No user wallet private key enters the frontend.
 
-Launch, trade and escrow operations preserve reviewed request IDs and pending transaction receipts for recovery. Unknown transaction outcomes are checked before another signature is requested. `VITE_*` values are public browser configuration: keep signing keys, session secrets and private RPC credentials on the backend.
+Failed launch, trade and escrow attempts are discarded, including preparation errors and wallet cancellations. A retry starts a fresh request with the current details. Transactions that may already have been submitted are checked automatically without another wallet signature; there is no saved-request or continue-transaction panel. `VITE_*` values are public browser configuration: keep signing keys, session secrets and private RPC credentials on the backend.
 
 See [the frontend API contract](docs/backend-contract.md) and the [backend deployment documentation](https://github.com/TaylorChappell/kanto-backend). Mobile browser GPS remains spoofable; server plausibility checks and limits reduce abuse but do not prove walking. Live activation still needs deployed infrastructure, real-wallet transaction checks and desktop/mobile visual and audio review.
 
