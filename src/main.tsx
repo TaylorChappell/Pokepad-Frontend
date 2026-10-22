@@ -45,6 +45,7 @@ import './pokemon-summary.css';
 import './site-footer.css';
 import './arena-launch-polish.css';
 import './battle-lobby.css';
+import './summary-screen.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')!).render(<App />);

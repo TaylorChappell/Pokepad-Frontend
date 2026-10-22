@@ -3,8 +3,8 @@ import type { OwnedPokemon } from '../types';
 import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { moveByName } from '../data/moves';
-import { Button, Icon, Modal, PokemonArt, TypeChip } from './UI';
-import { MovePreview, MoveInfoDialog } from './MovePreview';
+import { Button, Modal, PokemonArt, TypeChip } from './UI';
+import { MoveDetails } from './MoveDetails';
 
 export function MoveLearningPanel({
   pokemon: p,
@@ -24,12 +24,10 @@ export function MoveLearningPanel({
   onLater: () => void;
 }) {
   const [step, setStep] = useState<'preview' | 'replace' | 'decline'>('preview');
-  const [slot, setSlot] = useState<number | null>(null),
-    [info, setInfo] = useState<string | null>(null);
-  const meta = moveByName(move),
-    name = pokemonById(p.speciesId).name;
+  const [slot, setSlot] = useState<number | null>(null);
+  const name = pokemonById(p.speciesId).name;
   return (
-    <div className="move-decision-dialog" data-step={step}>
+    <div className="move-decision-dialog move-learning-screen" data-step={step}>
       <div className="move-decision-title">
         <PokemonArt id={p.speciesId} shiny={p.shiny} animated={false} />
         <p>
@@ -40,30 +38,11 @@ export function MoveLearningPanel({
       </div>
       {step === 'preview' ? (
         <>
-          <MovePreview name={move} speciesId={p.speciesId} shiny={p.shiny} />
-          <div className="new-move-record">
-            <div>
-              <h3>{move}</h3>
-              <TypeChip type={meta.type} />
-            </div>
-            <p>{meta.description}</p>
-            <dl>
-              <div>
-                <dt>POWER</dt>
-                <dd>{meta.power ?? '—'}</dd>
-              </div>
-              <div>
-                <dt>ACCURACY</dt>
-                <dd>{meta.accuracy === null ? '—' : meta.accuracy + '%'}</dd>
-              </div>
-              <div>
-                <dt>PP</dt>
-                <dd>{meta.pp}</dd>
-              </div>
-            </dl>
+          <div className="learning-move-detail">
+            <MoveDetails name={move} speciesId={p.speciesId} shiny={p.shiny} />
           </div>
           {manual && <p className="manual-consumption-note">Uses 1 {move} manual when learned.</p>}
-          <div className="modal-actions">
+          <div className="modal-actions move-command-menu">
             <Button variant="secondary" disabled={busy} onClick={onLater}>
               Later
             </Button>
@@ -92,23 +71,22 @@ export function MoveLearningPanel({
                 <button
                   disabled={busy || p.locked}
                   className={slot === i ? 'selected' : ''}
+                  aria-pressed={slot === i}
                   onClick={() => setSlot(i)}
                 >
-                  <span>{i + 1}</span>
+                  <span className="game-command-cursor" aria-hidden="true" />
                   <strong>{m}</strong>
                   <TypeChip type={moveByName(m).type} />
-                </button>
-                <button
-                  className="move-info-button"
-                  aria-label={'Preview ' + m}
-                  onClick={() => setInfo(m)}
-                >
-                  <Icon name="Info" size={16} />
                 </button>
               </div>
             ))}
           </div>
-          <div className="modal-actions">
+          {slot !== null && (
+            <div className="learning-move-detail replacement-move-detail">
+              <MoveDetails name={p.moves[slot]} speciesId={p.speciesId} shiny={p.shiny} />
+            </div>
+          )}
+          <div className="modal-actions move-command-menu">
             <Button variant="secondary" disabled={busy} onClick={() => setStep('preview')}>
               Back
             </Button>
@@ -130,7 +108,7 @@ export function MoveLearningPanel({
             This opportunity will be declined permanently. {name} will not be offered this move
             again.
           </p>
-          <div className="modal-actions">
+          <div className="modal-actions move-command-menu">
             <Button variant="secondary" disabled={busy} onClick={() => setStep('preview')}>
               Go back
             </Button>
@@ -139,14 +117,6 @@ export function MoveLearningPanel({
             </Button>
           </div>
         </>
-      )}
-      {info && (
-        <MoveInfoDialog
-          name={info}
-          speciesId={p.speciesId}
-          shiny={p.shiny}
-          onClose={() => setInfo(null)}
-        />
       )}
     </div>
   );

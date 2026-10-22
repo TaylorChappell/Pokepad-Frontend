@@ -1285,7 +1285,7 @@ test('Pokédex separates permanent variant discoveries and reference totals from
   }
 });
 
-test('PC bag heals only eligible Pokémon and move info opens the shared battle preview', async () => {
+test('PC bag heals only eligible Pokémon and selected moves show an inline battle preview', async () => {
   const app = await mountApp('/pokemon/partner', (s) => {
     s.pokemon.find((p) => p.id === 'partner')!.health = 0;
   });
@@ -1301,9 +1301,10 @@ test('PC bag heals only eligible Pokémon and move info opens the shared battle 
     assert.equal(app.saved().bag?.revive, 0);
     await app.click(app.document.querySelector('[role="dialog"] [aria-label="Close dialog"]'));
     assert.equal(app.document.querySelector('.summary-move-card summary'), null);
-    await app.click(app.document.querySelector('[aria-label="Preview Scratch"]'));
-    assert.ok(app.document.querySelector('.move-preview-field'));
-    assert.match(app.document.querySelector('.move-info-description')!.textContent!, /Accuracy/);
+    await app.click(app.document.querySelector('[aria-label="Select Scratch"]'));
+    assert.ok(app.document.querySelector('.game-move-detail .move-preview-field'));
+    assert.match(app.document.querySelector('.game-move-detail')!.textContent!, /Accuracy/);
+    assert.equal(app.document.querySelector('[role="dialog"]'), null);
   } finally {
     await app.close();
   }
@@ -1533,8 +1534,30 @@ test('summary shows moves beside the Pokémon and stats below, including after s
     await app.click(app.document.querySelectorAll('.game-move-select')[1]);
     assert.ok(app.document.querySelector('.summary-stats'));
     assert.ok(app.document.querySelector('.summary-main-actions'));
-    await app.click(app.document.querySelector('.game-move-row .move-info-button'));
-    assert.ok(app.document.querySelector('[role="dialog"]'));
+    const selected = app.saved().pokemon.find((p) => p.id === 'dragonite')!.moves[1];
+    assert.equal(
+      app.document.querySelector('.game-move-detail .move-preview')?.getAttribute('aria-label'),
+      selected + ' battle animation preview',
+    );
+    assert.equal(app.document.querySelector('.game-move-row .move-info-button'), null);
+    assert.equal(app.document.querySelector('.move-watch-button'), null);
+    assert.equal(app.document.querySelector('[role="dialog"]'), null);
+    const selectedButton = app.document.querySelectorAll<HTMLButtonElement>('.game-move-select')[1];
+    await act(async () => {
+      selectedButton.dispatchEvent(
+        new app.dom.window.KeyboardEvent('keydown', { key: 'Home', bubbles: true }),
+      );
+    });
+    const first = app.saved().pokemon.find((p) => p.id === 'dragonite')!.moves[0];
+    assert.equal(
+      app.document.querySelector('.game-move-detail .move-preview')?.getAttribute('aria-label'),
+      first + ' battle animation preview',
+    );
+    assert.equal(app.document.activeElement, app.document.querySelector('.game-move-select'));
+    assert.equal(
+      app.document.querySelector('.game-move-select')?.getAttribute('aria-pressed'),
+      'true',
+    );
   } finally {
     await app.close();
   }
