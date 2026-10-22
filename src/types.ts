@@ -51,6 +51,7 @@ export interface Coin {
   holdingDays: number;
   holdingStatus?: 'verified' | 'syncing' | 'unavailable';
   balanceCheckedAt?: number;
+  holdingHistoryDelayed?: boolean;
 }
 export interface Move {
   name: string;

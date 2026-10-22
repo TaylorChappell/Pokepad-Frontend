@@ -128,7 +128,9 @@ export function PortfolioPage() {
       {syncing && (
         <p className="holding-sync-note" role="status">
           <Icon name="Clock" size={16} />
-          Your token balance is confirmed. We’re checking your holding history for rewards.
+          {held.some((coin) => coin.holdingHistoryDelayed)
+            ? 'Your tokens are confirmed. Kanto is catching up with older trades to verify your hold streak. This updates automatically.'
+            : 'Your tokens are confirmed. Your hold streak is updating automatically.'}
         </p>
       )}
       {!held.length && state.coins.some((c) => c.holdingStatus === 'unavailable') && (

@@ -407,3 +407,76 @@
     right: 2px;
   }
 }
+
+.coin-feed-loading > span {
+  display: block;
+  color: #788d7b;
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+.coin-feed-skeleton {
+  height: 40px;
+  margin-block: 8px;
+  border-radius: 7px;
+  background: linear-gradient(100deg, #edf1e5, #f7f9f0, #edf1e5);
+  background-size: 200% 100%;
+  animation: coin-feed-shimmer 1.6s ease infinite;
+}
+@keyframes coin-feed-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.coin-feed-note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f3f1df;
+  color: #7d7958;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.coin-feed-note svg {
+  flex-shrink: 0;
+}
+.coin-feed-table {
+  table-layout: fixed;
+}
+.coin-feed-table th:first-child {
+  width: 37%;
+}
+.coin-feed-trainer {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.kanto-market-table .coin-feed-tx {
+  display: flex;
+  width: fit-content;
+  gap: 3px;
+  margin-top: 4px;
+  color: #85937c;
+  font-size: 10px;
+  font-weight: 500;
+}
+.coin-feed-table td {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.coin-feed-limit {
+  color: #839179;
+  font-size: 11px;
+  text-align: right;
+}
+@media (prefers-reduced-motion: reduce) {
+  .coin-feed-skeleton {
+    animation: none;
+  }
+}
+html[data-motion='reduced'] .coin-feed-skeleton {
+  animation: none;
+}

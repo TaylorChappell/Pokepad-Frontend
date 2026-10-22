@@ -1,3 +1,4 @@
+import { CoinMarketActivity } from '../components/CoinMarketActivity';
 import { holdingStreakLabel } from '../services/holdings';
 import { useId, useMemo, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
@@ -541,6 +542,7 @@ export function CoinPage({ id }: { id: string }) {
   const { state, toast, mode, session, reload } = useApp();
   const coin = state.coins.find((item) => item.id === id);
   const [tab, setTab] = useState<CoinDetailTab>('Transactions');
+  const [liveHolders, setLiveHolders] = useState<{ mint: string; count: number } | null>(null);
   const [side, setSide] = useState<'Buy' | 'Sell'>('Buy');
   const [amount, setAmount] = useState('0.1');
   const [review, setReview] = useState(false);
@@ -706,7 +708,7 @@ export function CoinPage({ id }: { id: string }) {
               </div>
               <div>
                 <dt>Holders</dt>
-                <dd>{compact(coin.holders)}</dd>
+                <dd>{compact(liveHolders?.mint === coin.ca ? liveHolders.count : coin.holders)}</dd>
               </div>
               <div>
                 <dt>Total supply</dt>
@@ -809,11 +811,11 @@ export function CoinPage({ id }: { id: string }) {
                     </div>
                   </>
                 ) : (
-                  <div className="kanto-market-data-empty">
-                    <Icon name="Activity" size={28} />
-                    <h3>No trade activity yet</h3>
-                    <p>Confirmed trades will appear here when the market feed is connected.</p>
-                  </div>
+                  <CoinMarketActivity
+                    mint={coin.ca}
+                    kind="Transactions"
+                    onHolderCount={setLiveHolders}
+                  />
                 )
               ) : tab === 'Holders' ? (
                 isDemo ? (
@@ -852,13 +854,11 @@ export function CoinPage({ id }: { id: string }) {
                     </div>
                   </>
                 ) : (
-                  <div className="kanto-market-data-empty">
-                    <Icon name="Users" size={28} />
-                    <h3>Holder directory coming soon</h3>
-                    <p>
-                      Verified holder accounts will appear here when the market feed is connected.
-                    </p>
-                  </div>
+                  <CoinMarketActivity
+                    mint={coin.ca}
+                    kind="Holders"
+                    onHolderCount={setLiveHolders}
+                  />
                 )
               ) : tab === 'Rewards' ? (
                 <div className="kanto-market-feature">
