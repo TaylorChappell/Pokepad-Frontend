@@ -418,6 +418,28 @@
 .reward-v3-detail-art > .button {
   margin-top: 15px;
 }
+.reward-v3-pool {
+  min-width: 0;
+}
+.reward-v3-odds-error {
+  padding: 18px;
+  margin-top: 16px;
+  border: 1px solid #e2d7a8;
+  border-radius: 12px;
+  background: #fff9e8;
+  color: #665529;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.reward-v3-drop > div {
+  min-width: 0;
+}
+.reward-v3-drop strong {
+  overflow-wrap: anywhere;
+}
+.drop-chance {
+  flex-shrink: 0;
+}
 .reward-v3-pool h3 {
   margin: 3px 0 8px;
   font-size: 20px;

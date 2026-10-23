@@ -3,7 +3,7 @@ import { useApp } from '../state/AppContext';
 import { LiveWalkPage } from './LiveWalk';
 import { eggWalkingMeters, walkingDistance } from '../services/walking-controller';
 import { pokemonById } from '../data/pokemon';
-import { rewardPool } from '../data/rewardPools';
+import { RewardProbabilities } from '../components/RewardProbabilities';
 import { rewardBudget } from '../state/model';
 import {
   Button,
@@ -285,10 +285,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
   const revealAudio = useRevealAudio();
   const [tab, setTab] = useState(initialTab),
     [detail, setDetail] = useState<Reward | null>(null),
-    [opening, setOpening] = useState<Reward | null>(null),
-    [poolFilter, setPoolFilter] = useState('all'),
-    [poolSearch, setPoolSearch] = useState(''),
-    [poolLimit, setPoolLimit] = useState(24);
+    [opening, setOpening] = useState<Reward | null>(null);
   useEffect(() => {
     setTab(initialTab);
   }, [initialTab]);
@@ -300,20 +297,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
   const equipped = state.pokemon.find((p) => p.id === state.profile.equippedId);
   const current = tab === 'packs' ? packs : eggs;
   const selected = detail ? state.rewards.find((r) => r.id === detail.id) || detail : null;
-  const pool = selected
-    ? rewardPool(selected.tier, selected.kind, selected.gift ? 100 : rewardBudget(state, selected))
-    : [];
-  const filteredPool = pool.filter(
-    (entry) =>
-      (poolFilter !== 'legendary' || legendaryIds.includes(entry.speciesId)) &&
-      pokemonById(entry.speciesId).name.toLowerCase().includes(poolSearch.toLowerCase().trim()),
-  );
-  const showDetail = (r: Reward) => {
-    setPoolFilter('all');
-    setPoolSearch('');
-    setPoolLimit(24);
-    setDetail(r);
-  };
+  const showDetail = (r: Reward) => setDetail(r);
   const open = (r: Reward) => {
     if (r.readyAt > now) {
       showDetail(r);
@@ -586,93 +570,13 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                 </a>
               )}
             </div>
-            <div className="reward-v3-pool">
-              <h3>Who could you discover?</h3>
-              {mode === 'live' ? (
-                <p>
-                  {selected.gift
-                    ? 'Your gift contains a random Pokémon, revealed when opened. It can be trained and evolved, but can never be sold or staked.'
-                    : 'Your reward was sealed and fully funded when awarded. Its Pokémon is revealed when opened.'}
-                </p>
-              ) : (
-                <>
-                  <p>
-                    Every opening is a fresh demo draw. Only rewards this coin can fund are
-                    included.
-                  </p>
-                  <div className="reward-v3-pool-tabs">
-                    <button
-                      className={poolFilter === 'all' ? 'active' : ''}
-                      onClick={() => {
-                        setPoolFilter('all');
-                        setPoolLimit(24);
-                      }}
-                    >
-                      All Pokémon
-                    </button>
-                    <button
-                      className={poolFilter === 'legendary' ? 'active' : ''}
-                      onClick={() => {
-                        setPoolFilter('legendary');
-                        setPoolLimit(24);
-                      }}
-                    >
-                      Legendaries
-                    </button>
-                  </div>
-                  <input
-                    className="reward-v3-pool-search"
-                    aria-label="Search possible Pokémon"
-                    placeholder="Find a Pokémon…"
-                    value={poolSearch}
-                    onChange={(event) => {
-                      setPoolSearch(event.target.value);
-                      setPoolLimit(24);
-                    }}
-                  />
-                  <div className="reward-v3-pool-list">
-                    {filteredPool.length ? (
-                      filteredPool.slice(0, poolLimit).map((entry) => (
-                        <div
-                          className={'reward-v3-drop ' + (entry.shiny ? 'is-shiny' : '')}
-                          key={entry.speciesId + '-' + entry.shiny}
-                        >
-                          <PokemonArt id={entry.speciesId} shiny={entry.shiny} animated={false} />
-                          <div>
-                            <strong>{pokemonById(entry.speciesId).name}</strong>
-                            {!selected.gift && <SolValue amount={entry.backing} />}
-                          </div>
-                          <span className="drop-chance">
-                            {entry.chance * 100 < 0.01 ? '<0.01' : (entry.chance * 100).toFixed(2)}%
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="reward-v3-no-drops">
-                        {poolSearch.trim()
-                          ? 'No Pokémon match your search.'
-                          : poolFilter === 'legendary'
-                            ? 'This pool needs more funding before a legendary can be drawn.'
-                            : 'The coin’s reward pool needs more funding before this reward can open.'}
-                      </p>
-                    )}
-                  </div>
-                  {filteredPool.length > poolLimit && (
-                    <button
-                      className="reward-v3-pool-more"
-                      onClick={() => setPoolLimit((limit) => limit + 24)}
-                    >
-                      Show more Pokémon <Icon name="ChevronDown" size={15} />
-                    </button>
-                  )}
-                  <p className="reward-v3-odds-note">
-                    {mode === 'demo' ? 'Demo odds shown for the current funded pool. ' : ''}Odds can
-                    change as pool funding changes. Alternate-colour Pokémon have their own funded
-                    value.
-                  </p>
-                </>
-              )}
-            </div>
+            <RewardProbabilities
+              key={state.profile.wallet + ':' + selected.id}
+              reward={selected}
+              wallet={state.profile.wallet}
+              mode={mode}
+              budget={mode === 'demo' ? (selected.gift ? 100 : rewardBudget(state, selected)) : 0}
+            />
           </div>
         </Modal>
       )}
