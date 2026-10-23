@@ -23,6 +23,7 @@ test('walking UI shows per-egg countdowns, retains GPS across pages, and pauses/
     });
   Object.defineProperty(navigator, 'userAgent', { value: 'iPhone Mobile', configurable: true });
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  let stall = true;
   let hidden = false,
     time = Date.now(),
     seq = 1,
@@ -49,7 +50,7 @@ test('walking UI shows per-egg countdowns, retains GPS across pages, and pauses/
     }) as GeolocationPosition;
   const geo = {
     getCurrentPosition(success: PositionCallback) {
-      success(location());
+      if (!stall) success(location());
     },
     watchPosition(success: PositionCallback) {
       watch = success;
@@ -153,6 +154,19 @@ test('walking UI shows per-egg countdowns, retains GPS across pages, and pauses/
           b.textContent?.includes('Enable location'),
         ) as HTMLButtonElement
       ).click();
+    });
+    assert.equal(controller.getSnapshot().phase, 'requesting');
+    const cancel = [...document.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === 'Cancel',
+    )!;
+    assert.equal(cancel.disabled, false);
+    await act(async () => cancel.click());
+    assert.equal(controller.getSnapshot().phase, 'idle');
+    stall = false;
+    await act(async () => {
+      [...document.querySelectorAll('button')]
+        .find((b) => b.textContent?.includes('Enable location'))!
+        .click();
     });
     assert.equal(controller.getSnapshot().phase, 'walking');
     assert.equal(watchCount, 1);

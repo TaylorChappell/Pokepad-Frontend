@@ -1,4 +1,5 @@
 import { apiRequest } from './http';
+import { requestWalkingLocation, WalkingLocationError } from './walking-location';
 import { postWalkingSample, type SampleResult, type WalkSession } from './walking';
 
 export type WalkingCapabilities = {
@@ -23,6 +24,7 @@ export type WalkingState = {
   phase: WalkingPhase;
   message: string;
   permission: 'prompt' | 'granted' | 'denied' | 'unavailable';
+  locationHelp: boolean;
   meters: number;
   dailyMeters: number;
   timeSavedMs: number;
@@ -32,6 +34,7 @@ export type WalkingState = {
 };
 interface Dependencies {
   geo: Geolocation | undefined;
+  permissions?: Pick<Permissions, 'query'>;
   mobile: boolean;
   screen: { width: number; height: number };
   hidden: () => boolean;
@@ -43,6 +46,7 @@ const initial = (): WalkingState => ({
   phase: 'idle',
   message: '',
   permission: 'prompt',
+  locationHelp: false,
   meters: 0,
   dailyMeters: 0,
   timeSavedMs: 0,
@@ -78,6 +82,7 @@ export function createWalkingController(deps: Dependencies) {
   let pendingSample: Promise<void> | null = null;
   let finishTask: Promise<void> | null = null;
   let disposed = false;
+  let locationRequest: ReturnType<typeof requestWalkingLocation> | null = null;
   const listeners = new Set<() => void>();
   function update(patch: Partial<WalkingState>) {
     if (disposed) return;
@@ -85,6 +90,8 @@ export function createWalkingController(deps: Dependencies) {
     listeners.forEach((listener) => listener());
   }
   function clearWatch() {
+    locationRequest?.cancel();
+    locationRequest = null;
     if (watcher !== null) deps.geo?.clearWatch(watcher);
     watcher = null;
   }
@@ -95,7 +102,7 @@ export function createWalkingController(deps: Dependencies) {
     if (error.code === 1)
       return 'Location is blocked. Enable location for Phantom (or your browser) in your phone’s settings, allow Kanto access, then try again.';
     if (error.code === 3)
-      return 'GPS is taking longer than expected. Move into an open area and try again.';
+      return 'Your browser hasn’t returned a location. Try again, or check Location help below. Your walk has not started.';
     return 'Your phone could not find its location. Turn on Location Services and try again.';
   }
   async function loadCapabilities() {
@@ -111,12 +118,17 @@ export function createWalkingController(deps: Dependencies) {
       update({ message: 'Couldn’t check walking availability. Try again in a moment.' });
     }
   }
-  function fail(run: number, message: string, permission?: WalkingState['permission']) {
+  function fail(
+    run: number,
+    message: string,
+    permission?: WalkingState['permission'],
+    locationHelp = false,
+  ) {
     if (!current(run)) return;
     clearWatch();
     wanted = false;
     version++;
-    update({ phase: 'error', message, ...(permission ? { permission } : {}) });
+    update({ phase: 'error', message, locationHelp, ...(permission ? { permission } : {}) });
   }
   function sendPosition(
     position: GeolocationPosition,
@@ -179,6 +191,7 @@ export function createWalkingController(deps: Dependencies) {
       update({
         phase: 'error',
         permission: 'unavailable',
+        locationHelp: true,
         message:
           'Location access is not available in this browser. Open Kanto in a phone browser with location access.',
       });
@@ -193,22 +206,38 @@ export function createWalkingController(deps: Dependencies) {
     const run = ++version;
     update({
       phase: 'requesting',
-      message: 'Allow location access on your phone. Finding your position…',
+      message: 'Allow location if your phone asks. Waiting for your browser…',
+      locationHelp: false,
     });
     // Request from the button gesture, before any network await, so mobile can show permission UI.
-    const firstPosition = new Promise<GeolocationPosition>((resolve, reject) => {
-      deps.geo!.getCurrentPosition(resolve, reject, gpsOptions);
+    const acquisition = requestWalkingLocation(deps.geo, {
+      permissions: deps.permissions,
+      onPermission: (permission) => {
+        if (!current(run) || state.phase !== 'requesting') return;
+        update({
+          permission,
+          message:
+            permission === 'granted'
+              ? 'Location allowed. Finding your GPS position…'
+              : 'Allow location if your phone asks. Waiting for your browser…',
+        });
+      },
     });
+    locationRequest = acquisition;
     let position: GeolocationPosition;
     try {
-      position = await firstPosition;
+      position = await acquisition.promise;
     } catch (error) {
+      if (error instanceof WalkingLocationError && error.reason === 'cancelled') return;
       fail(
         run,
         locationError(error as GeolocationPositionError),
         (error as GeolocationPositionError).code === 1 ? 'denied' : undefined,
+        true,
       );
       return;
+    } finally {
+      if (locationRequest === acquisition) locationRequest = null;
     }
     if (!current(run) || !wanted || deps.hidden()) return;
     update({
@@ -245,7 +274,15 @@ export function createWalkingController(deps: Dependencies) {
         needsAnchor = false;
       }
       if (!current(run) || !wanted || deps.hidden()) return;
-      update({ phase: 'walking' });
+      update({
+        phase: 'walking',
+        ...(needsAnchor
+          ? {
+              message:
+                'Location access is allowed. Waiting for a precise GPS signal before counting your steps.',
+            }
+          : {}),
+      });
       watcher = deps.geo.watchPosition(
         (next) => {
           if (!current(run) || !wanted || deps.hidden() || pendingSample) return;
@@ -262,8 +299,12 @@ export function createWalkingController(deps: Dependencies) {
         (error) => {
           // watchPosition can recover after a timeout or temporarily unavailable fix.
           if (!current(run)) return;
-          if (error.code === 1) fail(run, locationError(error), 'denied');
-          else update({ message: locationError(error) });
+          if (error.code === 1) fail(run, locationError(error), 'denied', true);
+          else
+            update({
+              message:
+                'Waiting for a fresh GPS signal. Move into an open area to help your phone find your position.',
+            });
         },
         gpsOptions,
       );
@@ -278,6 +319,7 @@ export function createWalkingController(deps: Dependencies) {
     update({
       phase: session ? 'paused' : 'idle',
       message: 'Walking paused. Your egg timers keep counting down.',
+      locationHelp: false,
     });
   }
   function visibilityChanged() {

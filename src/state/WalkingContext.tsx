@@ -26,6 +26,7 @@ export function WalkingProvider({
       suppliedController ||
       createWalkingController({
         geo: navigator.geolocation,
+        permissions: navigator.permissions,
         mobile: isMobileWalkingDevice(navigator),
         screen: window.screen,
         hidden: () => document.hidden,

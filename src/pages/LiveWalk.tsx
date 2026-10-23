@@ -166,12 +166,23 @@ export function LiveWalkPage() {
                       ? 'Finishing…'
                       : active
                         ? 'Pause walking'
-                        : walk.permission !== 'granted'
-                          ? 'Enable location & start'
-                          : walk.hasSession
-                            ? 'Resume walking'
-                            : 'Start walking'}
+                        : walk.locationHelp
+                          ? 'Try location again'
+                          : walk.permission !== 'granted'
+                            ? 'Enable location & start'
+                            : walk.hasSession
+                              ? 'Resume walking'
+                              : 'Start walking'}
               </Button>
+              {['requesting', 'connecting'].includes(walk.phase) && (
+                <Button
+                  variant="ghost"
+                  className="full-width"
+                  onClick={() => walk.controller.pause()}
+                >
+                  Cancel
+                </Button>
+              )}
               {walk.hasSession && (
                 <Button
                   variant="ghost"
@@ -197,6 +208,21 @@ export function LiveWalkPage() {
               <Icon name={walk.phase === 'error' ? 'Info' : 'Compass'} size={18} />
               <span>{walk.message}</span>
             </p>
+          )}
+          {walk.locationHelp && (
+            <div className="walk-location-help">
+              <h3>Location help</h3>
+              <p>
+                Turn on your phone’s Location Services. If Phantom has a location permission in your
+                phone’s settings, allow it and enable precise location.
+              </p>
+              <p>
+                Then return here and tap <strong>Try location again</strong>. If Phantom never asks
+                for access or has no location setting, its browser may not provide location on your
+                phone. Kanto can’t enable that permission for it.
+              </p>
+              <p>Your eggs will still hatch with time.</p>
+            </div>
           )}
           <p className="walk-explainer">
             Explore any Kanto page while you walk. Leave the app or lock your phone to pause; return

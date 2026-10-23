@@ -20,6 +20,7 @@ function Status({
   )
     return null;
   const active = walk.phase === 'walking';
+  const starting = ['requesting', 'connecting'].includes(walk.phase);
   return (
     <div className={'walking-status ' + (active ? 'is-active' : '')}>
       <a href="#/walk">
@@ -38,10 +39,10 @@ function Status({
       </a>
       <button
         type="button"
-        onClick={() => (active ? controller.pause() : void controller.start())}
-        disabled={['requesting', 'connecting', 'finishing'].includes(walk.phase)}
+        onClick={() => (active || starting ? controller.pause() : void controller.start())}
+        disabled={walk.phase === 'finishing'}
       >
-        {active ? 'Pause' : 'Resume'}
+        {starting ? 'Cancel' : active ? 'Pause' : 'Resume'}
       </button>
     </div>
   );

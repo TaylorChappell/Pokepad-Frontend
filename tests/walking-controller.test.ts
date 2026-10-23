@@ -7,7 +7,7 @@ import {
 } from '../src/services/walking-controller';
 import { ApiError, type apiRequest } from '../src/services/http';
 
-function fixture({ mobile = true, deny = false, deferLocation = false } = {}) {
+function fixture({ mobile = true, deny = false, deferLocation = false, accuracy = 3 } = {}) {
   let now = 100000,
     hidden = false,
     seq = 1,
@@ -23,7 +23,7 @@ function fixture({ mobile = true, deny = false, deferLocation = false } = {}) {
   const position = (): GeolocationPosition =>
     ({
       timestamp: now,
-      coords: { latitude: 51, longitude: 0, accuracy: 3 } as GeolocationCoordinates,
+      coords: { latitude: 51, longitude: 0, accuracy } as GeolocationCoordinates,
     }) as GeolocationPosition;
   const request = (async (path, options) => {
     log.push(path);
@@ -99,6 +99,9 @@ function fixture({ mobile = true, deny = false, deferLocation = false } = {}) {
   const settle = () => new Promise<void>((r) => setImmediate(r));
   return {
     controller,
+    setAccuracy(value: number) {
+      accuracy = value;
+    },
     log,
     bodies,
     watches,
@@ -250,4 +253,64 @@ test('remaining distance counts down with both clock time and server-approved wa
   assert.equal(eggWalkingMeters(now - 1, now), 0);
   assert.equal(walkingDistance(99.1), '100 m');
   assert.equal(walkingDistance(1900), '1.90 km');
+});
+
+test('silent mobile location times out with retry, and Cancel makes late permission callbacks harmless', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const f = fixture({ deferLocation: true });
+  await f.controller.loadCapabilities();
+  const pending = f.controller.start();
+  assert.equal(f.controller.getSnapshot().phase, 'requesting');
+  t.mock.timers.tick(15000);
+  await pending;
+  assert.equal(f.controller.getSnapshot().phase, 'error');
+  assert.equal(f.controller.getSnapshot().locationHelp, true);
+  assert.equal(f.watches.size, 0);
+  assert.ok(!f.log.some((p) => p.endsWith('/start')));
+  f.resolve();
+  await Promise.resolve();
+  assert.equal(f.controller.getSnapshot().phase, 'error');
+  const retry = f.controller.start();
+  f.controller.pause();
+  await retry;
+  f.resolve();
+  await Promise.resolve();
+  assert.equal(f.controller.getSnapshot().phase, 'idle');
+  assert.equal(f.watches.size, 0);
+  const last = f.controller.start();
+  f.resolve();
+  await last;
+  assert.equal(f.controller.getSnapshot().phase, 'walking');
+  t.mock.timers.tick(30000);
+  assert.equal(
+    f.controller.getSnapshot().phase,
+    'walking',
+    'previous timers cannot cancel the new session',
+  );
+  f.controller.dispose();
+});
+
+test('an initial approximate location never earns distance before precise GPS establishes an anchor', async () => {
+  const f = fixture({ accuracy: 1000 });
+  await f.controller.loadCapabilities();
+  await f.controller.start();
+  assert.equal(f.controller.getSnapshot().permission, 'granted');
+  assert.match(f.controller.getSnapshot().message, /precise GPS/);
+  assert.equal(f.bodies.length, 0);
+  f.advance();
+  f.emit();
+  await f.settle();
+  assert.equal(f.bodies.length, 0);
+  f.setAccuracy(3);
+  f.advance();
+  f.emit();
+  await f.settle();
+  assert.equal(f.bodies.length, 1);
+  assert.equal(f.bodies[0].resume, true);
+  assert.equal(f.controller.getSnapshot().meters, 0);
+  f.advance();
+  f.emit();
+  await f.settle();
+  assert.equal(f.controller.getSnapshot().meters, 10);
+  f.controller.dispose();
 });
