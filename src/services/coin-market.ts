@@ -23,6 +23,8 @@ export interface CoinMarket {
   syncing: boolean;
   holderCount: number;
   holdersCurrent: boolean;
+  nextTradeCursor?: string | null;
+  nextHolderCursor?: string | null;
   trades: CoinTrade[];
   holders: CoinHolder[];
 }
@@ -41,6 +43,7 @@ export function parseCoinMarket(value: unknown, mint: string): CoinMarket {
     typeof d.holdersCurrent !== 'boolean' ||
     !Number.isSafeInteger(d.holderCount) ||
     d.holderCount < 0 ||
+    ![d.nextTradeCursor, d.nextHolderCursor].every((c) => c == null || text(c, 1024)) ||
     !Array.isArray(d.trades) ||
     d.trades.length > 100 ||
     !Array.isArray(d.holders) ||
@@ -71,16 +74,25 @@ export function parseCoinMarket(value: unknown, mint: string): CoinMarket {
     throw new Error('Coin activity is temporarily unavailable.');
   return d;
 }
-export async function loadCoinMarket(mint: string, signal?: AbortSignal, base = API_BASE) {
+export async function loadCoinMarket(
+  mint: string,
+  signal?: AbortSignal,
+  base = API_BASE,
+  page?: { tradeCursor?: string; holderCursor?: string },
+) {
+  const query = new URLSearchParams(page).toString();
   return parseCoinMarket(
-    await apiRequest('/v1/coins/' + encodeURIComponent(mint) + '/market', {
-      base,
-      signal,
-      auth: false,
-      credentials: 'omit',
-      cache: 'no-store',
-      timeoutMs: 12000,
-    }),
+    await apiRequest(
+      '/v1/coins/' + encodeURIComponent(mint) + '/market' + (query ? '?' + query : ''),
+      {
+        base,
+        signal,
+        auth: false,
+        credentials: 'omit',
+        cache: 'no-store',
+        timeoutMs: 12000,
+      },
+    ),
     mint,
   );
 }

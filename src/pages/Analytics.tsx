@@ -1,3 +1,4 @@
+import { ListMore, useListWindow } from '../components/ListMore';
 import { ContentSkeleton } from '../components/Loading';
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../state/AppContext';
@@ -161,9 +162,8 @@ export function AnalyticsPage() {
     [snapshot, accountEvents],
   );
   const selectedEvents = scope === 'account' || mode === 'demo' ? accountEvents : communityEvents;
-  const events = selectedEvents
-    .filter((event) => filter === 'all' || event.kind === filter)
-    .slice(0, 100);
+  const events = selectedEvents.filter((event) => filter === 'all' || event.kind === filter);
+  const page = useListWindow(events, [scope, filter, state.profile.wallet].join(':'), 15);
   const metrics = snapshot?.metrics;
   const initialLoading = mode === 'live' && !snapshot && connection === 'connecting';
   const connectionLabel: Record<Connection, string> = {
@@ -317,7 +317,7 @@ export function AnalyticsPage() {
         </div>
         <div className="analytics-event-list">
           {events.length ? (
-            events.map((event) => (
+            page.items.map((event) => (
               <article className={'analytics-event event-' + event.kind} key={event.id}>
                 <a
                   className="analytics-trainer-avatar"
@@ -386,6 +386,7 @@ export function AnalyticsPage() {
             </div>
           )}
         </div>
+        <ListMore {...page} label="Load more trainer activity" />
       </section>
     </div>
   );

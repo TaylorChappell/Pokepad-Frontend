@@ -1,3 +1,4 @@
+import { ListMore, useListWindow } from './ListMore';
 import { ContentSkeleton } from './Loading';
 import { BattleRoomReview } from './BattleRoomReview';
 import type { BattleRules } from '../battle/rules';
@@ -59,16 +60,35 @@ export function useOnlineBattle(enabled: boolean) {
   useEffect(() => {
     if (!enabled || mode !== 'live') return;
     const abort = new AbortController();
-    setCapabilitiesError('');
-    void loadBattleCapabilities(abort.signal)
-      .then(setCapabilities)
-      .catch(() => {
+    let busy = false;
+    const refresh = async () => {
+      if (busy || abort.signal.aborted || document.visibilityState === 'hidden') return;
+      busy = true;
+      try {
+        const next = await loadBattleCapabilities(abort.signal);
+        if (!abort.signal.aborted) {
+          setCapabilities(next);
+          setCapabilitiesError('');
+        }
+      } catch {
         if (!abort.signal.aborted) {
           setCapabilities(null);
-          setCapabilitiesError('Wager availability could not be checked. Reopen Online to retry.');
+          setCapabilitiesError('Wager availability could not be checked. We’ll try again shortly.');
         }
-      });
-    return () => abort.abort();
+      } finally {
+        busy = false;
+      }
+    };
+    void refresh();
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      abort.abort();
+      clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, [enabled, mode]);
   useEffect(() => {
     generation.current++;
@@ -501,6 +521,11 @@ export function EscrowFunding({
 
 export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBattle> }) {
   const { state, mode, session, now, toast } = useApp();
+  const roomPage = useListWindow(
+    online.rooms.filter((item) => item.hostWallet !== state.profile.wallet),
+    state.profile.wallet,
+    8,
+  );
   const [selected, setSelected] = useState<string[]>([]);
   const [wager, setWager] = useState<OnlineWager>('friendly');
   const [amount, setAmount] = useState('0.1');
@@ -875,7 +900,10 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
               {mode !== 'demo' && (caps?.sol !== true || caps?.token !== true) && (
                 <p className="online-escrow-note">
                   {caps
-                    ? 'SOL and token wagers are not available right now. You can still choose an available format above.'
+                    ? caps.monetaryWagerReason ||
+                      (caps.sol
+                        ? 'SOL battles are ready. Token battles will appear when a supported coin is available.'
+                        : 'SOL and token battles are waiting for their payment setup.')
                     : online.capabilitiesError
                       ? 'We couldn’t check wager availability. Please try again shortly.'
                       : 'Checking wager availability…'}
@@ -949,7 +977,7 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
           ) : (
             <>
               <div className="online-open-rooms" aria-label="Open battle rooms">
-                {rooms.map((item) => (
+                {roomPage.items.map((item) => (
                   <button
                     type="button"
                     className={joinId === item.id ? 'selected' : ''}
@@ -983,6 +1011,7 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                   </div>
                 )}
               </div>
+              <ListMore {...roomPage} label="Load more battle rooms" />
               <details
                 className="online-invitation"
                 open={Boolean(invite || (joinId && !rooms.some((item) => item.id === joinId)))}

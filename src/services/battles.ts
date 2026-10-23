@@ -24,7 +24,8 @@ export interface BattleCapabilities {
   pokemon: boolean;
   sol: boolean;
   token: boolean;
-  monetaryWagerReason?: string;
+  monetaryWagerReason?: string | null;
+  monetaryWagerCode?: string | null;
   tokens?: { mint: string; symbol: string; name: string; decimals: number }[];
   solDecimals?: number;
   turnSeconds: number;

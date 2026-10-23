@@ -100,6 +100,7 @@ test('live tables request actual records, expose trainer and transaction links, 
     assert.match(app.dom.window.document.body.textContent || '', /Updates are delayed/);
     assert.equal(app.dom.window.document.querySelectorAll('tbody tr').length, 1);
     await app.render('mint', 'Holders');
+    await app.respond(2, payload());
     assert.match(app.dom.window.document.body.textContent || '', /Leaf.*500.*0\.25%/);
   } finally {
     await app.close();
@@ -125,6 +126,78 @@ test('failed initial reads have a retry and late responses cannot leak records a
     await app.respond(1, payload());
     assert.match(app.dom.window.document.body.textContent || '', /Trade history is catching up/);
     assert.doesNotMatch(app.dom.window.document.body.textContent || '', /Leaf/);
+  } finally {
+    await app.close();
+  }
+});
+
+test('load more follows cursors, keeps existing rows, and clears expansion on a different coin', async () => {
+  const app = await mount();
+  try {
+    await app.render();
+    const first = { ...payload(), syncing: true, nextTradeCursor: 'older-page' };
+    await app.respond(0, first);
+    assert.doesNotMatch(
+      app.dom.window.document.body.textContent || '',
+      /Earlier activity is still being added/,
+    );
+    await act(async () =>
+      app.dom.window.document
+        .querySelector<HTMLButtonElement>('button[aria-label="Load more transactions"]')!
+        .click(),
+    );
+    assert.equal(app.dom.window.document.querySelectorAll('tbody tr').length, 1);
+    await app.respond(1, first);
+    assert.match(app.requests[2].url, /tradeCursor=older-page/);
+    await app.respond(2, {
+      ...payload(),
+      trades: [{ ...payload().trades[0], id: 'second', signature: 'older' }],
+      nextTradeCursor: null,
+    });
+    assert.equal(app.dom.window.document.querySelectorAll('tbody tr').length, 2);
+    assert.equal(
+      app.dom.window.document.querySelector('button[aria-label="Load more transactions"]'),
+      null,
+    );
+    await app.render('other');
+    await app.respond(3, payload('other'));
+    assert.equal(app.dom.window.document.querySelectorAll('tbody tr').length, 1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('holder pagination rebuilds a changed snapshot instead of mixing balances', async () => {
+  const app = await mount();
+  try {
+    await app.render('mint', 'Holders');
+    const first = { ...payload(), nextHolderCursor: 'snapshot-one' };
+    await app.respond(0, first);
+    await act(async () =>
+      app.dom.window.document
+        .querySelector<HTMLButtonElement>('button[aria-label="Load more holders"]')!
+        .click(),
+    );
+    await app.respond(1, first);
+    await app.respond(2, { error: { code: 'MARKET_PAGE_CHANGED', message: 'Refresh' } }, 409);
+    await app.respond(3, {
+      ...payload(),
+      holders: [{ ...payload().holders[0], tokenAmount: 100 }],
+      nextHolderCursor: 'snapshot-two',
+    });
+    assert.match(app.requests[4].url, /holderCursor=snapshot-two/);
+    await app.respond(4, {
+      ...payload(),
+      holders: [{ ...payload().holders[0], wallet: 'second', tokenAmount: 50 }],
+      nextHolderCursor: null,
+    });
+    assert.equal(app.dom.window.document.querySelectorAll('tbody tr').length, 2);
+    assert.deepEqual(
+      [...app.dom.window.document.querySelectorAll('tbody tr td:nth-child(2)')].map(
+        (cell) => cell.textContent,
+      ),
+      ['100', '50'],
+    );
   } finally {
     await app.close();
   }

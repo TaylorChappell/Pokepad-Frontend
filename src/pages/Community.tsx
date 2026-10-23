@@ -1,3 +1,4 @@
+import { ListMore, useListWindow } from '../components/ListMore';
 import { ItemSprite } from '../components/ItemSprite';
 import { useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
@@ -128,6 +129,7 @@ export function GymsPage() {
       (filter === 'Ready to challenge' && g.defenders.length > 0) ||
       (filter === 'My gym' && g.coinId === state.profile.supportedGym),
   );
+  const page = useListWindow(visible, filter + ':' + state.profile.wallet);
   return (
     <div className="gyms-refresh trainer-theme">
       <header className="gyms-heading">
@@ -202,7 +204,7 @@ export function GymsPage() {
         <span>Weekly league · resets Monday UTC</span>
       </div>
       <div className="gym-directory">
-        {visible.map((g) => (
+        {page.items.map((g) => (
           <a
             href={'#/gym/' + g.coinId}
             className="gym-directory-row"
@@ -246,6 +248,7 @@ export function GymsPage() {
           </a>
         ))}
       </div>
+      <ListMore {...page} label="Load more gyms" />
       {!visible.length && (
         <EmptyState
           title="No gyms here yet"

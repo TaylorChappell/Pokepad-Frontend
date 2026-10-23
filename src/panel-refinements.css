@@ -480,3 +480,53 @@
 html[data-motion='reduced'] .coin-feed-skeleton {
   animation: none;
 }
+
+/* One quiet, consistent expansion control for directories and live feeds. */
+.list-more {
+  display: flex;
+  justify-content: center;
+  padding: 18px 12px;
+  width: 100%;
+}
+.list-more button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 10px 25px;
+  border: 1px solid #c8d5cb;
+  border-radius: 13px;
+  color: #264b40;
+  background: #f6f9ee;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #dce5d8;
+  transition:
+    background 0.18s,
+    transform 0.18s,
+    box-shadow 0.18s;
+}
+.list-more button:hover:not(:disabled) {
+  background: #e9f2dd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #d0ddc7;
+}
+.list-more button:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.list-more button:focus-visible {
+  outline: 3px solid #a7c79c;
+  outline-offset: 4px;
+}
+.list-more button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+@media (prefers-reduced-motion: reduce) {
+  .list-more button {
+    transition: none;
+  }
+}

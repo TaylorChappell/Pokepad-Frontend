@@ -1,21 +1,23 @@
+import { ListMore } from './ListMore';
 import { useEffect, useState } from 'react';
 import { loadCoinMarket, type CoinMarket } from '../services/coin-market';
-import { API_BASE } from '../services/http';
+import { ApiError, API_BASE } from '../services/http';
 import { compact, relativeTime, sol } from '../utils';
 import { Icon } from './UI';
 
 const shortWallet = (wallet: string) => wallet.slice(0, 4) + '…' + wallet.slice(-4);
-export function CoinMarketActivity({
-  mint,
-  kind,
-  base = API_BASE,
-  onHolderCount,
-}: {
+type Props = {
   mint: string;
   kind: 'Transactions' | 'Holders';
   base?: string;
   onHolderCount?: (value: { mint: string; count: number }) => void;
-}) {
+};
+export function CoinMarketActivity(props: Props) {
+  return <MarketList key={props.mint + ':' + props.kind + ':' + props.base} {...props} />;
+}
+function MarketList({ mint, kind, base = API_BASE, onHolderCount }: Props) {
+  const [pageCount, setPageCount] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CoinMarket | null>(null);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -23,13 +25,45 @@ export function CoinMarketActivity({
     let disposed = false,
       busy = false;
     const controller = new AbortController();
-    setData(null);
     setFailed(false);
+    setLoading(true);
     async function refresh() {
       if (busy || disposed || document.visibilityState === 'hidden') return;
       busy = true;
       try {
-        const response = await loadCoinMarket(mint, controller.signal, base);
+        async function readPages() {
+          const response = await loadCoinMarket(mint, controller.signal, base);
+          for (let page = 1; page < pageCount; page++) {
+            const cursor =
+              kind === 'Transactions' ? response.nextTradeCursor : response.nextHolderCursor;
+            if (!cursor) break;
+            const next = await loadCoinMarket(
+              mint,
+              controller.signal,
+              base,
+              kind === 'Transactions' ? { tradeCursor: cursor } : { holderCursor: cursor },
+            );
+            if (kind === 'Transactions') {
+              const ids = new Set(response.trades.map((t) => t.id));
+              response.trades.push(...next.trades.filter((t) => !ids.has(t.id)));
+              response.nextTradeCursor = next.nextTradeCursor;
+            } else {
+              const wallets = new Set(response.holders.map((h) => h.wallet));
+              response.holders.push(...next.holders.filter((h) => !wallets.has(h.wallet)));
+              response.nextHolderCursor = next.nextHolderCursor;
+            }
+          }
+          return response;
+        }
+        let response: CoinMarket;
+        try {
+          response = await readPages();
+        } catch (error) {
+          // A refreshed holder snapshot invalidates its old cursor. Rebuild once
+          // so changing balances never leave duplicated or stale holder pages.
+          if (!(error instanceof ApiError) || error.code !== 'MARKET_PAGE_CHANGED') throw error;
+          response = await readPages();
+        }
         if (!disposed) {
           setData(response);
           setFailed(false);
@@ -38,6 +72,7 @@ export function CoinMarketActivity({
         if (!disposed) setFailed(true);
       } finally {
         busy = false;
+        if (!disposed) setLoading(false);
       }
     }
     void refresh();
@@ -51,7 +86,7 @@ export function CoinMarketActivity({
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [mint, base, attempt]);
+  }, [mint, kind, base, attempt, pageCount]);
   useEffect(() => {
     if (data) onHolderCount?.({ mint: data.mint, count: data.holderCount });
   }, [data, onHolderCount]);
@@ -91,12 +126,6 @@ export function CoinMarketActivity({
       {failed && (
         <p className="coin-feed-note" role="status">
           Updates are delayed. We’ll try again shortly.
-        </p>
-      )}
-      {catchingUp && (
-        <p className="coin-feed-note" role="status">
-          <Icon name="Clock" size={14} />
-          Earlier activity is still being added. This list updates automatically.
         </p>
       )}
       {!rows.length ? (
@@ -210,9 +239,12 @@ export function CoinMarketActivity({
           </table>
         </div>
       )}
-      {rows.length === 100 && (
-        <p className="coin-feed-limit">{trades ? 'Latest 100 trades' : 'Largest 100 holders'}</p>
-      )}
+      <ListMore
+        hasMore={Boolean(trades ? data.nextTradeCursor : data.nextHolderCursor)}
+        loading={loading}
+        loadMore={() => setPageCount((n) => n + 1)}
+        label={'Load more ' + kind.toLowerCase()}
+      />
     </div>
   );
 }

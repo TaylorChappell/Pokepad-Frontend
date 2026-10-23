@@ -1,3 +1,4 @@
+import { ListMore, useListWindow } from '../components/ListMore';
 import { CoinMarketActivity } from '../components/CoinMarketActivity';
 import { holdingStreakLabel } from '../services/holdings';
 import { useId, useMemo, useState, type CSSProperties } from 'react';
@@ -328,6 +329,7 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
           ? (b.launchedAt || 0) - (a.launchedAt || 0)
           : b.change - a.change,
   );
+  const page = useListWindow(coins, [mode, sort, watchOnly, state.profile.wallet].join(':'));
   return (
     <>
       {!explore ? (
@@ -459,7 +461,7 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
           </EmptyState>
         ) : view === 'grid' ? (
           <div className="coin-grid">
-            {coins.map((c) => (
+            {page.items.map((c) => (
               <CoinCard
                 coin={c}
                 key={c.id}
@@ -483,7 +485,7 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {coins.map((c) => (
+                {page.items.map((c) => (
                   <tr key={c.id}>
                     <td>
                       <a className="table-coin" href={'#/coin/' + c.id}>
@@ -531,6 +533,7 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
             </table>
           </div>
         )}
+        <ListMore {...page} label="Load more coins" />
       </section>
     </>
   );

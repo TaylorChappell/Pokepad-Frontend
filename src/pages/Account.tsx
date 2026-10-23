@@ -1,3 +1,4 @@
+import { ListMore, useListWindow } from '../components/ListMore';
 import { PortfolioRewardsArt } from '../components/PortfolioRewardsArt';
 import { holdingStreakLabel } from '../services/holdings';
 import { TrainerBanner, TrainerImageEditor } from '../components/TrainerImages';
@@ -35,6 +36,7 @@ export function PortfolioPage() {
     held = state.coins.filter((c) => c.holding > 0),
     syncing = held.some((c) => c.holdingStatus === 'syncing'),
     value = held.reduce((n, c) => n + c.holding * c.price, 0);
+  const page = useListWindow(held, state.profile.wallet);
   return (
     <div className="portfolio-page trainer-theme">
       <PageHeading title="My portfolio">
@@ -166,7 +168,7 @@ export function PortfolioPage() {
                 </td>
               </tr>
             )}
-            {held.map((c) => (
+            {page.items.map((c) => (
               <tr key={c.id}>
                 <td>
                   <a className="table-coin" href={'#/coin/' + c.id}>
@@ -212,6 +214,7 @@ export function PortfolioPage() {
           </tbody>
         </table>
       </div>
+      <ListMore {...page} label="Load more held coins" />
       <div className="two-column panels-margin">
         <div className="panel inset">
           <div className="section-heading">
@@ -376,9 +379,10 @@ export function ProfilePage() {
 
 export function ActivityList({ limit }: { limit?: number }) {
   const { state, now } = useApp();
+  const page = useListWindow(state.activity, state.profile.wallet, limit || 15);
   return (
     <div className="panel activity-list">
-      {state.activity.slice(0, limit).map((a) => (
+      {page.items.map((a) => (
         <a href={'#' + a.href} className="activity-item" key={a.id}>
           <span className={'activity-art ' + a.kind}>
             {a.pokemonId ? (
@@ -398,6 +402,7 @@ export function ActivityList({ limit }: { limit?: number }) {
           <Icon name="ChevronRight" size={16} />
         </a>
       ))}
+      <ListMore {...page} label="Load more activity" />
     </div>
   );
 }

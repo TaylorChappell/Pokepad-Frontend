@@ -1,3 +1,4 @@
+import { ListMore, useListWindow } from './ListMore';
 import { ContentSkeleton } from './Loading';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -51,7 +52,8 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
     : [...coins].sort(
         (a, b) => Number(Boolean(b.main)) - Number(Boolean(a.main)) || b.volume - a.volume,
       );
-  const coinResults = matches.slice(0, term ? 8 : 5);
+  const coinPage = useListWindow(matches, term, term ? 8 : 5);
+  const coinResults = coinPage.items;
   const results: SearchEntry[] = [
     ...coinResults.map((coin) => ({ kind: 'coin' as const, coin })),
     ...trainers.map((trainer) => ({ kind: 'trainer' as const, trainer })),
@@ -406,6 +408,7 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
               </div>
             )}
           </div>
+          <ListMore {...coinPage} label="Load more matching coins" />
         </div>
         <footer className="coin-search-footer">
           <span>

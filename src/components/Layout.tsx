@@ -1,3 +1,4 @@
+import { ListMore, useListWindow } from './ListMore';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '../state/AppContext';
 import { profileName } from '../state/model';
@@ -27,6 +28,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
     [searchOpen, setSearchOpen] = useState(false);
   const closeSearch = useCallback(() => setSearchOpen(false), []);
   const header = useRef<HTMLElement>(null);
+  const notifications = useListWindow(state.notifications, state.profile.wallet + ':' + panel, 8);
   const unread = state.notifications.filter((n) => !n.read).length;
   useEffect(() => {
     setPanel(null);
@@ -160,7 +162,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
                 <button onClick={() => act({ type: 'notification.read' })}>Mark all read</button>
               </div>
               {state.notifications.length ? (
-                state.notifications.slice(0, 8).map((n) => (
+                notifications.items.map((n) => (
                   <button
                     className={'notification-item ' + (!n.read ? 'unread' : '')}
                     key={n.id}
@@ -193,6 +195,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
               ) : (
                 <p className="muted">You’re all caught up.</p>
               )}
+              <ListMore {...notifications} label="Load more notifications" />
               <a className="dropdown-footer" href="#/activity">
                 View all activity <Icon name="ArrowRight" size={14} />
               </a>
