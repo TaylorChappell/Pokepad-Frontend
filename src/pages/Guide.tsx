@@ -98,7 +98,7 @@ const topics: GuideTopic[] = [
         text: [
           'There is no minimum holding time. Once your holding is confirmed, your wallet can receive rewards, even if you have never signed in to Kanto. Awards are saved to that wallet and appear in Rewards when you connect it.',
           'The wallet that launched a coin does not earn holder eggs, packs or Rare Candy from that coin. Creators can earn from other coins they hold, and still receive their 30% creator fee share.',
-          'Funded draws run every three minutes, with no fixed limit on the number of rewards. Your token balance multiplied by your holding time determines your share of the draw chances; holding time counts up to 30 days, and new holders have a chance immediately. Rewards remain random, so an award is not guaranteed each round. Selling resets the streak. The coin must stay active and every Pokémon and its future evolutions must be fully funded.',
+          'Funded draws run every three minutes, with no fixed limit on the number of rewards. Your token balance multiplied by your holding time determines your share of rewards; holding time counts up to 30 days, and new holders are eligible immediately. Unreceived shares carry forward to give you priority in later funded rounds. Receiving an egg or pack uses one reward share; the Pokémon inside remains random. An award is not guaranteed every round. Selling resets the streak. The coin must stay active and every Pokémon and its future evolutions must be fully funded.',
           'Better eggs take longer and make rarer outcomes more likely. Lower-tier rewards can still reveal valuable Pokémon. The tier belongs to the egg or pack, not to the individual Pokémon.',
         ],
       },
