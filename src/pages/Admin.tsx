@@ -376,7 +376,11 @@ function TrainerDetail({
             </div>
             <div>
               <dt>Last active</dt>
-              <dd>{date(data.trainer.last_active_at)}</dd>
+              <dd>
+                {data.trainer.last_active_at
+                  ? date(data.trainer.last_active_at)
+                  : 'Not signed in yet'}
+              </dd>
             </div>
           </dl>
           <button className="button primary" onClick={() => onGift(wallet)}>

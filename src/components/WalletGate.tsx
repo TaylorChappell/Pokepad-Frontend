@@ -17,7 +17,8 @@ const destinations: Record<string, { title: string; description: string; item: s
   },
   rewards: {
     title: 'Your next discovery awaits',
-    description: 'Connect your wallet to collect your packs and hatch your eggs.',
+    description:
+      'Any rewards you earn are saved to your wallet, even before your first visit. Connect to open your packs and hatch your eggs.',
     item: 'lucky-egg',
   },
   pokemon: {

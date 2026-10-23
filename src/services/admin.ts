@@ -10,7 +10,7 @@ export interface AdminTrainer {
   accessory_color: string;
   restricted: boolean;
   created_at: string;
-  last_active_at: string;
+  last_active_at: string | null;
   pokemon_count?: number;
 }
 export interface AdminUser {

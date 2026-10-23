@@ -96,7 +96,8 @@ const topics: GuideTopic[] = [
       {
         title: 'Holding and reward tiers',
         text: [
-          'Your token balance and holding streak determine the tier you qualify for. Selling affects that streak. A coin must meet activity requirements to generate new holder benefits.',
+          'There is no minimum holding time. Once your holding is confirmed, your wallet can receive rewards, even if you have never signed in to Kanto. Awards are saved to that wallet and appear in Rewards when you connect it.',
+          'Funded draws happen in hourly batches. Your balance and holding streak influence your chances and reward tier; an award is not guaranteed every hour. Selling resets the streak. The coin must stay active and have enough reward funds.',
           'Better eggs take longer and make rarer outcomes more likely. Lower-tier rewards can still reveal valuable Pokémon. The tier belongs to the egg or pack, not to the individual Pokémon.',
         ],
       },
