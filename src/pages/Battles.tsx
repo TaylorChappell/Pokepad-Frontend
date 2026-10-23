@@ -52,6 +52,7 @@ import {
 } from '../battle/engine';
 
 import { OnlineBattle, useOnlineBattle, EscrowFunding } from '../components/OnlineBattle';
+import { BattlePresenceNotice } from '../components/BattleRoomStatus';
 import { battleWagerLabel } from '../services/battles';
 import { monetaryBattleResult } from '../battle/result';
 
@@ -705,7 +706,15 @@ export function BattlesPage() {
             <span>
               {online.error ||
                 (online.connected
-                  ? 'Connected · server-authoritative battle'
+                  ? battle.winner
+                    ? 'Battle complete · your result is saved'
+                    : awaitingRivalReplacement
+                      ? 'Your rival is choosing their next Pokémon'
+                      : online.room?.submitted
+                        ? 'Move locked in · waiting for your rival'
+                        : choosingReplacement
+                          ? 'Choose your next Pokémon below'
+                          : 'Your turn · choose an action below'
                   : 'Reconnecting… Your battle continues on the server.')}
             </span>
             <span>
@@ -715,7 +724,7 @@ export function BattlesPage() {
                     Math.ceil(
                       (Date.parse(online.room.deadlineAt) - now - online.clockOffset) / 1000,
                     ),
-                  ) + 's to choose'
+                  ) + (online.room?.submitted ? 's left this turn' : 's to choose')
                 : monetary &&
                     online.room?.escrow?.status !== 'settled' &&
                     online.room?.escrow?.status !== 'refunded'
@@ -723,6 +732,9 @@ export function BattlesPage() {
                   : 'Battle complete'}
             </span>
           </div>
+        )}
+        {mode === 'online' && online.room && (
+          <BattlePresenceNotice room={online.room} clockOffset={online.clockOffset} />
         )}
         {mode === 'gym' && gymBattle.error && (
           <p className="online-error" role="alert">
@@ -740,7 +752,7 @@ export function BattlesPage() {
           </div>
         )}
         {escrowDetails && online.room && (
-          <Modal title="Battle escrow" onClose={() => setEscrowDetails(false)}>
+          <Modal title="Battle payments" onClose={() => setEscrowDetails(false)}>
             <div className="modal-body">
               <EscrowFunding room={online.room} online={online} />
             </div>
@@ -925,7 +937,7 @@ export function BattlesPage() {
                     <>
                       {monetary && (
                         <Button variant="secondary" onClick={() => setEscrowDetails(true)}>
-                          Wager details
+                          Payments & receipts
                         </Button>
                       )}
                       <Button onClick={leave}>Back to rooms</Button>

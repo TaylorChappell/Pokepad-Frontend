@@ -8,6 +8,7 @@ import { teamStrength, type Fighter } from '../battle/engine';
 import type { BattleRules } from '../battle/rules';
 import { battleWagerLabel, formatRawAmount, type BattleRoom } from '../services/battles';
 import { decimalToRaw } from '../services/transactions';
+import { BattleJourney, BattlePresenceNotice, RoomNextStep } from './BattleRoomStatus';
 
 export function BattleRoomReview({
   room,
@@ -16,7 +17,7 @@ export function BattleRoomReview({
   room: BattleRoom;
   online: ReturnType<typeof useOnlineBattle>;
 }) {
-  const { state, now } = useApp();
+  const { state } = useApp();
   const review = room.review!;
   const [tab, setTab] = useState<'review' | 'team' | 'rules' | 'chat'>('review');
   const [ids, setIds] = useState(room.yourPokemonIds);
@@ -60,15 +61,12 @@ export function BattleRoomReview({
   };
   return (
     <section className="battle-room-review" aria-label="Review battle terms">
+      <BattleJourney room={room} />
       <header className="battle-review-heading">
         <div>
-          <span>LINK ROOM · REVIEW {review.version}</span>
+          <span>LINK ROOM</span>
           <h2>Meet your rival</h2>
-          <p>
-            Review both teams. Agree the rules. Then accept.
-            {room.deadlineAt &&
-              ` · ${Math.max(0, Math.ceil((Date.parse(room.deadlineAt) - now - (online.clockOffset || 0)) / 1000))}s remaining`}
-          </p>
+          <p>Both trainers choose the terms before the match starts.</p>
         </div>
         <div className="battle-review-stake">
           <strong>{battleWagerLabel(room)}</strong>
@@ -81,6 +79,8 @@ export function BattleRoomReview({
           </small>
         </div>
       </header>
+      <RoomNextStep room={room} clockOffset={online.clockOffset} />
+      <BattlePresenceNotice room={room} clockOffset={online.clockOffset} />
       <nav className="battle-review-tabs" aria-label="Room preparation">
         {(['review', 'team', 'rules', 'chat'] as const).map((value) => (
           <button
@@ -315,7 +315,9 @@ export function BattleRoomReview({
       <footer className="battle-review-footer">
         <div>
           {own?.accepted ? (
-            <p>You accepted review {review.version}. Waiting for your rival.</p>
+            <p>
+              <Icon name="Check" size={16} /> You accepted. Your rival still needs to accept.
+            </p>
           ) : (
             <label>
               <input

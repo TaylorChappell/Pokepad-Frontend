@@ -6,6 +6,8 @@ import { JSDOM } from 'jsdom';
 import { AppContext } from '../src/state/AppContext';
 import { BattleRoomReview } from '../src/components/BattleRoomReview';
 import { BattleBagMenu } from '../src/components/BattleBagMenu';
+import { EscrowFunding } from '../src/components/OnlineBattle';
+import { RoomNextStep, BattlePresenceNotice } from '../src/components/BattleRoomStatus';
 import { createInitialState } from '../src/data/demo';
 import { createBattle, createPlayerTeam, type BattleAction } from '../src/battle/engine';
 import type { BattleRoom } from '../src/services/battles';
@@ -38,7 +40,7 @@ async function harness() {
   const context = {
     state: snapshot,
     mode: 'live',
-    session: { status: 'authenticated', wallet: snapshot.profile.wallet },
+    session: { status: 'authenticated', wallet: snapshot.profile.wallet, signingReady: true },
     now: Date.now(),
     busy: false,
     toast: () => {},
@@ -207,6 +209,157 @@ test('an empty or disabled bag always has a usable Back button', async () => {
     assert.equal(h.button('Back').disabled, false);
     await h.click(h.button('Back'));
     assert.equal(left, 1);
+  } finally {
+    await h.close();
+  }
+});
+
+test('waiting rooms explain the next step and never imply an escrow error or ask for payment', async () => {
+  const h = await harness();
+  try {
+    const room = {
+      id: 'waiting',
+      status: 'waiting',
+      visibility: 'public',
+      wager: 'sol',
+      wagerAmount: '100000000',
+      wagerDecimals: 9,
+      wagerSymbol: 'SOL',
+      yourSeat: 0,
+    } as BattleRoom;
+    const online = { clockOffset: 0 } as ReturnType<typeof useOnlineBattle>;
+    await h.render(
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(RoomNextStep, { room }),
+        React.createElement(EscrowFunding, { room, online }),
+      ),
+    );
+    assert.match(document.body.textContent!, /Waiting for a rival to join/);
+    assert.match(document.body.textContent!, /Nothing to pay yet/);
+    assert.doesNotMatch(document.body.textContent!, /details are syncing|Refresh this room/);
+    assert.equal(document.querySelectorAll('a[href*="solscan"]').length, 0);
+    assert.equal(document.querySelectorAll('button').length, 0);
+  } finally {
+    await h.close();
+  }
+});
+
+test('funding requires explicit consent, puts wallet payment first, and waits clearly once paid', async () => {
+  const h = await harness();
+  try {
+    let room = {
+      id: 'payment',
+      status: 'funding',
+      wager: 'sol',
+      wagerAmount: '100000000',
+      wagerDecimals: 9,
+      wagerSymbol: 'SOL',
+      yourSeat: 0,
+      escrow: {
+        asset: 'sol',
+        mint: null,
+        amount: '100000000',
+        address: 'battle-account',
+        status: 'funding',
+        initialized: true,
+        deposits: { host: false, guest: false },
+        depositDeadlineAt: new Date(Date.now() + 120000).toISOString(),
+      },
+    } as BattleRoom;
+    const online = {
+      clockOffset: 0,
+      acceptRoom: () => {},
+      refreshRoom: async () => {},
+    } as unknown as ReturnType<typeof useOnlineBattle>;
+    const render = () => h.render(React.createElement(EscrowFunding, { room, online }));
+    await render();
+    assert.match(document.body.textContent!, /Your turn to pay/);
+    assert.equal(h.button('Pay with wallet · 0.1 SOL').disabled, true);
+    assert.equal(document.querySelector('details')!.open, false);
+    assert.ok(document.querySelector('a[href*="solscan"]')!.closest('details'));
+    assert.match(document.body.textContent!, /Do not transfer to the battle account manually/);
+    await h.click(document.querySelector('input[type=checkbox]')!);
+    assert.equal(h.button('Pay with wallet · 0.1 SOL').disabled, false);
+    room = structuredClone(room);
+    room.escrow!.deposits.host = true;
+    await render();
+    assert.match(document.body.textContent!, /You’re paid. Waiting for your rival/);
+    assert.equal(
+      [...document.querySelectorAll('button')].some((b) =>
+        b.textContent?.includes('Pay with wallet'),
+      ),
+      false,
+    );
+    room.escrow!.deposits.guest = true;
+    await render();
+    assert.match(document.body.textContent!, /Both trainers have paid/);
+  } finally {
+    await h.close();
+  }
+});
+
+test('payment expiry disables deposit, while verified refunds stay usable', async () => {
+  const h = await harness();
+  try {
+    const room = {
+      id: 'expired-payment',
+      status: 'funding',
+      wager: 'sol',
+      wagerAmount: '100000000',
+      wagerDecimals: 9,
+      wagerSymbol: 'SOL',
+      yourSeat: 0,
+      escrow: {
+        asset: 'sol',
+        mint: null,
+        amount: '100000000',
+        address: 'battle-account',
+        status: 'funding',
+        initialized: true,
+        deposits: { host: false, guest: false },
+        depositDeadlineAt: new Date(Date.now() - 5000).toISOString(),
+      },
+    } as BattleRoom;
+    const online = { clockOffset: 0 } as ReturnType<typeof useOnlineBattle>;
+    await h.render(React.createElement(EscrowFunding, { room, online }));
+    assert.match(document.body.textContent!, /payment window has closed/);
+    assert.equal(document.querySelectorAll('button').length, 0);
+    room.escrow!.status = 'refund-available';
+    room.escrow!.deposits.host = true;
+    await h.render(React.createElement(EscrowFunding, { room, online }));
+    assert.equal(h.button('Reclaim my stake').disabled, false);
+  } finally {
+    await h.close();
+  }
+});
+
+test('rival absence has a visible forfeit countdown and disappears when they return', async () => {
+  const h = await harness();
+  try {
+    const room = {
+      id: 'active',
+      status: 'active',
+      opponentWallet: 'guest',
+      trainers: [{ wallet: 'guest', displayName: 'Taylor' }],
+      presence: [
+        {
+          wallet: 'guest',
+          status: 'away',
+          forfeitAt: new Date(Date.now() + 45000).toISOString(),
+          awaySince: new Date().toISOString(),
+        },
+      ],
+    } as BattleRoom;
+    await h.render(React.createElement(BattlePresenceNotice, { room }));
+    assert.match(document.body.textContent!, /Taylor has left the arena/);
+    assert.match(document.body.textContent!, /Forfeit in/);
+    assert.match(document.body.textContent!, /Turns keep counting down/);
+    room.presence![0].status = 'present';
+    room.presence![0].forfeitAt = null;
+    await h.render(React.createElement(BattlePresenceNotice, { room }));
+    assert.equal(document.querySelector('.battle-away-notice'), null);
   } finally {
     await h.close();
   }

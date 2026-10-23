@@ -1,6 +1,18 @@
 import { ListMore, useListWindow } from './ListMore';
 import { ContentSkeleton } from './Loading';
 import { BattleRoomReview } from './BattleRoomReview';
+import {
+  BattleJourney,
+  BattlePresenceNotice,
+  RoomNextStep,
+  WaitingStake,
+  battleClock,
+} from './BattleRoomStatus';
+import {
+  rememberBattleRoom,
+  savedBattleRoom,
+  startBattlePresence,
+} from '../services/battle-presence';
 import type { BattleRules } from '../battle/rules';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../state/AppContext';
@@ -26,6 +38,7 @@ import {
   listBattleRooms,
   newestBattleRoom,
   readBattleRoom,
+  updateBattlePresence,
   sendBattleCommand,
   type BattleRoom,
   type BattleCapabilities,
@@ -45,6 +58,7 @@ export function useOnlineBattle(enabled: boolean) {
   const [networkError, setNetworkError] = useState('');
   const [pending, setPending] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [restoring, setRestoring] = useState(true);
   const [clockOffset, setClockOffset] = useState(0);
   const roomRef = useRef(room);
   roomRef.current = room;
@@ -52,11 +66,27 @@ export function useOnlineBattle(enabled: boolean) {
   const requestIds = useRef(new Map<string, string>());
   const generation = useRef(0);
   const restoredRoute = useRef('');
-  const accept = useCallback((next: BattleRoom) => {
-    setRoom((current) => newestBattleRoom(current, next));
-    setConnected(true);
-    setClockOffset(Date.parse(next.serverTime) - Date.now());
-  }, []);
+  const accept = useCallback(
+    (next: BattleRoom) => {
+      setRoom((current) => newestBattleRoom(current, next));
+      rememberBattleRoom(session.wallet || '', next.id);
+      setConnected(true);
+      setClockOffset(Date.parse(next.serverTime) - Date.now());
+    },
+    [session.wallet],
+  );
+  const openRoom = !!room && ['waiting', 'review', 'funding', 'active'].includes(room.status);
+  useEffect(() => {
+    if (!enabled || mode !== 'live' || session.status !== 'authenticated' || !room?.id || !openRoom)
+      return;
+    const id = room.id;
+    return startBattlePresence({
+      send: (body, keepalive) => updateBattlePresence(id, body, keepalive),
+      accept,
+      document,
+      window,
+    });
+  }, [enabled, mode, session.status, room?.id, openRoom, accept]);
   useEffect(() => {
     if (!enabled || mode !== 'live') return;
     const abort = new AbortController();
@@ -93,6 +123,7 @@ export function useOnlineBattle(enabled: boolean) {
   useEffect(() => {
     generation.current++;
     setRoom(null);
+    setRestoring(true);
     roomRef.current = null;
     requestIds.current.clear();
     restoredRoute.current = '';
@@ -105,6 +136,7 @@ export function useOnlineBattle(enabled: boolean) {
   );
   useEffect(() => {
     if (!enabled || mode !== 'live' || session.status !== 'authenticated') return;
+    setRestoring(true);
     const controller = new AbortController();
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
@@ -123,7 +155,9 @@ export function useOnlineBattle(enabled: boolean) {
           const current = await currentBattleRoom(controller.signal);
           if (!stopped && current.room) accept(current.room);
           if (!current.room) {
-            const routeRoom = new URLSearchParams(window.location.hash.split('?')[1]).get('room');
+            const routeRoom =
+              new URLSearchParams(window.location.hash.split('?')[1]).get('room') ||
+              savedBattleRoom(session.wallet || '');
             if (routeRoom && restoredRoute.current !== routeRoom) {
               restoredRoute.current = routeRoom;
               try {
@@ -149,7 +183,10 @@ export function useOnlineBattle(enabled: boolean) {
           );
         }
       }
-      if (!stopped) timer = setTimeout(poll, 2000);
+      if (!stopped) {
+        setRestoring(false);
+        timer = setTimeout(poll, 2000);
+      }
     }
     void poll();
     return () => {
@@ -199,9 +236,20 @@ export function useOnlineBattle(enabled: boolean) {
     capabilities,
     capabilitiesError,
     acceptRoom: accept,
+    refreshRoom: async () => {
+      const current = roomRef.current;
+      if (!current) return;
+      try {
+        accept(await readBattleRoom(current.id));
+        setNetworkError('');
+      } catch {
+        setNetworkError('Your room could not be refreshed. We’ll keep trying.');
+      }
+    },
     pending,
     error: error || networkError,
     connected,
+    restoring,
     clockOffset,
     create: (
       ids: string[],
@@ -264,6 +312,7 @@ export function useOnlineBattle(enabled: boolean) {
       return next;
     },
     clear: () => {
+      rememberBattleRoom(session.wallet || '', null);
       setRoom(null);
       roomRef.current = null;
       requestIds.current.clear();
@@ -335,7 +384,7 @@ export function EscrowFunding({
   room: BattleRoom;
   online: ReturnType<typeof useOnlineBattle>;
 }) {
-  const { session } = useApp();
+  const { session, now } = useApp();
   const controller = useMemo(
     () => new BattleFundingController(session.wallet || '', room.id),
     [session.wallet, room.id],
@@ -346,7 +395,6 @@ export function EscrowFunding({
     setFunding(controller.state);
     return controller.subscribe(setFunding);
   }, [controller]);
-  const escrow = room.escrow;
   const accept = (result: Awaited<ReturnType<BattleFundingController['check']>>) => {
     if (result?.room) online.acceptRoom(result.room);
     else if (result?.status === 'confirmed')
@@ -357,113 +405,160 @@ export function EscrowFunding({
   };
   useEffect(() => {
     if (!funding.pending?.signingStarted && !funding.pending?.signature) return;
+    void controller.check().then(accept);
     const timer = setInterval(() => {
       void controller.check().then(accept);
     }, 5000);
     return () => clearInterval(timer);
   }, [controller, funding.pending?.signingStarted, funding.pending?.signature]);
-  if (!escrow)
+  const escrow = room.escrow;
+  if (!escrow) {
+    if (room.status === 'waiting' || room.status === 'review') return <WaitingStake room={room} />;
     return (
-      <p className="online-inline-notice">
-        Escrow details are syncing. Refresh this room before funding it.
-      </p>
+      <section className="battle-escrow-desk battle-payment-empty" role="status">
+        <Icon name="Wallet" size={28} />
+        <h3>
+          {room.status === 'cancelled' ? 'No payment was requested' : 'Loading payment details'}
+        </h3>
+        <p>
+          {room.status === 'cancelled'
+            ? 'This room closed before the payment stage.'
+            : 'Your payment button will appear when the room details arrive. There’s nothing to send manually.'}
+        </p>
+        {room.status !== 'cancelled' && (
+          <Button variant="secondary" onClick={() => void online.refreshRoom()}>
+            Refresh payment status
+          </Button>
+        )}
+      </section>
     );
+  }
   const ownDeposit = room.yourSeat === 0 ? escrow.deposits.host : escrow.deposits.guest;
   const otherDeposit = room.yourSeat === 0 ? escrow.deposits.guest : escrow.deposits.host;
+  const decimals = room.wagerDecimals ?? escrow.decimals;
+  const symbol = room.wagerSymbol || escrow.symbol || (room.wager === 'sol' ? 'SOL' : 'tokens');
+  const amount =
+    (decimals === undefined ? 'Unavailable' : formatRawAmount(escrow.amount, decimals)) +
+    ' ' +
+    symbol;
+  const total =
+    decimals !== undefined && /^\d+$/.test(escrow.amount)
+      ? formatRawAmount((BigInt(escrow.amount) * 2n).toString(), decimals) + ' ' + symbol
+      : null;
+  const paymentExpired =
+    !!escrow.depositDeadlineAt && Date.parse(escrow.depositDeadlineAt) <= now + online.clockOffset;
   const canDeposit =
     room.status === 'funding' &&
     !ownDeposit &&
     escrow.status === 'funding' &&
     escrow.initialized === true &&
-    Boolean(escrow.address);
+    !!escrow.address &&
+    !paymentExpired;
   const canRefund = escrow.status === 'refund-available' && ownDeposit;
   const action: EscrowAction = canRefund ? 'refund' : 'deposit';
-  const decimals = room.wagerDecimals ?? escrow.decimals;
-  const symbol = room.wagerSymbol || escrow.symbol || (room.wager === 'sol' ? 'SOL' : 'tokens');
-  const amount =
-    (decimals === undefined ? 'Amount unavailable' : formatRawAmount(escrow.amount, decimals)) +
-    ' ' +
-    symbol;
-  const remaining =
-    escrow.depositDeadlineAt &&
-    Math.max(
-      0,
-      Math.ceil((Date.parse(escrow.depositDeadlineAt) - Date.now() - online.clockOffset) / 1000),
-    );
+  let title = 'Both stakes are secured',
+    description = 'Your battle is in progress. The result decides where the stakes go.';
+  if (room.status === 'funding') {
+    if (paymentExpired) {
+      title = 'The payment window has closed';
+      description = ownDeposit
+        ? 'If your rival did not pay, your refund button will appear after the payment status is confirmed.'
+        : 'We’re checking the final payment status. Don’t send another payment.';
+    } else if (ownDeposit && !otherDeposit) {
+      title = 'You’re paid. Waiting for your rival.';
+      description =
+        'Keep this room open. The battle starts automatically once their payment is confirmed.';
+    } else if (ownDeposit && otherDeposit) {
+      title = 'Both trainers have paid';
+      description = 'Getting your battle ready. You don’t need to do anything else.';
+    } else if (funding.pending) {
+      title = funding.pending.signature ? 'Confirming your payment' : 'Check your wallet';
+      description =
+        funding.message ||
+        'Approve the payment in your wallet, then return here. Confirmation updates automatically.';
+    } else if (!escrow.initialized) {
+      title = 'Preparing your payment';
+      description =
+        'Your wallet button will appear automatically when the battle account is ready.';
+    } else {
+      title = 'Your turn to pay';
+      description =
+        'Press Pay with wallet below, then approve the transaction in Phantom or MetaMask. The battle starts after both payments confirm.';
+    }
+  }
+  if (escrow.status === 'settling') {
+    title = 'Sending the battle payout';
+    description = 'Your result is saved. Payment updates here once it is confirmed on Solana.';
+  }
+  if (escrow.status === 'settled') {
+    title = 'Battle payout confirmed';
+    description =
+      room.winnerWallet === null
+        ? 'Each trainer’s stake has been returned.'
+        : room.winnerWallet === session.wallet
+          ? 'Both stakes have been paid to your wallet.'
+          : 'Both stakes have been paid to the winning trainer.';
+  }
+  if (escrow.status === 'refund-available') {
+    title = ownDeposit ? 'Your refund is ready' : 'This match did not start';
+    description = ownDeposit
+      ? 'Press Reclaim my stake to return your deposit to your wallet.'
+      : 'You have no confirmed deposit to reclaim.';
+  }
+  if (escrow.status === 'refunded') {
+    title = 'Match closed';
+    description = ownDeposit
+      ? 'The refund is confirmed. Your deposited stake has been returned.'
+      : 'Any confirmed deposits have been returned. No further payment is needed.';
+  }
+  const explorerSuffix = escrow.chain === 'solana:devnet' ? '?cluster=devnet' : '';
   return (
-    <section className="battle-escrow-desk" aria-label="Battle escrow">
-      <div className="battle-escrow-amount">
-        <span>Your stake</span>
-        <strong>{amount}</strong>
-        <small>Each trainer deposits the same amount.</small>
+    <section className="battle-escrow-desk" aria-label="Battle payments">
+      <header className="battle-payment-heading" role="status">
+        <Icon name={ownDeposit ? 'Check' : 'Wallet'} size={24} />
+        <div>
+          <h3>{title}</h3>
+          <p>{description}</p>
+        </div>
+      </header>
+      <div className="battle-payment-amounts">
+        <div className="battle-escrow-amount">
+          <span>Your stake</span>
+          <strong>{amount}</strong>
+          <small>Plus your wallet’s network fee</small>
+        </div>
+        {total && (
+          <div>
+            <span>Total prize</span>
+            <strong>{total}</strong>
+            <small>Both trainers’ stakes</small>
+          </div>
+        )}
       </div>
       <div className="battle-escrow-seats">
         <span className={ownDeposit ? 'funded' : ''}>
-          <Icon name={ownDeposit ? 'Check' : 'Wallet'} size={15} />
-          You <b>{ownDeposit ? 'Funded' : 'Not funded'}</b>
+          <Icon name={ownDeposit ? 'Check' : 'Wallet'} size={17} /> You{' '}
+          <b>
+            {ownDeposit
+              ? 'Payment confirmed'
+              : funding.pending
+                ? 'Confirming payment'
+                : 'Not paid yet'}
+          </b>
         </span>
         <span className={otherDeposit ? 'funded' : ''}>
-          <Icon name={otherDeposit ? 'Check' : 'Wallet'} size={15} />
-          Rival <b>{otherDeposit ? 'Funded' : 'Not funded'}</b>
+          <Icon name={otherDeposit ? 'Check' : 'Clock'} size={17} /> Rival{' '}
+          <b>{otherDeposit ? 'Payment confirmed' : 'Waiting for payment'}</b>
         </span>
       </div>
-      {escrow.address && (
-        <a
-          className="battle-escrow-address"
-          href={
-            'https://solscan.io/account/' +
-            encodeURIComponent(escrow.address) +
-            (escrow.chain === 'solana:devnet' ? '?cluster=devnet' : '')
-          }
-          target="_blank"
-          rel="noreferrer"
-        >
-          View escrow account <Icon name="ArrowUpRight" size={13} />
-        </a>
-      )}
-      {room.status === 'waiting' && (
-        <p>A rival must join and accept these exact terms before either trainer deposits.</p>
-      )}
-      {remaining !== null && remaining !== undefined && room.status === 'funding' && (
-        <p className="battle-escrow-timer">
-          Funding window: {Math.floor(Number(remaining) / 60)}:
-          {String(Number(remaining) % 60).padStart(2, '0')}
-        </p>
-      )}
-      {room.status === 'funding' && !escrow.initialized && (
-        <p>
-          Preparing the on-chain escrow account. Funding will be available when initialization
-          confirms.
-        </p>
-      )}
-      {escrow.status === 'settling' && (
-        <p>Battle complete. The escrow payout is pending on-chain confirmation.</p>
-      )}
-      {escrow.status === 'settled' && (
-        <p className="online-success">The escrow payout is confirmed.</p>
-      )}
-      {escrow.status === 'refund-available' && (
-        <p>The match did not start. Each funded trainer can reclaim their own deposit.</p>
-      )}
-      {escrow.status === 'refunded' && (
-        <p className="online-success">The escrow refund is confirmed.</p>
-      )}
-      <EscrowTokenReceipt room={room} />
-      {escrow.settlementSignature && (
-        <a
-          href={
-            'https://solscan.io/tx/' +
-            encodeURIComponent(escrow.settlementSignature) +
-            (escrow.chain === 'solana:devnet' ? '?cluster=devnet' : '')
-          }
-          target="_blank"
-          rel="noreferrer"
-        >
-          View settlement transaction <Icon name="ArrowUpRight" size={13} />
-        </a>
+      {room.status === 'funding' && escrow.depositDeadlineAt && (
+        <div className="battle-payment-deadline">
+          <span>Both payments must confirm within</span>
+          <strong>{battleClock(escrow.depositDeadlineAt, now + online.clockOffset)}</strong>
+        </div>
       )}
       {(canDeposit || canRefund || funding.pending) && (
-        <>
+        <div className="battle-payment-action">
           {!session.signingReady &&
             !funding.pending?.signingStarted &&
             !funding.pending?.signature && <WalletConnection />}
@@ -475,46 +570,98 @@ export function EscrowFunding({
                 onChange={(event) => setConsent(event.target.checked)}
               />
               <span>
-                I approve a stake of <strong>{amount}</strong>. Losing or forfeiting gives the
-                winner the wagered funds.
+                I’m staking <strong>{amount}</strong>. If I lose or forfeit, the winner receives my
+                stake.
               </span>
             </label>
-          )}
-          {funding.pending?.signature && (
-            <a
-              href={`https://solscan.io/tx/${encodeURIComponent(funding.pending.signature)}${funding.pending.chain === 'solana:devnet' ? '?cluster=devnet' : ''}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View your transaction <Icon name="ArrowUpRight" size={13} />
-            </a>
           )}
           <Button
             className="full-width"
             disabled={
-              funding.busy ||
-              Boolean(funding.pending) ||
-              !session.signingReady ||
-              (canDeposit && !consent)
+              funding.busy || !!funding.pending || !session.signingReady || (canDeposit && !consent)
             }
             onClick={() => void controller.run(action).then(accept)}
           >
-            {funding.busy
-              ? 'Checking wallet transaction…'
-              : funding.pending
-                ? 'Confirming…'
+            <Icon name="Wallet" size={18} />
+            {funding.pending
+              ? 'Confirming payment…'
+              : funding.busy
+                ? 'Opening wallet…'
                 : canRefund
-                  ? 'Reclaim my deposit'
-                  : 'Fund ' + amount}
+                  ? 'Reclaim my stake'
+                  : 'Pay with wallet · ' + amount}
           </Button>
-        </>
+          {!funding.pending && canDeposit && (
+            <small>
+              Tick the agreement above to enable payment. Your wallet will show the amount before
+              you approve.
+            </small>
+          )}
+        </div>
       )}
-      {funding.message && <p role="status">{funding.message}</p>}
+      {funding.message && (
+        <p className="battle-payment-message" role="status">
+          {funding.message}
+        </p>
+      )}
       {funding.error && (
         <p className="online-error" role="alert">
           {funding.error}
         </p>
       )}
+      <p className="battle-payment-help">
+        <Icon name="Lock" size={16} />
+        <span>
+          Always use the wallet button. <b>Do not transfer to the battle account manually.</b>
+        </span>
+      </p>
+      <details className="battle-payment-details">
+        <summary>
+          Payment receipts &amp; details <Icon name="ChevronDown" size={14} />
+        </summary>
+        <p>
+          The battle account holds the stakes until the match ends. These links are for checking
+          payments, not making them.
+        </p>
+        {escrow.address && (
+          <a
+            href={
+              'https://solscan.io/account/' + encodeURIComponent(escrow.address) + explorerSuffix
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            Inspect battle account on Solscan <Icon name="ArrowUpRight" size={13} />
+          </a>
+        )}
+        {funding.pending?.signature && (
+          <a
+            href={
+              'https://solscan.io/tx/' +
+              encodeURIComponent(funding.pending.signature) +
+              explorerSuffix
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            View my payment receipt <Icon name="ArrowUpRight" size={13} />
+          </a>
+        )}
+        {escrow.settlementSignature && (
+          <a
+            href={
+              'https://solscan.io/tx/' +
+              encodeURIComponent(escrow.settlementSignature) +
+              explorerSuffix
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            View payout receipt <Icon name="ArrowUpRight" size={13} />
+          </a>
+        )}
+        <EscrowTokenReceipt room={room} />
+      </details>
     </section>
   );
 }
@@ -656,12 +803,26 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
         room.yourPokemonIds.map((id) => state.pokemon.find((p) => p.id === id)).filter((p) => !!p),
       );
   }, [room?.id, room?.status]);
+  if (eligible && online.restoring && !room)
+    return (
+      <section className="online-room-panel">
+        <header className="online-room-heading">
+          <Pokeball size={36} />
+          <div>
+            <h2>Restoring your battle room</h2>
+            <p>Checking your saved match and payment status…</p>
+          </div>
+        </header>
+        <ContentSkeleton kind="rows" label="Loading your saved battle" />
+      </section>
+    );
   if (room?.status === 'review' && room.review)
     return <BattleRoomReview key={room.id} room={room} online={online} />;
   if (room) {
     const monetaryRoom = room.wager === 'sol' || room.wager === 'token';
     return (
       <section className={'online-room-panel ' + (monetaryRoom ? 'has-escrow' : '')}>
+        <BattleJourney room={room} />
         <header className="online-room-heading">
           <span className="online-room-ball">
             <Pokeball size={42} />
@@ -670,9 +831,9 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
             <span className="battle-desk-label">{battleWagerLabel(room)}</span>
             <h2>
               {room.status === 'waiting'
-                ? 'Your room is ready'
+                ? 'Your battle room'
                 : room.status === 'funding'
-                  ? 'Fund your battle'
+                  ? 'Secure your stakes'
                   : room.status === 'active'
                     ? 'Entering the arena…'
                     : room.status === 'cancelled'
@@ -685,14 +846,16 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                   room.teamSize +
                   ' Pokémon. You will both review and accept before the battle begins.'
                 : room.status === 'funding'
-                  ? 'The match begins only when both equal deposits confirm.'
-                  : 'Your room and transaction status are saved on the server.'}
+                  ? 'Approve your payment in your wallet. We’ll bring you into the arena when both trainers have paid.'
+                  : 'Your progress is saved. Payment updates appear below.'}
             </p>
           </div>
         </header>
+        <RoomNextStep room={room} clockOffset={online.clockOffset} />
+        <BattlePresenceNotice room={room} clockOffset={online.clockOffset} />
         <div className="online-room-body">
           <div className="online-room-party">
-            <h3>Your locked party</h3>
+            <h3>Your team is ready</h3>
             <div className="online-party-preview">
               {room.yourPokemonIds.map((id) => {
                 const pokemon = state.pokemon.find((item) => item.id === id);
@@ -712,14 +875,16 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
             </div>
             {room.status === 'waiting' && (
               <>
-                <span className="online-room-time">
-                  Room expires in{' '}
-                  {Math.max(
-                    0,
-                    Math.ceil((Date.parse(room.deadlineAt!) - now - online.clockOffset) / 1000),
-                  )}
-                  s
-                </span>
+                <div className="battle-rival-seat">
+                  <Pokeball size={36} />
+                  <div>
+                    <strong>Rival’s spot is open</strong>
+                    <span>
+                      {room.visibility === 'public' ? 'Listed in open rooms' : 'Invitation only'} ·{' '}
+                      {room.teamSize} Pokémon each
+                    </span>
+                  </div>
+                </div>
                 <Button
                   variant="secondary"
                   onClick={async () => {
@@ -736,11 +901,11 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                     }
                   }}
                 >
-                  Copy invitation <Icon name="Copy" size={16} />
+                  Invite a trainer <Icon name="Copy" size={16} />
                 </Button>
               </>
             )}
-            {['waiting', 'funding'].includes(room.status) && (
+            {room.status === 'waiting' && (
               <Button
                 variant="ghost"
                 disabled={online.pending}

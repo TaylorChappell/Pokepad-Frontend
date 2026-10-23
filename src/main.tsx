@@ -52,6 +52,7 @@ import './wallet-trainer.css';
 import './create-coin-refined.css';
 import './trainer-pages.css';
 import './panel-refinements.css';
+import './battle-room-flow.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 createRoot(document.getElementById('root')!).render(<App />);

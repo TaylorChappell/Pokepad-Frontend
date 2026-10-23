@@ -124,9 +124,7 @@ export class BattleFundingController {
     this.update({
       busy: true,
       error: '',
-      message: record.intentId
-        ? 'Checking your escrow transaction…'
-        : 'Preparing your escrow transaction…',
+      message: record.intentId ? 'Checking your payment…' : 'Preparing your wallet payment…',
     });
     try {
       this.remember(record);
@@ -154,8 +152,8 @@ export class BattleFundingController {
           message: '',
           error:
             intent.status === 'expired'
-              ? 'The escrow transaction expired. Review the room before trying again.'
-              : 'The escrow transaction failed on Solana.',
+              ? 'The payment request expired. Check the room before trying again.'
+              : 'The payment failed on Solana.',
         });
         return null;
       }
@@ -164,8 +162,8 @@ export class BattleFundingController {
         this.update({
           message:
             record.action === 'deposit'
-              ? 'Your wager is confirmed in escrow.'
-              : 'Your escrow refund is confirmed.',
+              ? 'Your stake has been received.'
+              : 'Your stake has been returned to your wallet.',
         });
         return { status: 'confirmed', signature: record.signature };
       }
@@ -179,7 +177,7 @@ export class BattleFundingController {
           message:
             record.action === 'deposit'
               ? 'Approve your exact wager in your wallet.'
-              : 'Approve the escrow refund transaction in your wallet.',
+              : 'Approve the refund in your wallet.',
         });
         const signature = await this.deps.sign(
           { ...intent, mint: intent.mint || '' },
@@ -208,8 +206,8 @@ export class BattleFundingController {
         this.update({
           message:
             record.action === 'deposit'
-              ? 'Your wager is confirmed in escrow.'
-              : 'Your escrow refund is confirmed.',
+              ? 'Your stake has been received.'
+              : 'Your stake has been returned to your wallet.',
         });
       } else this.update({ message: 'Submitted. Waiting for confirmation on Solana.' });
       return result;

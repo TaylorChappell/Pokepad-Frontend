@@ -321,6 +321,14 @@ const topics: GuideTopic[] = [
         ],
         note: 'Demo mode does not connect online matchmaking or real wagers. An offline practice match never becomes a wager.',
       },
+      {
+        title: 'Leaving and reconnecting',
+        text: [
+          'Your online battle is saved. Refreshing or returning to Battle arena restores the same teams, health, moves and payment status. A banner on other pages takes you back to your room.',
+          'If you leave the arena, switch browser tabs or lose connection during a battle, your rival sees that you are away. Once your absence is detected, you have 60 seconds to return before forfeiting. Return in time and that countdown disappears. A lost connection can take a few seconds to detect.',
+          'Turn timers never pause or reset while you are away. Missing your normal move deadline can lose the match before the reconnect countdown ends. Surrender is a separate action and ends the battle immediately after confirmation.',
+        ],
+      },
     ],
     links: [
       { label: 'Open Battle arena', path: '/battles' },
@@ -419,7 +427,8 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
     'Online and wagers': [
       'Online rooms use server-controlled teams, turns, and results. Inspect both teams, discuss changes in room chat, and accept the same team, rules and stake. Changes reset both acceptances. Reconnect to restore a running match.',
       'Friendly battles and Pokémon stakes are available when the battle service is ready. Losing a Pokémon wager transfers the selected team to the winner. If a Pokémon faints, choose a living teammate before the next attack turn.',
-      'SOL and supported coin-token wagers appear when the connected service has verified its deployed escrow program and worker. Review the matching amount and asset, then approve your deposit in your wallet. Both deposits must confirm before battle; a win is not paid until settlement confirms.',
+      'For SOL or supported token wagers, both trainers first accept the same matchup. When the payment screen is ready, tick the stake agreement and press Pay with wallet, then approve in Phantom or MetaMask. Never manually transfer to a battle account. The screen shows which trainer has paid and how long remains.',
+      'After you pay, wait in the room for your rival. The battle begins automatically after both payments confirm. If the other stake does not arrive before the deadline, the payment panel offers a refund once the final status is confirmed. A win is paid only when its payout is confirmed.',
     ],
     'Know what is connected': [
       'Browse live coin data without signing in. Connect Phantom or MetaMask using a Solana account, then sign a one-time message to access your trainer.',

@@ -32,6 +32,7 @@ export interface BattleCapabilities {
   waitingSeconds: number;
   recoverySeconds: number;
   maxTeamSize: number;
+  reconnectSeconds?: number;
 }
 export interface BattleEscrow {
   initialized?: boolean;
@@ -63,6 +64,13 @@ export interface BattleReview {
   messages: { id: string; wallet: string; body: string; createdAt: string }[];
 }
 export interface BattleRoom extends BattleTerms {
+  presence?: {
+    wallet: string;
+    status: 'present' | 'away' | 'unknown';
+    awaySince: string | null;
+    forfeitAt: string | null;
+  }[];
+  reconnectSeconds?: number;
   review?: BattleReview;
   id: string;
   status: 'waiting' | 'review' | 'funding' | 'active' | 'finished' | 'cancelled';
@@ -85,7 +93,7 @@ export interface BattleRoom extends BattleTerms {
   winnerWallet: string | null;
   resultReason: string | null;
   settledAt: string | null;
-  escrow?: BattleEscrow;
+  escrow?: BattleEscrow | null;
 }
 export interface OpenBattleRoom extends BattleTerms {
   rules?: BattleRules;
@@ -147,6 +155,17 @@ export function createBattleClient(request: typeof apiRequest = apiRequest) {
       request<{ room: BattleRoom | null }>('/v1/battles/mine', { signal }),
     read: (id: string, signal?: AbortSignal) =>
       request<BattleRoom>('/v1/battles/' + encodeURIComponent(id), { signal }),
+    presence: (
+      id: string,
+      body: { clientId: string; sequence: number; present: boolean },
+      keepalive = false,
+    ) =>
+      request<BattleRoom>('/v1/battles/' + encodeURIComponent(id) + '/presence', {
+        method: 'POST',
+        json: body,
+        keepalive,
+        timeoutMs: 8000,
+      }),
     preview: (id: string, inviteCode?: string, signal?: AbortSignal) =>
       request<OpenBattleRoom>(
         '/v1/battles/' +
@@ -247,6 +266,7 @@ export const previewBattleRoom = client.preview;
 export const listBattleRooms = client.list;
 export const currentBattleRoom = client.current;
 export const readBattleRoom = client.read;
+export const updateBattlePresence = client.presence;
 export const createOnlineBattle = client.create;
 export const joinOnlineBattle = client.join;
 export const sendBattleCommand = client.command;
@@ -256,4 +276,9 @@ export const sendBattleMessage = client.message;
 export const leaveOnlineBattle = client.leave;
 /** Discard stale polls that raced a command response. */
 export const newestBattleRoom = (current: BattleRoom | null, incoming: BattleRoom) =>
-  current?.id === incoming.id && current.revision > incoming.revision ? current : incoming;
+  current?.id === incoming.id &&
+  (current.revision > incoming.revision ||
+    (current.revision === incoming.revision &&
+      Date.parse(current.serverTime) > Date.parse(incoming.serverTime)))
+    ? current
+    : incoming;
