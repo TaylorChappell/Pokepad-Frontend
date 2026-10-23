@@ -368,9 +368,18 @@ export function CreateCoinPage() {
                             onChange={(e) => setSocials({ ...socials, [key]: e.target.value })}
                             aria-invalid={!validSocial(socials[key])}
                             aria-describedby={
-                              !validSocial(socials[key]) ? 'social-error-' + key : undefined
+                              !validSocial(socials[key])
+                                ? 'social-error-' + key
+                                : key === 'website'
+                                  ? 'coin-website-help'
+                                  : undefined
                             }
                           />
+                          {key === 'website' && (
+                            <span id="coin-website-help" className="creation-field-note">
+                              Leave blank to use this coin’s Kanto page.
+                            </span>
+                          )}
                           {!validSocial(socials[key]) && (
                             <p id={'social-error-' + key} className="creation-error">
                               Use a full https:// link.
