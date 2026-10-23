@@ -112,7 +112,7 @@ const topics: GuideTopic[] = [
         title: 'Walking helps the timer',
         text: [
           'Each egg shows its remaining hatch time and how much farther you can walk to finish it now. Every 100 metres of accepted walking takes 12 minutes off all incubating eggs, while their normal timers continue.',
-          'On your phone, tap Enable location & start and allow location access. You can browse any Kanto page while walking. Switching away from Kanto or locking your phone pauses tracking; returning resumes automatically. A manually paused walk stays paused until you resume it. Demo walking only simulates progress.',
+          'Open Kanto in your phone’s default browser, connect your wallet, then tap Enable location & start and allow location access. Phantom opens only for approval and returns you to your browser. You can browse any Kanto page while walking. Switching away from Kanto or locking your phone pauses tracking; returning resumes automatically. A manually paused walk stays paused until you resume it. Demo walking only simulates progress.',
         ],
         note: 'An egg being ready does not reveal its Pokémon. The reveal happens when you choose to hatch it.',
       },

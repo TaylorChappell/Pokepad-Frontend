@@ -213,13 +213,12 @@ export function LiveWalkPage() {
             <div className="walk-location-help">
               <h3>Location help</h3>
               <p>
-                Turn on your phone’s Location Services. If Phantom has a location permission in your
-                phone’s settings, allow it and enable precise location.
+                Turn on your phone’s Location Services and allow precise location for your browser.
               </p>
               <p>
-                Then return here and tap <strong>Try location again</strong>. If Phantom never asks
-                for access or has no location setting, its browser may not provide location on your
-                phone. Kanto can’t enable that permission for it.
+                If Phantom never asks for location, open Kanto in your phone’s default browser
+                (usually Safari on iPhone), connect Phantom there, then start walking. Phantom will
+                open just for approval and return you to your browser.
               </p>
               <p>Your eggs will still hatch with time.</p>
             </div>

@@ -938,7 +938,7 @@ export function PokedexPage({ selectedId }: { selectedId?: number }) {
                   <Icon name="Lock" size={13} />
                 )}
               </div>
-              <PokemonArt id={p.id} shiny={shiny} />
+              <PokemonArt id={p.id} shiny={shiny} animated={false} defer />
               <h3>{p.name}</h3>
               <div className="type-row">
                 {p.types.map((t) => (

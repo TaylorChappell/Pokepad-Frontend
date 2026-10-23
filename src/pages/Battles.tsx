@@ -1,3 +1,4 @@
+import { navigate } from '../services/navigation';
 import { BattleResult } from '../components/BattleResult';
 import { useGymChallenge } from '../services/gyms';
 import { gymRankings } from '../state/gyms';
@@ -575,7 +576,7 @@ export function BattlesPage() {
     }
     if (mode === 'gym') {
       gymBattle.clear();
-      window.location.hash = '/gym/' + (gym?.coinId || gymId);
+      navigate('/gym/' + (gym?.coinId || gymId));
       return;
     }
     if (mode === 'online') online.clear();

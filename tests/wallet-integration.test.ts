@@ -899,3 +899,28 @@ test('unavailable session storage does not prevent normal sign-in or logout', as
     f.dispose();
   }
 });
+
+test('a returned mobile proof uses its original server challenge and still verifies the resulting bearer', async () => {
+  const f = fixture();
+  try {
+    await f.controller.connectWallet('Phantom', {
+      wallet: f.account.address,
+      challengeId: 'mobile-original-challenge',
+      message,
+      signature: new Uint8Array(64).fill(9),
+    });
+    assert.equal(f.controller.currentWalletSession().status, 'authenticated');
+    assert.equal(
+      f.requests.some((r) => r.path.endsWith('/challenge')),
+      false,
+    );
+    assert.equal(f.signedMessages.length, 0, 'does not ask for a second, different signature');
+    assert.equal(
+      (f.requests.find((r) => r.path.endsWith('/verify'))!.init.json as any).challengeId,
+      'mobile-original-challenge',
+    );
+    assert.equal(f.requests.at(-1)?.path, '/v1/auth/session');
+  } finally {
+    f.dispose();
+  }
+});

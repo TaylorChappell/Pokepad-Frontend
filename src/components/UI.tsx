@@ -230,6 +230,7 @@ export function PokemonArt({
   shiny = false,
   frameFill,
   stableFrames = false,
+  defer = false,
 }: {
   id: number;
   className?: string;
@@ -242,6 +243,8 @@ export function PokemonArt({
   frameFill?: number;
   /** Keep one sheet, scale and animation timeline when a hover starts or stops. */
   stableFrames?: boolean;
+  /** Keep offscreen catalogue entries from fetching image assets. */
+  defer?: boolean;
 }) {
   const app = useOptionalApp(),
     style = styleOverride || app?.state.profile.artStyle || 'pixel',
@@ -258,6 +261,16 @@ export function PokemonArt({
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [style]);
+  if (defer && !visible)
+    return (
+      <span
+        ref={ref}
+        role="img"
+        aria-label={pokemonById(id).name}
+        className={'pokemon-art sprite-art normalized-art ' + className}
+        data-media-state="loading"
+      />
+    );
   const sprite = SPRITES[id] || SPRITES[1],
     moving =
       animated && !shiny && !app?.state.profile.reducedMotion && visible && sprite.frames > 1;

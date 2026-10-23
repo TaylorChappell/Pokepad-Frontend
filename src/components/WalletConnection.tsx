@@ -3,7 +3,7 @@ import { useApp } from '../state/AppContext';
 import { Button, Icon, Modal, Pokeball } from './UI';
 import type { WalletName } from '../services/wallet';
 import { asset } from '../utils';
-import { phantomMobileLink } from '../services/phantom-mobile';
+import { startPhantomSignIn, useExternalPhantom } from '../services/phantom-deeplink';
 
 function connectionError(error: unknown) {
   if (typeof error === 'object' && error && 'code' in error && error.code === 4001)
@@ -18,7 +18,6 @@ export function WalletConnection({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
-  const [phantomLink, setPhantomLink] = useState<string | null>(null);
   if (mode === 'demo') return null;
   const connecting = pending || session.status === 'connecting';
   const stage =
@@ -31,13 +30,14 @@ export function WalletConnection({ compact = false }: { compact?: boolean }) {
           : `Open ${session.provider || 'your wallet'} to continue.`;
   async function connect(name: WalletName) {
     setError('');
-    const mobileLink = name === 'Phantom' ? phantomMobileLink() : null;
-    if (mobileLink) {
-      setPhantomLink(mobileLink);
-      window.location.assign(mobileLink);
+    if (name === 'Phantom' && useExternalPhantom()) {
+      try {
+        window.location.assign(startPhantomSignIn());
+      } catch (e) {
+        setError(connectionError(e));
+      }
       return;
     }
-    setPhantomLink(null);
     setPending(true);
     try {
       await connectWallet(name);
@@ -79,7 +79,6 @@ export function WalletConnection({ compact = false }: { compact?: boolean }) {
           }
           onClick={() => {
             setError('');
-            setPhantomLink(null);
             setOpen(true);
           }}
         >
@@ -153,18 +152,14 @@ export function WalletConnection({ compact = false }: { compact?: boolean }) {
                 <p>{error}</p>
               </div>
             )}
-            {phantomLink && (
-              <div className="wallet-connection-progress" role="status">
-                <span>Opening Kanto in Phantom…</span>
-                <a href={phantomLink}>Open Phantom</a>
-              </div>
-            )}
             <div className="wallet-signature-note">
               <Icon name="Lock" size={18} />
               <span>Sign a message to log in. No payment or transaction.</span>
             </div>
           </div>
-          <p className="wallet-device-help">On mobile, choosing Phantom opens its app.</p>
+          <p className="wallet-device-help">
+            On mobile, use your default browser. Phantom opens for approval and returns you here.
+          </p>
         </Modal>
       )}
     </>

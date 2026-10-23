@@ -1,9 +1,7 @@
 export const asset = (path: string) =>
   (globalThis as typeof globalThis & { __POKEPAD_ASSETS__?: Record<string, string> })
     .__POKEPAD_ASSETS__?.[path] || (import.meta.env?.BASE_URL || './') + 'assets/' + path;
-export const navigate = (path: string) => {
-  window.location.hash = path;
-};
+export { navigate } from './services/navigation';
 export const sol = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 4 });
 export const compact = (n: number) =>
   Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(n);

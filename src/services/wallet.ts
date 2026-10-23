@@ -11,6 +11,7 @@ import type {
   SolanaSignTransactionFeature,
 } from '@solana/wallet-standard-features';
 import bs58 from 'bs58';
+import type { MobileSignInProof } from './phantom-deeplink';
 import { createBrowserWalletStorage, watchWalletStorage } from './wallet-storage';
 import {
   API_BASE,
@@ -456,7 +457,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
       if (disconnecting === work) disconnecting = undefined;
     }
   }
-  async function connectWallet(name: WalletName) {
+  async function connectWallet(name: WalletName, mobileProof?: MobileSignInProof) {
     if ((session as WalletSession).status === 'connecting') return;
     if (session.status === 'authenticated') await disconnectWallet().catch(() => {});
     else if (disconnecting) await disconnecting.catch(() => {});
@@ -495,16 +496,20 @@ export function createWalletController(overrides: Partial<ControllerDependencies
           'Select a valid Solana account in your wallet. Ethereum accounts cannot sign in to Kanto.',
         );
       attachProvider(wallet, account);
-      const challenge = await deps.request<{
-        challengeId: string;
-        message: string;
-        expiresAt: string;
-      }>('/v1/auth/challenge', {
-        method: 'POST',
-        json: { wallet: account.address },
-        auth: false,
-        credentials: 'include',
-      });
+      if (mobileProof && (name !== 'Phantom' || mobileProof.wallet !== account.address))
+        throw new Error('The Phantom approval belongs to another wallet. Connect again.');
+      const challenge =
+        mobileProof ||
+        (await deps.request<{
+          challengeId: string;
+          message: string;
+          expiresAt: string;
+        }>('/v1/auth/challenge', {
+          method: 'POST',
+          json: { wallet: account.address },
+          auth: false,
+          credentials: 'include',
+        }));
       current();
       if (
         !challenge ||
@@ -516,7 +521,9 @@ export function createWalletController(overrides: Partial<ControllerDependencies
         throw new Error('The server returned an invalid sign-in challenge.');
       emit({ ...session, step: 'signing' });
       const message = new TextEncoder().encode(challenge.message);
-      const [proof] = await wallet.features['solana:signMessage'].signMessage({ account, message });
+      const [proof] = mobileProof
+        ? [{ signature: mobileProof.signature, signedMessage: message, signatureType: 'ed25519' }]
+        : await wallet.features['solana:signMessage'].signMessage({ account, message });
       current();
       if (
         !proof ||
@@ -675,3 +682,6 @@ export const resumeWalletSession = controller.resumeWalletSession;
 export const connectWallet = controller.connectWallet;
 export const disconnectWallet = controller.disconnectWallet;
 export const signAndSendPrepared = controller.signAndSendPrepared;
+
+export const completeMobileSignIn = (proof: MobileSignInProof) =>
+  controller.connectWallet('Phantom', proof);

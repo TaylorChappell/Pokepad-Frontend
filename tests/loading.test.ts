@@ -91,3 +91,70 @@ test('boot waits for images, decoding, fonts and route data; later images use sk
     dom.window.close();
   }
 });
+
+test('missing images, stalled decode and fonts cannot hide ready route content forever', async () => {
+  const dom = new JSDOM(
+    '<body><div id="boot-screen"></div><main><span class="pokemon-art"><img src="/stuck.png"></span><span class="pokemon-art"><span style="background-image:url(/missing.png)"></span></span><section aria-busy="true"></section></main></body>',
+    { url: 'https://kanto.test', pretendToBeVisual: true },
+  );
+  for (const key of ['window', 'document', 'HTMLElement', 'MutationObserver', 'Image'])
+    Object.defineProperty(globalThis, key, {
+      value: (dom.window as any)[key],
+      configurable: true,
+      writable: true,
+    });
+  Object.assign(globalThis, {
+    requestAnimationFrame: dom.window.requestAnimationFrame.bind(dom.window),
+    cancelAnimationFrame: dom.window.cancelAnimationFrame.bind(dom.window),
+    getComputedStyle: dom.window.getComputedStyle.bind(dom.window),
+  });
+  dom.window.HTMLElement.prototype.getBoundingClientRect = () => ({
+    x: 0,
+    y: 0,
+    top: 0,
+    left: 0,
+    bottom: 80,
+    right: 80,
+    width: 80,
+    height: 80,
+    toJSON() {},
+  });
+  Object.defineProperty(dom.window.document, 'fonts', { value: { ready: new Promise(() => {}) } });
+  const img = dom.window.document.querySelector('img')!;
+  Object.defineProperty(img, 'complete', { value: false });
+  Object.defineProperty(img, 'naturalWidth', { value: 80 });
+  let decoded!: () => void;
+  img.decode = () =>
+    new Promise<void>((r) => {
+      decoded = r;
+    });
+  let ready = 0;
+  const stop = watchPageReadiness(
+    dom.window.document.body,
+    () => {
+      ready++;
+      dom.window.document.getElementById('boot-screen')?.remove();
+    },
+    80,
+  );
+  try {
+    await wait(35);
+    img.dispatchEvent(new dom.window.Event('load'));
+    await wait(300);
+    assert.equal(ready, 0, 'actual data loading must still block unveiling the page');
+    assert.equal(img.dataset.mediaState, 'error');
+    assert.equal(
+      dom.window.document.querySelector('[style]')?.getAttribute('data-media-state'),
+      'error',
+    );
+    dom.window.document.querySelector('section')!.removeAttribute('aria-busy');
+    await wait();
+    assert.equal(ready, 1, 'unavailable artwork uses its own fallback instead of trapping the app');
+    decoded();
+    await wait(30);
+    assert.equal(img.dataset.mediaState, 'ready', 'late artwork can still replace the placeholder');
+  } finally {
+    stop();
+    dom.window.close();
+  }
+});

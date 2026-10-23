@@ -1,3 +1,5 @@
+import { PhantomApprovalDialog } from './components/PhantomApproval';
+import { navigate } from './utils';
 import { AdminPage } from './pages/Admin';
 import { Component, useEffect, useState, type ReactNode } from 'react';
 import { LoadingCoordinator } from './components/Loading';
@@ -31,7 +33,11 @@ function useRoute() {
   useEffect(() => {
     const update = () => setRoute(read());
     window.addEventListener('hashchange', update);
-    return () => window.removeEventListener('hashchange', update);
+    window.addEventListener('popstate', update);
+    return () => {
+      window.removeEventListener('hashchange', update);
+      window.removeEventListener('popstate', update);
+    };
   }, []);
   const [path, query] = route.split('?');
   return { path, params: new URLSearchParams(query) };
@@ -84,7 +90,7 @@ function Routes() {
     );
   useEffect(() => {
     if (path === '/marketplace') {
-      window.location.replace('#/pokemon');
+      navigate('/pokemon', true);
       return;
     }
     const label =
@@ -134,6 +140,7 @@ export default function App() {
         <WalkingProvider>
           <Routes />
           <LoadingCoordinator />
+          <PhantomApprovalDialog />
         </WalkingProvider>
       </AppProvider>
     </ErrorBoundary>

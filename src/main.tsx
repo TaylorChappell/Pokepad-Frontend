@@ -56,6 +56,18 @@ import './panel-refinements.css';
 import './battle-room-flow.css';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-createRoot(document.getElementById('root')!).render(<App />);
+import {
+  hasPhantomCallback,
+  consumePhantomCallback,
+  registerMobilePhantom,
+} from './services/phantom-deeplink';
+import { PhantomReturn } from './components/PhantomApproval';
+import { installClientNavigation } from './services/navigation';
+installClientNavigation();
+registerMobilePhantom();
+const callback = hasPhantomCallback() ? consumePhantomCallback() : null;
+createRoot(document.getElementById('root')!).render(
+  callback ? <PhantomReturn response={callback} /> : <App />,
+);
 
 import './admin.css';
