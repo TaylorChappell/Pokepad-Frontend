@@ -9,6 +9,7 @@ import { drawReward } from '../data/rewardPools';
 import { getPokemonHealth, getPokemonStats } from '../data/stats';
 import { recordVariantDiscovery, variantDiscoveries } from './collection';
 export const EVOLUTION_CANDY = 1000;
+const CANDY_PER_FULL_SUPPLY_DAY = 25_000;
 export const WALK_BOOST_MS_PER_KM = 2 * 60 * 60 * 1000;
 export const STORAGE_KEY = 'pokepad.frontend.v1';
 const LAMPORTS_PER_SOL = 1_000_000_000;
@@ -588,7 +589,8 @@ export function applyAction(
             (!partner.starter || c.id === partner.originCoin),
         )
         .reduce((n, c) => n + c.holding / c.totalSupply, 0);
-      const amount = (rate * elapsed * 1000) / 86400000 + (s.demoCandyRemainder || 0);
+      const amount =
+        (rate * elapsed * CANDY_PER_FULL_SUPPLY_DAY) / 86400000 + (s.demoCandyRemainder || 0);
       s.demoCandyRemainder = amount - Math.floor(amount);
       grantDemoCandy(s, partner, Math.floor(amount));
     }

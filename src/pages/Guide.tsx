@@ -180,6 +180,7 @@ const topics: GuideTopic[] = [
         title: 'Rare Candy and active holdings',
         text: [
           'Your equipped partner gains Rare Candy from eligible active coins launched by other trainers. Your own coins do not generate Candy. Inactive coins do not generate progress. Candy that would advance an evolution is granted only with its share of evolution funding reserved.',
+          'Holding 1% of an eligible coin earns about 250 Rare Candy a day: 1,000 in four days. Larger holdings earn faster and smaller holdings earn more slowly, provided evolution funding is available.',
           'If the reward pool cannot reserve the next Candy increase, progress pauses. Reaching the evolution threshold means its value increase is already covered.',
         ],
       },
@@ -408,6 +409,7 @@ function liveGuideSection(section: GuideTopic['sections'][number]) {
   const replacements: Record<string, string[]> = {
     'Rare Candy and active holdings': [
       'Your equipped Pokémon earns Rare Candy from verified holdings in active coins launched by other trainers. Your own coins do not generate Candy. Selling can reset holding progress; inactive coins do not keep generating candy.',
+      'Holding 1% of an eligible coin earns about 250 Rare Candy a day: 1,000 in four days. Larger holdings earn faster and smaller holdings earn more slowly, provided evolution funding is available.',
       'Each Candy grant is covered by reserved evolution funding, so progress pauses if the next grant cannot be funded. Starters chosen before the main token launches can begin training with any eligible active coin. The first funded Candy grant links that starter to that coin’s reward pool. Until its first evolution, a starter earns Candy only from the coin funding it; afterwards, any eligible active coin counts.',
     ],
     'Complete the launch wizard': [
