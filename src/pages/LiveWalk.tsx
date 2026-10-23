@@ -255,10 +255,6 @@ export function LiveWalkPage() {
                 {message}
               </p>
             )}
-            <p className="notice small">
-              Keep this page open while walking. GPS progress is checked and capped by the server;
-              it is not proof against all location spoofing.
-            </p>
           </div>
           <div className="panel walk-eggs">
             <h3>Egg timers</h3>

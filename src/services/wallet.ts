@@ -11,6 +11,7 @@ import type {
   SolanaSignTransactionFeature,
 } from '@solana/wallet-standard-features';
 import bs58 from 'bs58';
+import { createBrowserWalletStorage, watchWalletStorage } from './wallet-storage';
 import {
   API_BASE,
   apiRequest,
@@ -164,6 +165,7 @@ interface ControllerDependencies {
   setSessionEnabled: typeof setSessionEnabled;
   onUnauthorized: typeof onUnauthorized;
   storage: () => Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | undefined;
+  onStorageChange: (changed: () => void) => () => void;
 }
 /** Dependency boundary keeps Wallet Standard/HTTP races testable without an installed extension. */
 export function createWalletController(overrides: Partial<ControllerDependencies> = {}) {
@@ -174,7 +176,10 @@ export function createWalletController(overrides: Partial<ControllerDependencies
     setAccessToken,
     setSessionEnabled,
     onUnauthorized,
-    storage: () => (typeof window === 'undefined' ? undefined : window.sessionStorage),
+    storage: createBrowserWalletStorage(savedSessionKey, signedOutKey),
+    onStorageChange: overrides.storage
+      ? () => () => {}
+      : (changed) => watchWalletStorage(savedSessionKey, signedOutKey, changed),
     ...overrides,
   };
   let session: WalletSession = { ...anonymous(), status: 'checking' };
@@ -182,6 +187,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
   let stopWalletEvents: (() => void) | undefined;
   let restoringProvider: AbortController | undefined;
   let generation = 0;
+  let currentToken: string | null = null;
   let disconnecting: Promise<void> | undefined;
   const listeners = new Set<(session: WalletSession) => void>();
   function rememberSignedOut(value: boolean) {
@@ -234,6 +240,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
   }
   function clearSession(explicit: boolean, forget = true) {
     clearConnection();
+    currentToken = null;
     deps.setAccessToken(null);
     deps.setSessionEnabled(false);
     if (forget) saveSession(null);
@@ -244,15 +251,48 @@ export function createWalletController(overrides: Partial<ControllerDependencies
     generation++;
     clearSession(true);
   });
+  const stopStorage = deps.onStorageChange(() => {
+    let signedOut = false;
+    try {
+      signedOut = !!deps.storage()?.getItem(signedOutKey);
+    } catch {
+      return;
+    }
+    const saved = readSavedSession();
+    if (!saved || signedOut) {
+      generation++;
+      clearSession(false, false);
+    } else if ((saved.token || null) !== currentToken || saved.wallet !== session.wallet) {
+      void restoreWalletSession().catch(() => {});
+    }
+  });
   function attachProvider(wallet: SolanaWallet, account: WalletAccount) {
     clearConnection();
     connected = { wallet, account };
     stopWalletEvents = wallet.features['standard:events'].on('change', (change) => {
-      if (
-        change.accounts &&
-        !change.accounts.some((item) => item.address === account.address && validAccount(item))
-      )
-        void disconnectWallet().catch(() => {});
+      if (!change.accounts) return;
+      const matching = change.accounts.find(
+        (item) => item.address === account.address && validAccount(item),
+      );
+      if (matching) {
+        if (session.status === 'authenticated' && session.wallet === matching.address) {
+          connected = { wallet, account: matching };
+          emit({ ...session, signingReady: true, restoringProvider: false });
+        }
+        return;
+      }
+      if (!change.accounts.length && session.status === 'authenticated') {
+        // A mobile provider can temporarily lose its connection. Stop signing immediately,
+        // but do not revoke the independently verified Kanto session or forget its token.
+        generation++;
+        connected = null;
+        restoringProvider?.abort();
+        restoringProvider = undefined;
+        emit({ ...session, signingReady: false, restoringProvider: false });
+        return;
+      }
+      // A different exposed account is a real wallet switch, not a temporary disconnect.
+      void disconnectWallet().catch(() => {});
     });
   }
   async function restoreProvider(attempt: number, preferred: WalletName | null, address: string) {
@@ -301,6 +341,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
   async function restoreWalletSession() {
     const attempt = ++generation;
     clearConnection();
+    currentToken = null;
     deps.setAccessToken(null);
     deps.setSessionEnabled(false);
     emit({ ...anonymous(), status: 'checking' });
@@ -335,6 +376,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
       ) {
         const provider = saved?.wallet === value.wallet ? saved.provider : null;
         deps.setAccessToken(saved?.token || null);
+        currentToken = saved?.token || null;
         deps.setSessionEnabled(true);
         saveSession({
           wallet: value.wallet!,
@@ -358,10 +400,40 @@ export function createWalletController(overrides: Partial<ControllerDependencies
       throw error;
     }
   }
+  async function resumeWalletSession() {
+    if (session.status === 'checking' || session.status === 'connecting') return;
+    try {
+      if (deps.storage()?.getItem(signedOutKey)) {
+        if (session.status === 'authenticated') {
+          generation++;
+          clearSession(false, false);
+        }
+        return;
+      }
+    } catch {
+      /* Storage-disabled browsers can keep their in-memory session. */
+    }
+    const saved = readSavedSession();
+    if (saved?.token && (saved.token !== currentToken || saved.wallet !== session.wallet)) {
+      await restoreWalletSession();
+      return;
+    }
+    if (session.status !== 'authenticated') return;
+    if (!session.expiresAt || Date.parse(session.expiresAt) <= Date.now()) {
+      generation++;
+      clearSession(true);
+      return;
+    }
+    if (!session.signingReady && !session.restoringProvider) {
+      emit({ ...session, restoringProvider: true });
+      await restoreProvider(generation, session.provider, session.wallet!);
+    }
+  }
   async function disconnectWallet() {
     const attempt = ++generation,
       previous = connected;
     clearConnection();
+    currentToken = null;
     // Construct the revocation while the current bearer is still available.
     const revoke = deps.request('/v1/auth/logout', { method: 'POST', json: {} });
     deps.setAccessToken(null);
@@ -491,6 +563,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
           'Your signature was accepted, but Kanto couldn’t keep you signed in. Please try connecting again.',
         );
       rememberSignedOut(false);
+      currentToken = verified.token;
       saveSession({
         wallet: verified.wallet,
         provider: name,
@@ -581,6 +654,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
       };
     },
     restoreWalletSession,
+    resumeWalletSession,
     connectWallet,
     disconnectWallet,
     signAndSendPrepared,
@@ -588,6 +662,7 @@ export function createWalletController(overrides: Partial<ControllerDependencies
       generation++;
       clearConnection();
       stopUnauthorized();
+      stopStorage();
       listeners.clear();
     },
   };
@@ -596,6 +671,7 @@ const controller = createWalletController();
 export const currentWalletSession = controller.currentWalletSession;
 export const subscribeWalletSession = controller.subscribeWalletSession;
 export const restoreWalletSession = controller.restoreWalletSession;
+export const resumeWalletSession = controller.resumeWalletSession;
 export const connectWallet = controller.connectWallet;
 export const disconnectWallet = controller.disconnectWallet;
 export const signAndSendPrepared = controller.signAndSendPrepared;

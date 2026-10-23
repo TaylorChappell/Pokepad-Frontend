@@ -163,6 +163,22 @@ test('failed sign-in keeps its dialog and error; success opens each private rout
     assert.ok(document.querySelector('[data-private]'));
     assert.ok(document.querySelector('.sidebar-buddy'));
     assert.equal(document.querySelector('[role="dialog"]'), null);
+    await act(async () => emit({ ...session, signingReady: false }));
+    const signedInLoads = loads;
+    for (const path of ['/portfolio', '/rewards', '/pokemon', '/battles', '/create', '/walk']) {
+      await render(path);
+      assert.equal(
+        document.querySelector('.trainer-gate'),
+        null,
+        path + ' keeps the authenticated trainer while Phantom is suspended',
+      );
+      assert.ok(document.querySelector('[data-private]'));
+    }
+    assert.equal(
+      loads,
+      signedInLoads,
+      'changing site tabs must not restart sign-in or reload the account',
+    );
     await act(async () => {
       await wallet.disconnectWallet();
     });

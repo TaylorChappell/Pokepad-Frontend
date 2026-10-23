@@ -11,6 +11,7 @@ import {
   disconnectWallet,
   currentWalletSession,
   restoreWalletSession,
+  resumeWalletSession,
   subscribeWalletSession,
   type WalletName,
   type WalletSession,
@@ -33,6 +34,7 @@ const defaultWallet = {
   disconnectWallet,
   currentWalletSession,
   restoreWalletSession,
+  resumeWalletSession,
   subscribeWalletSession,
 };
 export function AppProvider({
@@ -42,13 +44,15 @@ export function AppProvider({
 }: {
   children: ReactNode;
   api?: KantoApi;
-  wallet?: typeof defaultWallet;
+  wallet?: Omit<typeof defaultWallet, 'resumeWalletSession'> &
+    Partial<Pick<typeof defaultWallet, 'resumeWalletSession'>>;
 }) {
   const {
     connectWallet,
     disconnectWallet,
     currentWalletSession,
     restoreWalletSession,
+    resumeWalletSession,
     subscribeWalletSession,
   } = wallet;
   const [state, setState] = useState<AppSnapshot | null>(null),
@@ -132,6 +136,23 @@ export function AppProvider({
       stop();
     };
   }, []);
+  useEffect(() => {
+    if (api.mode !== 'live' || !resumeWalletSession) return;
+    const resume = () => {
+      if (document.visibilityState !== 'hidden' && initialized.current)
+        void resumeWalletSession().catch(() => {});
+    };
+    window.addEventListener('focus', resume);
+    window.addEventListener('pageshow', resume);
+    window.addEventListener('hashchange', resume);
+    document.addEventListener('visibilitychange', resume);
+    return () => {
+      window.removeEventListener('focus', resume);
+      window.removeEventListener('pageshow', resume);
+      window.removeEventListener('hashchange', resume);
+      document.removeEventListener('visibilitychange', resume);
+    };
+  }, [api.mode, resumeWalletSession]);
   useEffect(() => {
     if (!state) return;
     document.documentElement.dataset.motion = state.profile.reducedMotion ? 'reduced' : 'normal';

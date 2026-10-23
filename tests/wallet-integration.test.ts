@@ -60,7 +60,8 @@ function fixture(
   const signedMessages: Uint8Array[] = [];
   let disconnectCalls = 0,
     metaMaskRegistrations = 0,
-    unauthorized: (() => void) | undefined;
+    unauthorized: (() => void) | undefined,
+    storageChanged: (() => void) | undefined;
   const features: any = {
     'standard:connect': {
       version: '1.0.0',
@@ -139,6 +140,12 @@ function fixture(
         unauthorized = undefined;
       };
     },
+    onStorageChange: (callback) => {
+      storageChanged = callback;
+      return () => {
+        storageChanged = undefined;
+      };
+    },
     storage: () => {
       if (options.storageUnavailable) throw new Error('Storage disabled');
       return {
@@ -174,6 +181,9 @@ function fixture(
     },
     expire() {
       unauthorized?.();
+    },
+    syncStoredSession() {
+      storageChanged?.();
     },
     eventCount: () => events.size,
     disconnectCalls: () => disconnectCalls,
@@ -355,11 +365,12 @@ test('disconnect during provider connection or verification cannot install a sta
   }
 });
 
-test('provider account changes and authorization expiry clear the connected account immediately', async () => {
+test('real provider account switches and authorization expiry clear the connected account immediately', async () => {
   const f = fixture();
   try {
     await f.controller.connectWallet('Phantom');
-    f.emitAccounts([]);
+    const publicKey = new Uint8Array(32).fill(8);
+    f.emitAccounts([{ ...f.account, publicKey, address: bs58.encode(publicKey) }]);
     assert.equal(f.controller.currentWalletSession().status, 'anonymous');
     assert.equal(f.tokens.at(-1), null);
     assert.equal(f.eventCount(), 0);
@@ -368,6 +379,123 @@ test('provider account changes and authorization expiry clear the connected acco
     assert.equal(f.controller.currentWalletSession().status, 'anonymous');
     assert.equal(f.enabled.at(-1), false);
     assert.equal(f.stored.has(`kanto.wallet-session:v1:${API_BASE}`), false);
+  } finally {
+    f.dispose();
+  }
+});
+
+test('a temporary empty provider account list keeps sign-in while suspending signing', async () => {
+  const f = fixture();
+  try {
+    await f.controller.connectWallet('Phantom');
+    f.emitAccounts([]);
+    assert.equal(f.controller.currentWalletSession().status, 'authenticated');
+    assert.equal(f.controller.currentWalletSession().signingReady, false);
+    assert.equal(f.tokens.at(-1), token);
+    assert.equal(f.stored.has(`kanto.wallet-session:v1:${API_BASE}`), true);
+    assert.equal(
+      f.requests.some((r) => r.path.endsWith('/logout')),
+      false,
+    );
+    await assert.rejects(f.controller.signAndSendPrepared(prepared), /Reconnect/);
+    f.emitAccounts([f.account]);
+    assert.equal(f.controller.currentWalletSession().signingReady, true);
+    assert.equal(f.eventCount(), 1);
+    assert.equal(f.signedMessages.length, 1);
+    assert.equal(f.disconnectCalls(), 0);
+    await f.controller.disconnectWallet();
+    assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+  } finally {
+    f.dispose();
+  }
+});
+
+test('resuming a suspended Phantom provider reconnects silently without a new sign-in', async () => {
+  const f = fixture();
+  try {
+    await f.controller.connectWallet('Phantom');
+    f.setAccounts([]);
+    f.emitAccounts([]);
+    await Promise.all([f.controller.resumeWalletSession(), f.controller.resumeWalletSession()]);
+    assert.equal(f.controller.currentWalletSession().signingReady, true);
+    assert.deepEqual(f.connectInputs, [undefined, { silent: true }]);
+    assert.equal(f.signedMessages.length, 1);
+    assert.equal(f.requests.filter((r) => r.path.endsWith('/challenge')).length, 1);
+    assert.equal(f.eventCount(), 1);
+    await f.controller.resumeWalletSession();
+    assert.equal(
+      f.connectInputs.length,
+      2,
+      'normal page changes never reconnect an attached wallet',
+    );
+  } finally {
+    f.dispose();
+  }
+});
+
+test('a provider interruption invalidates an in-flight signed transaction even if the account returns', async () => {
+  const f = fixture();
+  const signing = deferred<any>();
+  try {
+    delete f.features['solana:signAndSendTransaction'];
+    f.features['solana:signTransaction'] = {
+      version: '1.0.0',
+      signTransaction: () => signing.promise,
+    };
+    await f.controller.connectWallet('Phantom');
+    const pending = f.controller.signAndSendPrepared(prepared);
+    f.emitAccounts([]);
+    f.emitAccounts([f.account]);
+    signing.resolve([{ signedTransaction: new Uint8Array(160) }]);
+    await assert.rejects(pending, /changed before submission/);
+    assert.equal(
+      f.requests.some((r) => r.path.endsWith('/submit')),
+      false,
+    );
+    assert.equal(f.controller.currentWalletSession().status, 'authenticated');
+  } finally {
+    f.dispose();
+  }
+});
+
+test('logout in another tab clears the current session without revoking or resurrecting anything', async () => {
+  const f = fixture();
+  try {
+    await f.controller.connectWallet('Phantom');
+    f.stored.delete(`kanto.wallet-session:v1:${API_BASE}`);
+    f.stored.set('kanto.explicitly-signed-out', '1');
+    f.syncStoredSession();
+    assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+    assert.equal(f.tokens.at(-1), null);
+    assert.equal(f.eventCount(), 0);
+    assert.equal(
+      f.requests.some((r) => r.path.endsWith('/logout')),
+      false,
+    );
+    const count = f.requests.length;
+    await f.controller.resumeWalletSession();
+    assert.equal(f.requests.length, count);
+  } finally {
+    f.dispose();
+  }
+});
+
+test('a shared sign-in is server-verified and a cross-tab logout wins over a pending restore', async () => {
+  const pending = deferred<any>();
+  const stored = await savedLogin();
+  const f = fixture({ stored, request: async () => pending.promise });
+  try {
+    f.syncStoredSession();
+    assert.equal(f.controller.currentWalletSession().status, 'checking');
+    assert.equal(f.tokens.includes(token), false, 'shared storage alone cannot authenticate');
+    stored.delete(sessionKey);
+    stored.set('kanto.explicitly-signed-out', '1');
+    f.syncStoredSession();
+    pending.resolve({ authenticated: true, wallet: f.account.address, expiresAt: expiresAt() });
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    assert.equal(f.controller.currentWalletSession().status, 'anonymous');
+    assert.equal(f.tokens.includes(token), false);
+    assert.equal(f.signedMessages.length, 0);
   } finally {
     f.dispose();
   }
