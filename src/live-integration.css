@@ -51,17 +51,6 @@
 .creation-fee-split {
   grid-template-columns: 3fr 2fr 5fr;
 }
-.kanto-market-fee-split > span:nth-child(1) {
-  flex: 3;
-}
-.kanto-market-fee-split > span:nth-child(2) {
-  flex: 2;
-  background: #81a4bd;
-}
-.kanto-market-fee-split > span:nth-child(3) {
-  flex: 5;
-  background: #83b99d;
-}
 @media (max-width: 600px) {
   .header-connect {
     font-size: 11px;

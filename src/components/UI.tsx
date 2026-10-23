@@ -123,14 +123,21 @@ export function Icon({
     );
   if (name === 'Egg')
     return (
-      <img
-        className={'pixel-item ui-item ' + className}
+      <svg
+        className={'egg-icon ui-item ' + className}
         width={size}
         height={size}
-        src={asset('pixel/egg.png')}
-        alt=""
+        viewBox="18 18 28 28"
         aria-hidden="true"
-      />
+      >
+        {/* Frame the 24px egg inside its 64px source canvas, with a 2px margin. */}
+        <image
+          href={asset('pixel/egg-standard.png')}
+          width="64"
+          height="64"
+          style={{ imageRendering: 'pixelated' }}
+        />
+      </svg>
     );
   return (
     <svg

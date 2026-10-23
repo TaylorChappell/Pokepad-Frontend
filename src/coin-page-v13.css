@@ -109,24 +109,6 @@
 .kanto-market-identity-meta .mode-badge {
   font-size: 10px;
 }
-.kanto-market-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-.kanto-market-status i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #96a0a5;
-}
-.kanto-market-status.is-active {
-  color: #4e8c74;
-}
-.kanto-market-status.is-active i {
-  background: #4e9f7e;
-  box-shadow: 0 0 0 3px #e5f3e8;
-}
 .kanto-market-creator {
   align-self: center;
   display: grid;
@@ -909,6 +891,9 @@
   color: #83967f;
 }
 .kanto-market-vault {
+  --fee-creator: #d8a151;
+  --fee-platform: #74a7ce;
+  --fee-rewards: #83b99d;
   padding: 21px;
   border: 1px solid #e6dfc6;
   border-radius: 18px;
@@ -949,17 +934,28 @@
 }
 .kanto-market-fee-split {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 3fr 2fr 5fr;
+  grid-template-rows: 8px;
   gap: 3px;
-  height: 5px;
-  border-radius: 3px;
+  height: 8px;
+  border-radius: 4px;
   overflow: hidden;
 }
-.kanto-market-fee-split span:first-child {
-  background: #e7bb76;
+.kanto-market-fee-split > span {
+  min-width: 0;
+  height: 100%;
 }
-.kanto-market-fee-split span:last-child {
-  background: #a0ba8d;
+.kanto-market-fee-split > span:nth-child(1),
+.kanto-market-fee-labels > span:nth-child(1) i {
+  background: var(--fee-creator);
+}
+.kanto-market-fee-split > span:nth-child(2),
+.kanto-market-fee-labels > span:nth-child(2) i {
+  background: var(--fee-platform);
+}
+.kanto-market-fee-split > span:nth-child(3),
+.kanto-market-fee-labels > span:nth-child(3) i {
+  background: var(--fee-rewards);
 }
 .kanto-market-fee-labels {
   display: flex;
@@ -967,7 +963,7 @@
   gap: 10px;
   margin-top: 9px;
   font-size: 10px;
-  color: #a29b82;
+  color: #756c55;
 }
 .kanto-market-fee-labels > span {
   display: inline-flex;
@@ -975,13 +971,10 @@
   gap: 4px;
 }
 .kanto-market-fee-labels i {
-  width: 4px;
-  height: 4px;
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
   border-radius: 50%;
-  background: #e7bb76;
-}
-.kanto-market-fee-labels > span:last-child i {
-  background: #a0ba8d;
 }
 @media (min-width: 1500px) {
   .kanto-market-layout {

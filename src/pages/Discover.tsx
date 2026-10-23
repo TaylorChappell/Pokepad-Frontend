@@ -648,10 +648,6 @@ export function CoinPage({ id }: { id: string }) {
             </div>
             <div className="kanto-market-identity-meta">
               <ModeBadge mode={coin.mode} />
-              <span className={'kanto-market-status ' + (coin.active ? 'is-active' : '')}>
-                <i aria-hidden="true" />
-                {coin.active ? 'Active' : 'Inactive'}
-              </span>
               {coin.launchedAt && (
                 <time dateTime={new Date(coin.launchedAt).toISOString()}>
                   Launched {relativeTime(coin.launchedAt).toLowerCase()}
@@ -1015,6 +1011,7 @@ export function CoinPage({ id }: { id: string }) {
             <p>Collected for this community’s Pokémon rewards.</p>
             <div
               className="kanto-market-fee-split"
+              role="img"
               aria-label="Creator fees: 30 percent creator, 20 percent platform, 50 percent holder rewards"
             >
               <span />
@@ -1023,15 +1020,15 @@ export function CoinPage({ id }: { id: string }) {
             </div>
             <div className="kanto-market-fee-labels">
               <span>
-                <i />
+                <i aria-hidden="true" />
                 30% creator
               </span>
               <span>
-                <i />
+                <i aria-hidden="true" />
                 20% platform
               </span>
               <span>
-                <i />
+                <i aria-hidden="true" />
                 50% rewards
               </span>
             </div>
