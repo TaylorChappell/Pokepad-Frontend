@@ -21,7 +21,7 @@ import { useOptionalApp } from '../state/AppContext';
 import { TrainerPalettePixels } from './TrainerPalette';
 import { trainerPortraitGeometry } from './trainer-portrait';
 import { lockPageScroll } from './overlay-scroll-lock';
-export type IconName = keyof typeof PIXEL_ICONS | 'Pokeball' | 'Candy' | 'Gym';
+export type IconName = keyof typeof PIXEL_ICONS | 'Pokeball' | 'Candy' | 'Gym' | 'Pack';
 export function Icon({
   name,
   size = 18,
@@ -33,6 +33,27 @@ export function Icon({
   strokeWidth?: number;
 }) {
   if (name === 'Sparkles') return null;
+  if (name === 'Pack')
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={'pack-icon ' + className}
+        aria-hidden="true"
+      >
+        <path d="M5 2.5 7 3.5 9 2.5l3 1 3-1 2 1 2-1v19l-2-1-2 1-3-1-3 1-2-1-2 1Z" />
+        <path d="M5 6h14M5 18h14" />
+        <circle cx="12" cy="12" r="3.7" />
+        <path d="M8.3 12h2.2m3 0h2.2" />
+        <circle cx="12" cy="12" r="1.5" />
+      </svg>
+    );
   if (name === 'Info')
     return (
       <svg

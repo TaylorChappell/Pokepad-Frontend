@@ -201,3 +201,72 @@ test('walking UI shows per-egg countdowns, retains GPS across pages, and pauses/
     dom.window.close();
   }
 });
+
+test('desktop walking is an explanation, never a location permission or tracking screen', async () => {
+  const dom = new JSDOM('<div id="root"></div>', { url: 'https://kanto.test/#/walk' });
+  for (const key of ['window', 'document', 'navigator', 'HTMLElement', 'Image'])
+    Object.defineProperty(globalThis, key, {
+      value: (dom.window as any)[key],
+      configurable: true,
+      writable: true,
+    });
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  let gpsCalls = 0;
+  const controller = createWalkingController({
+    mobile: false,
+    geo: {
+      getCurrentPosition() {
+        gpsCalls++;
+      },
+      watchPosition() {
+        gpsCalls++;
+        return 1;
+      },
+      clearWatch() {},
+    } as Geolocation,
+    screen: { width: 1440, height: 900 },
+    request: (async () => ({ enabled: true, boostMsPerMeter: 7200 })) as typeof apiRequest,
+  });
+  const context = {
+    state: createInitialState(),
+    mode: 'live',
+    now: Date.now(),
+    session: { status: 'authenticated', wallet: 'trainer', provider: 'Phantom', expiresAt: null },
+    reload: async () => null,
+  } as React.ContextType<typeof AppContext>;
+  const { createRoot } = await import('react-dom/client');
+  const { WalkPage } = await import('../src/pages/Rewards');
+  const root = createRoot(document.getElementById('root')!);
+  try {
+    for (const mode of ['live', 'demo'] as const) {
+      await act(async () =>
+        root.render(
+          React.createElement(
+            AppContext.Provider,
+            { value: { ...context, mode } },
+            React.createElement(WalkingProvider, {
+              controller,
+              children: React.createElement(WalkPage),
+            }),
+          ),
+        ),
+      );
+      assert.ok(document.querySelector('.walk-mobile-invitation'));
+      assert.match(document.body.textContent!, /Walking isn’t available on desktop/);
+      assert.match(document.body.textContent!, /12m off each egg/);
+      assert.match(document.body.textContent!, /connect the same wallet/);
+      assert.equal(
+        document.querySelectorAll('.walk-controls,.walking-layout,.walk-session').length,
+        0,
+      );
+      assert.equal(
+        document.querySelector('a[href="#/rewards"]')!.textContent!.trim(),
+        'View your eggs',
+      );
+      assert.equal(gpsCalls, 0);
+    }
+  } finally {
+    await act(async () => root.unmount());
+    dom.window.close();
+  }
+});

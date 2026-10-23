@@ -25,6 +25,99 @@ export function LiveWalkPage() {
   const active = walk.phase === 'walking';
   const busy = ['requesting', 'connecting', 'finishing'].includes(walk.phase);
   const rate = walk.capabilities?.boostMsPerMeter || 7200;
+  if (!mobile) {
+    return (
+      <div className="walking-desktop-page">
+        <PageHeading title="Take a walk" />
+        <section className="walk-mobile-invitation" aria-labelledby="walk-phone-title">
+          <div className="walk-phone-scene" aria-hidden="true">
+            <div className="walk-phone-orbit" />
+            <div className="walk-phone">
+              <div className="walk-phone-speaker" />
+              <div className="walk-phone-screen">
+                <div className="walk-phone-heading">
+                  <Icon name="Compass" size={18} /> KANTO WALK
+                </div>
+                <div className="walk-phone-partner">
+                  <PokemonArt id={id} shiny={equipped?.shiny} animated={false} />
+                </div>
+                <svg className="walk-phone-route" viewBox="0 0 180 70" fill="none">
+                  <path
+                    d="M40 5v8c0 22 100 2 100 30v16"
+                    stroke="#86a88c"
+                    strokeWidth="3"
+                    strokeDasharray="5 7"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="40" cy="5" r="5" fill="#416c53" />
+                  <circle cx="140" cy="59" r="5" fill="#416c53" />
+                </svg>
+                <div className="walk-phone-egg">
+                  <EggArt tier="Standard" />
+                  <span>Hatch a little sooner</span>
+                </div>
+              </div>
+              <div className="walk-phone-home" />
+            </div>
+            <div className="walk-phone-stamp">
+              <Icon name="Clock" size={22} />
+              <span>
+                Every step
+                <br />
+                <strong>less waiting</strong>
+              </span>
+            </div>
+          </div>
+          <div className="walk-mobile-copy">
+            <span className="walk-mobile-only">
+              <svg
+                width="16"
+                height="20"
+                viewBox="0 0 16 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                aria-hidden="true"
+              >
+                <rect x="2" y="1" width="12" height="18" rx="3" />
+                <path d="M6 4h4M7 16h2" />
+              </svg>
+              Available on your phone
+            </span>
+            <h2 id="walk-phone-title">
+              A little walk.
+              <br />A quicker hatch.
+            </h2>
+            <p>
+              Take your partner along. Walking takes time off every incubating egg, so your next
+              Pokémon arrives sooner.
+            </p>
+            <div className="walk-mobile-benefit">
+              <Icon name="Footprints" size={24} />
+              <span>
+                <strong>100 m walked</strong>
+                <span>{duration(rate * 100)} off each egg</span>
+              </span>
+              <Icon name="Egg" size={34} />
+            </div>
+            <div className="walk-phone-instructions">
+              <h3>Pick up your phone to start</h3>
+              <p>
+                Open <strong>{window.location.host}</strong> on your phone and connect the same
+                wallet. Visit Take a walk and enable location.
+              </p>
+              <p>
+                Walking isn’t available on desktop. Your eggs keep counting down while you’re here.
+              </p>
+            </div>
+            <a className="button secondary" href="#/rewards">
+              View your eggs <Icon name="ArrowRight" size={17} />
+            </a>
+          </div>
+        </section>
+      </div>
+    );
+  }
   const status = active
     ? 'Walking active'
     : walk.phase === 'requesting'
@@ -140,12 +233,7 @@ export function LiveWalkPage() {
               across your eggs
             </span>
           </div>
-          {!mobile ? (
-            <div className="walk-feedback">
-              <Icon name="Info" />
-              <span>Open Kanto on your phone to start walking.</span>
-            </div>
-          ) : account.status !== 'authenticated' ? (
+          {account.status !== 'authenticated' ? (
             <WalletConnection />
           ) : (
             <>

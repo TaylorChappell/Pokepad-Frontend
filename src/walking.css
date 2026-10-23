@@ -425,3 +425,218 @@
   line-height: 1.7;
   margin: 8px 0 0;
 }
+
+/* Desktop explains the phone feature; tracking controls stay on mobile. */
+.walking-desktop-page {
+  max-width: 1100px;
+  margin-inline: auto;
+}
+.walk-mobile-invitation {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 70px);
+  padding: clamp(28px, 4vw, 54px);
+  border: 1px solid #d0ddc9;
+  border-radius: 24px;
+  background: linear-gradient(120deg, #f0f5e5, #fffdf4 65%);
+  box-shadow: 0 5px 0 #e1e8d9;
+}
+.walk-mobile-copy {
+  min-width: 0;
+}
+.walk-mobile-only {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid #c8d7b8;
+  border-radius: 8px;
+  background: #e8f0dc;
+  color: #4c6e3f;
+  font-size: 12px;
+  font-weight: 800;
+}
+.walk-mobile-copy h2 {
+  font-size: clamp(26px, 3vw, 40px);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+  color: #345947;
+  margin: 20px 0 14px;
+}
+.walk-mobile-copy > p {
+  max-width: 45ch;
+  color: #6f7e66;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.walk-mobile-benefit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 320px;
+  padding: 15px 18px;
+  margin: 24px 0;
+  border: 1px solid #d8dfc4;
+  border-radius: 12px;
+  background: #fffef4;
+  color: #60834f;
+}
+.walk-mobile-benefit > span {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.walk-mobile-benefit strong,
+.walk-mobile-benefit > span > span {
+  display: block;
+}
+.walk-mobile-benefit strong {
+  font-size: 15px;
+  color: #355b46;
+}
+.walk-phone-instructions h3 {
+  font-size: 15px;
+  margin: 0 0 8px;
+  color: #45613e;
+}
+.walk-phone-instructions p {
+  color: #7a846d;
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.walk-phone-instructions strong {
+  color: #4a6744;
+}
+.walk-mobile-copy > .button {
+  margin-top: 16px;
+}
+.walk-phone-scene {
+  display: grid;
+  place-items: center;
+  position: relative;
+  min-width: 0;
+  padding: 24px 0;
+}
+.walk-phone-orbit {
+  position: absolute;
+  width: min(330px, 100%);
+  aspect-ratio: 1;
+  border: 1px dashed #c4d5b5;
+  border-radius: 50%;
+  background: #e6efda;
+  box-shadow: 0 0 0 16px #edf3e2;
+}
+.walk-phone {
+  position: relative;
+  width: 208px;
+  padding: 12px 10px 10px;
+  border: 3px solid #395a4e;
+  border-radius: 30px;
+  background: #fffbed;
+  box-shadow:
+    6px 9px 0 #c5d7b7,
+    0 18px 35px #496e4321;
+  transform: rotate(-6deg);
+}
+.walk-phone-speaker,
+.walk-phone-home {
+  width: 42px;
+  height: 5px;
+  border-radius: 10px;
+  margin: 0 auto 10px;
+  background: #8ca28c;
+}
+.walk-phone-home {
+  width: 55px;
+  margin: 11px auto 0;
+  height: 4px;
+}
+.walk-phone-screen {
+  border: 1px solid #ccd9bb;
+  border-radius: 18px;
+  background: linear-gradient(#eff5dd, #f9fbed);
+  padding: 17px 10px;
+}
+.walk-phone-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #5a7952;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+.walk-phone-partner {
+  display: grid;
+  place-items: center;
+  height: 112px;
+  margin-top: 10px;
+}
+.walk-phone-partner .pokemon-art {
+  width: 104px !important;
+  height: 104px !important;
+}
+.walk-phone-route {
+  display: block;
+  width: 100%;
+  height: 50px;
+}
+.walk-phone-egg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  color: #718259;
+}
+.walk-phone-egg .egg-art {
+  width: 52px;
+  height: 58px;
+}
+.walk-phone-stamp {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-22%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  padding: 13px 18px;
+  border: 1px solid #d2dfc6;
+  border-radius: 12px;
+  background: #fffef4;
+  box-shadow: 0 4px 12px #4b68391a;
+  color: #618551;
+  font-size: 11px;
+  line-height: 1.6;
+}
+@media (max-width: 850px) {
+  .walk-mobile-invitation {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 28px;
+  }
+  .walk-phone-scene {
+    max-width: 330px;
+    width: 100%;
+    margin-inline: auto;
+  }
+  .walk-mobile-copy {
+    max-width: 440px;
+    margin-inline: auto;
+  }
+}
+@media (max-width: 400px) {
+  .walk-mobile-invitation {
+    padding: 22px 16px;
+  }
+  .walk-phone-stamp {
+    transform: translateX(-40%);
+  }
+}

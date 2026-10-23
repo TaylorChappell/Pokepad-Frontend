@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { LiveWalkPage } from './LiveWalk';
+import { isMobileWalkingDevice } from '../services/walking';
 import { eggWalkingMeters, walkingDistance } from '../services/walking-controller';
 import { pokemonById } from '../data/pokemon';
 import { RewardProbabilities } from '../components/RewardProbabilities';
@@ -346,7 +347,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
             className={tab === 'packs' ? 'active' : ''}
             onClick={() => setTab('packs')}
           >
-            <Icon name="Package" size={19} />
+            <Icon name="Pack" size={20} />
             Packs <span>{packs.length}</span>
           </button>
           <button
@@ -456,7 +457,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
           </div>
         ) : (
           <EmptyState
-            icon={tab === 'eggs' ? 'Egg' : 'Package'}
+            icon={tab === 'eggs' ? 'Egg' : 'Pack'}
             title={tab === 'eggs' ? 'No eggs waiting' : 'No unopened packs'}
             description="Hold active community coins to become eligible for rewards."
           >
@@ -596,7 +597,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
 
 export function WalkPage() {
   const { mode } = useApp();
-  return mode === 'live' ? <LiveWalkPage /> : <DemoWalkPage />;
+  return mode === 'live' || !isMobileWalkingDevice(navigator) ? <LiveWalkPage /> : <DemoWalkPage />;
 }
 function DemoWalkPage() {
   const { state, act, mode, now } = useApp(),

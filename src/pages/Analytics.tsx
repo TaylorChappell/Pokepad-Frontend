@@ -1,5 +1,4 @@
 import { ListMore, useListWindow } from '../components/ListMore';
-import { ContentSkeleton } from '../components/Loading';
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../state/AppContext';
 import { Avatar, Icon, PokemonArt, Pokeball } from '../components/UI';
@@ -196,9 +195,28 @@ export function AnalyticsPage() {
             <i />
           </span>
         </header>
-        <div className="analytics-metrics">
+        <div className="analytics-metrics" aria-busy={initialLoading}>
           {initialLoading ? (
-            <ContentSkeleton label="Loading platform totals" />
+            <>
+              <span className="sr-only" role="status">
+                Loading platform totals
+              </span>
+              {[
+                ['Total rewards', 'Distributed to trainers · all time'],
+                ['Platform trading volume', 'Across all Kanto coins · all time'],
+                ['Active users', 'Unique active trainers · past 24 hours'],
+              ].map(([label, description]) => (
+                <div className="analytics-metric" key={label} aria-hidden="true">
+                  <div className="analytics-metric-copy">
+                    <span>{label}</span>
+                    <strong>
+                      <span className="analytics-number-skeleton" />
+                    </strong>
+                    <small>{description}</small>
+                  </div>
+                </div>
+              ))}
+            </>
           ) : (
             <>
               <div className="analytics-metric rewards">
