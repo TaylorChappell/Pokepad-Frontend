@@ -497,13 +497,16 @@ export function CoinAvatar({
   coin,
   size = 38,
 }: {
-  coin: Pick<Coin, 'name' | 'ticker'> & Partial<Pick<Coin, 'color' | 'image'>>;
+  coin: Pick<Coin, 'name' | 'ticker'> & Partial<Pick<Coin, 'color' | 'image' | 'main'>>;
   size?: number;
 }) {
+  // The admin-selected main token uses Kanto's supplied coin artwork, even if
+  // its imported token metadata has no image or points at an unavailable host.
+  const image = coin.main ? asset('brand/kanto-main-coin.png') : coin.image;
   return (
     <span className="coin-avatar" style={{ background: coin.color, width: size, height: size }}>
-      {coin.image ? (
-        <img src={coin.image} alt={coin.name} className="coin-image" />
+      {image ? (
+        <img src={image} alt={coin.name} className="coin-image" />
       ) : (
         <span className="coin-monogram" aria-label={coin.name + ' coin'}>
           {coin.ticker.trim().slice(0, 2)}
