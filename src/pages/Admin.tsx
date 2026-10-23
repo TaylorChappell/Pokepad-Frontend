@@ -1,3 +1,4 @@
+import { POKEMON, pokemonById } from '../data/pokemon';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApp } from '../state/AppContext';
 import { Avatar, EggArt, PackArt, PokemonArt, Icon } from '../components/UI';
@@ -612,6 +613,152 @@ function Trainers({ onGift }: { onGift: (wallet: string) => void }) {
     </>
   );
 }
+function SendPokemon({ recipient }: { recipient: string }) {
+  const { session } = useApp();
+  const [wallet, setWallet] = useState(recipient);
+  const [speciesId, setSpeciesId] = useState(25);
+  const [shiny, setShiny] = useState(false);
+  const [reason, setReason] = useState('');
+  const [review, setReview] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const species = pokemonById(speciesId);
+  function change() {
+    setReview(false);
+    setError('');
+    setSuccess('');
+  }
+  async function send() {
+    setBusy(true);
+    setError('');
+    try {
+      await adminApi.mutate(session.wallet!, '/pokemon', {
+        wallet: wallet.trim(),
+        speciesId,
+        shiny,
+        reason: reason.trim(),
+      });
+      setSuccess(species.name + ' sent to ' + short(wallet.trim()) + '.');
+      setReview(false);
+      setReason('');
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="admin-gifts-grid">
+      <div className="admin-gift-stage">
+        <span className="admin-gift-label">DIRECT TO THEIR PC</span>
+        <div className="admin-gift-art">
+          <PokemonArt id={speciesId} shiny={shiny} animated={false} />
+        </div>
+        <h2>{species.name}</h2>
+        <p>{shiny ? 'Shiny' : 'Normal'} · Level 5</p>
+        <div className="admin-gift-foot">
+          <Icon name="Pokeball" size={20} />
+          <span>Collection Pokémon · no SOL backing</span>
+        </div>
+      </div>
+      <Section title="Send a Pokémon">
+        <form
+          className="admin-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (review) void send();
+            else setReview(true);
+          }}
+        >
+          <label>
+            Trainer wallet
+            <input
+              required
+              minLength={32}
+              maxLength={44}
+              pattern="[1-9A-HJ-NP-Za-km-z]{32,44}"
+              placeholder="Paste their Solana wallet address"
+              disabled={busy}
+              value={wallet}
+              onChange={(e) => {
+                setWallet(e.target.value);
+                change();
+              }}
+            />
+          </label>
+          <p className="admin-note">Works even if this wallet has not joined Kanto yet.</p>
+          <label>
+            Pokémon
+            <select
+              value={speciesId}
+              disabled={busy}
+              onChange={(e) => {
+                setSpeciesId(Number(e.target.value));
+                change();
+              }}
+            >
+              {POKEMON.map((p) => (
+                <option key={p.id} value={p.id}>
+                  #{String(p.id).padStart(3, '0')} · {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Appearance
+            <select
+              value={shiny ? 'shiny' : 'normal'}
+              disabled={busy}
+              onChange={(e) => {
+                setShiny(e.target.value === 'shiny');
+                change();
+              }}
+            >
+              <option value="normal">Normal</option>
+              <option value="shiny">Shiny</option>
+            </select>
+          </label>
+          <label>
+            Admin note
+            <input
+              required
+              minLength={3}
+              maxLength={280}
+              disabled={busy}
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+                change();
+              }}
+              placeholder="Reason for sending (admin log only)"
+            />
+          </label>
+          <p className="admin-note">
+            Appears normally in their PC with no Gift badge. It can be trained and evolved, but
+            cannot be sold for SOL or staked as a Pokémon.
+          </p>
+          {review && (
+            <div className="admin-review">
+              Send {shiny ? 'shiny ' : ''}
+              {species.name} to {wallet.trim()}?
+            </div>
+          )}
+          {error && <Alert>{error} Retrying the same request will not send it twice.</Alert>}
+          {success && (
+            <p className="admin-success" role="status">
+              {success}
+            </p>
+          )}
+          <button className="button primary" disabled={busy} type="submit">
+            {busy ? 'Sending…' : review ? 'Confirm & send Pokémon' : 'Review Pokémon'}
+          </button>
+        </form>
+      </Section>
+    </div>
+  );
+}
+
 function Gifts({ recipient }: { recipient: string }) {
   const { session } = useApp(),
     [wallet, setWallet] = useState(recipient),
@@ -910,9 +1057,11 @@ function Logs() {
                   <strong>
                     {kind === 'system'
                       ? log.operation
-                      : log.action === 'gift'
-                        ? `${log.details?.quantity} ${log.details?.tier} ${log.details?.kind}${log.details?.quantity === 1 ? '' : 's'} sent`
-                        : log.action?.replaceAll('-', ' ')}
+                      : log.action === 'pokemon.issue'
+                        ? 'Pokémon sent'
+                        : log.action === 'gift'
+                          ? `${log.details?.quantity} ${log.details?.tier} ${log.details?.kind}${log.details?.quantity === 1 ? '' : 's'} sent`
+                          : log.action?.replaceAll('-', ' ')}
                   </strong>
                   <time>{date(log.created_at)}</time>
                 </div>
@@ -1201,6 +1350,7 @@ const tabs = [
   ['overview', 'Overview', 'Activity'],
   ['trainers', 'Trainers', 'Users'],
   ['gifts', 'Gifts', 'Gift'],
+  ['pokemon', 'Send Pokémon', 'Pokeball'],
   ['main-token', 'Main token', 'Pokeball'],
   ['logs', 'Logs', 'BookOpen'],
 ] as const;
@@ -1260,6 +1410,8 @@ export function AdminPage() {
         />
       ) : tab === 'gifts' ? (
         <Gifts key={recipient} recipient={recipient} />
+      ) : tab === 'pokemon' ? (
+        <SendPokemon key={recipient} recipient={recipient} />
       ) : tab === 'main-token' ? (
         <MainToken />
       ) : (

@@ -78,6 +78,7 @@ export interface EvolutionPreview {
 }
 export interface OwnedPokemon {
   gift?: boolean;
+  adminIssued?: boolean;
   baseMoves?: string[];
   gymManual?: { wallet: string; move: string; slot: number };
   favourite?: boolean;

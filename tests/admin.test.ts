@@ -146,6 +146,10 @@ test('control room shows stale status honestly and reaches gifts, users, main to
       document.querySelector<HTMLButtonElement>('.admin-actions .primary')!.disabled,
       true,
     );
+    await h.click('Send Pokémon');
+    assert.equal(document.querySelectorAll('select')[0].options.length, 151);
+    assert.match(document.body.textContent!, /no Gift badge/);
+    assert.match(document.body.textContent!, /Review Pokémon/);
     await h.click('Trainers');
     assert.match(document.body.textContent!, /No trainers match/);
     await h.click('Main token');
@@ -190,6 +194,9 @@ test('gift Pokémon remain available for friendly battles but not Pokémon stake
   const p = { ...createInitialState().pokemon[0], gift: true, locked: false, health: 999 };
   assert.equal(battleAvailability(p, false), null);
   assert.equal(battleAvailability(p, true), 'Gifts cannot be staked');
+  const direct = { ...p, gift: false, adminIssued: true };
+  assert.equal(battleAvailability(direct, false), null);
+  assert.equal(battleAvailability(direct, true), 'Cannot be staked');
 });
 
 test('main-token setup requires a verified preview before confirmation', async (t) => {

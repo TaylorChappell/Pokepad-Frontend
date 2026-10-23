@@ -561,8 +561,20 @@ export function PokemonDetailPage({ id }: { id: string }) {
               </Button>
               <Button
                 variant="secondary"
-                disabled={!!p.gift || !!p.starter || !!p.locked || p.backing <= 0 || busy}
-                onClick={() => setDialog('sell')}
+                disabled={
+                  !!p.gift ||
+                  !!p.starter ||
+                  !!p.locked ||
+                  (p.backing <= 0 && !p.adminIssued) ||
+                  busy
+                }
+                onClick={() =>
+                  p.adminIssued
+                    ? toast(
+                        'This Pokémon cannot be sold for SOL. You can still keep it, train it and battle with it.',
+                      )
+                    : setDialog('sell')
+                }
               >
                 Sell
               </Button>
@@ -702,6 +714,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
                     </a>
                   ) : p.gift ? (
                     'Kanto gift'
+                  ) : p.adminIssued ? (
+                    'Kanto'
                   ) : (
                     'Starter selection'
                   )}
