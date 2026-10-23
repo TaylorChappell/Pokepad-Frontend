@@ -281,7 +281,11 @@ export function PokemonCard({ pokemon }: { pokemon: OwnedPokemon }) {
             {pokemon.locked && <span>In battle</span>}
           </div>
           <div className="pokemon-card-value">
-            <SolValue amount={pokemon.backing} />
+            {pokemon.gift ? (
+              <span className="gift-badge">Gift · unsellable</span>
+            ) : (
+              <SolValue amount={pokemon.backing} />
+            )}
             <small
               className="pc-strength"
               title="Combined HP, Attack, Defense, Special Attack, Special Defense and Speed"
@@ -537,8 +541,12 @@ export function PokemonDetailPage({ id }: { id: string }) {
               </button>
             )}
             <div className="summary-value">
-              <span>Pokémon value</span>
-              <SolValue amount={p.backing} />
+              <span>{p.gift ? 'Kanto gift' : 'Pokémon value'}</span>
+              {p.gift ? (
+                <span className="gift-badge">Cannot be sold</span>
+              ) : (
+                <SolValue amount={p.backing} />
+              )}
             </div>
             <div className="summary-main-actions">
               <Button
@@ -553,12 +561,18 @@ export function PokemonDetailPage({ id }: { id: string }) {
               </Button>
               <Button
                 variant="secondary"
-                disabled={!!p.starter || !!p.locked || busy}
+                disabled={!!p.gift || !!p.starter || !!p.locked || p.backing <= 0 || busy}
                 onClick={() => setDialog('sell')}
               >
                 Sell
               </Button>
             </div>
+            {p.gift && (
+              <p className="summary-starter-note">
+                Train and evolve this Pokémon as usual. It remains a gift and cannot be sold or
+                staked.
+              </p>
+            )}
             {p.starter && (
               <p className="summary-starter-note">
                 Your starter can be sold after its first funded evolution.
@@ -668,7 +682,13 @@ export function PokemonDetailPage({ id }: { id: string }) {
               <div>
                 <dt>Status</dt>
                 <dd>
-                  {p.locked ? 'In battle' : p.starter ? 'Starter Pokémon' : 'In your inventory'}
+                  {p.locked
+                    ? 'In battle'
+                    : p.gift
+                      ? 'Gift Pokémon'
+                      : p.starter
+                        ? 'Starter Pokémon'
+                        : 'In your inventory'}
                 </dd>
               </div>
               <div>
@@ -680,6 +700,8 @@ export function PokemonDetailPage({ id }: { id: string }) {
                       <strong>${origin.ticker}</strong>
                       <Icon name="ArrowUpRight" size={14} />
                     </a>
+                  ) : p.gift ? (
+                    'Kanto gift'
                   ) : (
                     'Starter selection'
                   )}

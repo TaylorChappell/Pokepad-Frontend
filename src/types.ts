@@ -77,6 +77,7 @@ export interface EvolutionPreview {
   reason?: string;
 }
 export interface OwnedPokemon {
+  gift?: boolean;
   baseMoves?: string[];
   gymManual?: { wallet: string; move: string; slot: number };
   favourite?: boolean;
@@ -110,6 +111,7 @@ export interface MoveOffer {
   status: 'pending' | 'learned' | 'declined';
 }
 export interface Reward {
+  gift?: boolean;
   pokemonInstanceId?: string;
   id: string;
   kind: 'egg' | 'pack';
@@ -182,6 +184,8 @@ export interface VariantDiscoveries {
   unknown: number[];
 }
 export interface AppSnapshot {
+  admin?: boolean;
+  restricted?: boolean;
   demoPromptEpoch?: number;
   demoCandyUpdatedAt?: number;
   demoCandyRemainder?: number;

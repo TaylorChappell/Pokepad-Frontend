@@ -5,6 +5,11 @@ import { WalletConnection } from './WalletConnection';
 import { asset } from '../utils';
 
 const destinations: Record<string, { title: string; description: string; item: string }> = {
+  admin: {
+    title: 'Kanto control room',
+    description: 'Connect an approved admin wallet to manage Kanto.',
+    item: 'poke-ball',
+  },
   portfolio: {
     title: 'Your portfolio awaits',
     description: 'Connect your wallet to see your coins, holdings and Pokémon value.',

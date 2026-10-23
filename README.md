@@ -129,3 +129,7 @@ Online rooms now wait in a review stage after a rival joins. Both trainers inspe
 The standard battle bag grants each side two Potions (30% maximum HP), one Revive (50% HP), and one Full Heal. Supplies are match-only and identical; a trainer’s collectible inventory cannot increase them. Each valid item use consumes a turn and a single supply. Supplies and legal targets are enforced by the backend, and the offline bot uses the same limits. Items cannot interrupt charge/recharge or substitute for a mandatory faint replacement. Surrender requires confirmation and settles a started wager as a loss.
 
 Deploy the backend migration `090_battle_review.sql` before this frontend. This change adds no purchasable or redeemable items and does not yet distribute gym reward items.
+
+### Admin panel
+
+The wallet account menu exposes **Admin panel** at `/#/admin` only when the backend grants admin access. Configure `ADMIN_WALLETS` on the API service; never put admin credentials or signing keys in this frontend. The control room offers platform metrics, worker health, trainer management, unsellable gifts, an audit/system log, and setup of the main Pump token (with Pikachu). Every operation is authorized again by the server. Main-token setup is shared through the backend database; no frontend variable or redeploy is needed to change the main token. Gifts are visibly marked in Rewards/My PC and cannot be sold or staked as Pokémon.

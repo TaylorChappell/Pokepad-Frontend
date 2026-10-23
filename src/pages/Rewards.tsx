@@ -204,10 +204,14 @@ export function RewardOpening({
               ))}
             </div>
             <div className="reveal-v3-value">
-              <SolValue amount={owned.backing} />
+              {owned.gift ? (
+                <span className="gift-badge">Gift · cannot be sold</span>
+              ) : (
+                <SolValue amount={owned.backing} />
+              )}
             </div>
             <div className="reveal-v3-source">
-              From <SourceCoin id={reward.originCoin} />
+              From {reward.gift ? 'Kanto' : <SourceCoin id={reward.originCoin} />}
             </div>
             <div className="reveal-v3-actions">
               <Button
@@ -296,7 +300,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
   const current = tab === 'packs' ? packs : eggs;
   const selected = detail ? state.rewards.find((r) => r.id === detail.id) || detail : null;
   const pool = selected
-    ? rewardPool(selected.tier, selected.kind, rewardBudget(state, selected))
+    ? rewardPool(selected.tier, selected.kind, selected.gift ? 100 : rewardBudget(state, selected))
     : [];
   const filteredPool = pool.filter(
     (entry) =>
@@ -412,7 +416,14 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                       {r.tier} {r.kind}
                     </h2>
                     <div className="reward-origin">
-                      From <SourceCoin id={r.originCoin} />
+                      From{' '}
+                      {r.gift ? (
+                        <span>
+                          Kanto · <span className="gift-badge">Gift</span>
+                        </span>
+                      ) : (
+                        <SourceCoin id={r.originCoin} />
+                      )}
                     </div>
                     {r.kind === 'egg' ? (
                       <div className="reward-v3-timer">
@@ -433,7 +444,9 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                       </div>
                     ) : (
                       <p className="reward-v3-pack-copy">
-                        A surprise Pokémon from the funded reward pool.
+                        {r.gift
+                          ? 'A mystery gift Pokémon from Kanto. Cannot be sold.'
+                          : 'A surprise Pokémon from the funded reward pool.'}
                         <br />
                         Legendaries can appear in packs, too.
                       </p>
@@ -488,8 +501,14 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                     <strong>{pokemonById(r.outcomeSpeciesId || 1).name}</strong>
                     <small>{r.tier + ' ' + r.kind + ' · ' + relativeTime(r.openedAt!)}</small>
                   </span>
-                  <SourceCoin id={r.originCoin} />
-                  <SolValue amount={r.backing} />
+                  {r.gift ? (
+                    <span className="gift-badge">Gift · unsellable</span>
+                  ) : (
+                    <>
+                      <SourceCoin id={r.originCoin} />
+                      <SolValue amount={r.backing} />
+                    </>
+                  )}
                   <Icon name="ChevronRight" />
                 </a>
               ))
@@ -527,7 +546,12 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                 )}
               </div>
               <p>
-                From <SourceCoin id={selected.originCoin} />
+                From{' '}
+                {selected.gift ? (
+                  'Kanto · gift Pokémon cannot be sold'
+                ) : (
+                  <SourceCoin id={selected.originCoin} />
+                )}
               </p>
               {selected.kind === 'egg' && (
                 <div className="reward-v3-detail-timer">
@@ -566,8 +590,9 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
               <h3>Who could you discover?</h3>
               {mode === 'live' ? (
                 <p>
-                  Your reward was sealed and fully funded when awarded. Its Pokémon is revealed when
-                  opened.
+                  {selected.gift
+                    ? 'Your gift contains a random Pokémon, revealed when opened. It can be trained and evolved, but can never be sold or staked.'
+                    : 'Your reward was sealed and fully funded when awarded. Its Pokémon is revealed when opened.'}
                 </p>
               ) : (
                 <>
@@ -615,7 +640,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                           <PokemonArt id={entry.speciesId} shiny={entry.shiny} animated={false} />
                           <div>
                             <strong>{pokemonById(entry.speciesId).name}</strong>
-                            <SolValue amount={entry.backing} />
+                            {!selected.gift && <SolValue amount={entry.backing} />}
                           </div>
                           <span className="drop-chance">
                             {entry.chance * 100 < 0.01 ? '<0.01' : (entry.chance * 100).toFixed(2)}%

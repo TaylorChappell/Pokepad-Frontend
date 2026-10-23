@@ -11,6 +11,7 @@ import { Icon, Modal, PokemonArt, Pokeball, TypeChip } from './UI';
 export function battleAvailability(pokemon: OwnedPokemon, pokemonWager = false): string | null {
   if (pokemon.locked) return 'Busy';
   if (getPokemonHealth(pokemon).current <= 0) return 'Needs a Revive';
+  if (pokemonWager && pokemon.gift) return 'Gifts cannot be staked';
   if (pokemonWager && pokemon.starter) return 'Starters cannot be wagered';
   return null;
 }

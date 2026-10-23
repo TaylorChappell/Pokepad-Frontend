@@ -1,3 +1,4 @@
+import { AdminPage } from './pages/Admin';
 import { Component, useEffect, useState, type ReactNode } from 'react';
 import { LoadingCoordinator } from './components/Loading';
 import { WalletGate } from './components/WalletGate';
@@ -39,6 +40,7 @@ function Routes() {
   let page: ReactNode;
   if (path === '/' || path === '/discover') page = <DiscoverPage />;
   else if (path === '/explore') page = <DiscoverPage explore />;
+  else if (path === '/admin') page = <AdminPage />;
   else if (path === '/analytics') page = <AnalyticsPage />;
   else if (path.startsWith('/trainer/'))
     page = <TrainerPage wallet={path.slice('/trainer/'.length)} />;

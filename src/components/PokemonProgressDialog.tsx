@@ -228,9 +228,18 @@ export function PokemonProgressDialog({
                     </p>
                   )}
                   <div className="evolution-value-change">
-                    <SolValue amount={evolution.before} />
-                    <span>→</span>
-                    <EvolutionValue preview={p.evolutionPreview} fallback={evoStatus.nextValue} />
+                    {p.gift ? (
+                      <span className="gift-badge">Gift · stays unsellable after evolution</span>
+                    ) : (
+                      <>
+                        <SolValue amount={evolution.before} />
+                        <span>→</span>
+                        <EvolutionValue
+                          preview={p.evolutionPreview}
+                          fallback={evoStatus.nextValue}
+                        />
+                      </>
+                    )}
                   </div>
                   <div className="modal-actions">
                     <Button variant="secondary" disabled={busy} onClick={closeDialog}>
@@ -263,9 +272,15 @@ export function PokemonProgressDialog({
                     evolved into <strong>{pokemonById(evolution.to!).name}</strong>!
                   </p>
                   <div className="evolution-value-change">
-                    <SolValue amount={evolution.before} />
-                    <span>→</span>
-                    <SolValue amount={evolution.after!} />
+                    {p.gift ? (
+                      <span className="gift-badge">Gift · cannot be sold</span>
+                    ) : (
+                      <>
+                        <SolValue amount={evolution.before} />
+                        <span>→</span>
+                        <SolValue amount={evolution.after!} />
+                      </>
+                    )}
                   </div>
                   <Button onClick={closeDialog}>Continue</Button>
                 </>

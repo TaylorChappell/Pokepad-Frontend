@@ -215,6 +215,12 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
                 <Icon name="Users" />
                 Trainer profile
               </a>
+              {mode === 'live' && state.admin && (
+                <a href="#/admin">
+                  <Icon name="Settings" />
+                  Admin panel
+                </a>
+              )}
               <a href="#/settings">
                 <Icon name="Settings" />
                 Settings & appearance
