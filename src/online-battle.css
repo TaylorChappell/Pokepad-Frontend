@@ -630,6 +630,59 @@
   font-size: 9px;
   color: #8fa3b2;
 }
+.online-token-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #7490a3;
+  font-size: 10px;
+  font-weight: 800;
+}
+.online-token-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #ccd9cf;
+  border-radius: 12px;
+  background: #fffef7;
+  color: #354e55;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms,
+    background 160ms;
+}
+.online-token-picker:hover {
+  background: #f5f8eb;
+  border-color: #8da994;
+}
+.online-token-picker:focus-visible {
+  outline: 2px solid #658cad;
+  outline-offset: 3px;
+}
+.online-token-picker > span:not(.coin-avatar) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.online-token-picker strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.online-token-picker small {
+  font-size: 10px;
+  color: #788a84;
+}
+.online-token-picker > svg {
+  flex-shrink: 0;
+}
 .online-visibility-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;

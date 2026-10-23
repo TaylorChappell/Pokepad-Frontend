@@ -113,23 +113,24 @@ body,
 .trainer-banner[data-media-state='loading'] {
   isolation: isolate;
 }
-.pokemon-art[data-media-state='loading']::after,
 .coin-avatar[data-media-state='loading']::after,
 .trainer-avatar[data-media-state='loading']::after,
-.egg-art[data-media-state='loading']::after,
 .trainer-banner[data-media-state='loading']::after {
   content: '';
   position: absolute;
-  inset: 7%;
+  inset: 0;
   z-index: 5;
-  border-radius: 12px;
+  border-radius: inherit;
   background: linear-gradient(110deg, #e9efdf 20%, #f5f8ed 42%, #e9efdf 64%);
   background-size: 220% 100%;
   animation: skeleton-sheen 1.6s ease-in-out infinite;
 }
-img[data-media-state='loading'] {
+/* Transparent artwork keeps its silhouette; never paint a rectangular placeholder behind it. */
+img[data-media-state='loading'],
+.sprite-pixels[data-media-state='loading'],
+.battle-body-frame[data-media-state='loading'] {
   color: transparent;
-  background: #edf2e7;
+  opacity: 0 !important;
 }
 .pokemon-art[data-media-state='error']::after {
   content: '?';

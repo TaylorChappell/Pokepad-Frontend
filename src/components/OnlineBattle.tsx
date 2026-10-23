@@ -19,9 +19,10 @@ import { useApp } from '../state/AppContext';
 import { pokemonById } from '../data/pokemon';
 import { BattleTeamPicker, battleSelection, rememberBattleTeam } from './BattleTeamPicker';
 import { WalletConnection } from './WalletConnection';
+import { SearchDialog } from './SearchDialog';
 import { BattleFundingController, type EscrowAction } from '../services/battle-funding';
 import { shortWallet } from '../state/model';
-import { Button, Icon, PokemonArt, Pokeball } from './UI';
+import { Button, CoinAvatar, Icon, PokemonArt, Pokeball } from './UI';
 import {
   battleWagerLabel,
   proposeBattleReview,
@@ -677,6 +678,7 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
   const [wager, setWager] = useState<OnlineWager>('friendly');
   const [amount, setAmount] = useState('0.1');
   const [tokenMint, setTokenMint] = useState('');
+  const [choosingToken, setChoosingToken] = useState(false);
   const [visibility, setVisibility] = useState<'public' | 'invite'>('public');
   const [approved, setApproved] = useState(false);
   const [desk, setDesk] = useState<'create' | 'join'>(() =>
@@ -704,6 +706,20 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
     desk === 'join' ? preview?.teamSize || 3 : 3,
   );
   const selectedToken = caps?.tokens?.find((token) => token.mint === tokenMint);
+  const wagerCoins = (caps?.tokens || []).map((token) => {
+    const coin = state.coins.find((coin) => coin.ca === token.mint);
+    return {
+      id: token.mint,
+      ca: token.mint,
+      name: token.name,
+      ticker: token.symbol,
+      image: coin?.image,
+      color: coin?.color,
+      main: coin?.main,
+      volume: coin?.volume,
+    };
+  });
+  const selectedCoin = wagerCoins.find((coin) => coin.ca === tokenMint);
   const monetary = activeWager === 'sol' || activeWager === 'token';
   let terms: MonetaryTerms | undefined,
     amountError = '';
@@ -731,7 +747,8 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
     return () => window.removeEventListener('hashchange', readInvitation);
   }, []);
   useEffect(() => {
-    if (!tokenMint && caps?.tokens?.length) setTokenMint(caps.tokens[0].mint);
+    if (tokenMint && caps && !caps.tokens?.some((token) => token.mint === tokenMint))
+      setTokenMint('');
   }, [caps, tokenMint]);
   useEffect(() => {
     setApproved(false);
@@ -1028,6 +1045,7 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                       onClick={() => {
                         setWager(format);
                         setApproved(false);
+                        if (format === 'token') setChoosingToken(true);
                       }}
                     >
                       <Icon
@@ -1077,22 +1095,37 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
               {(wager === 'sol' || wager === 'token') && (
                 <div className="online-money-fields">
                   {wager === 'token' && (
-                    <label>
-                      Coin token
-                      <select
-                        value={tokenMint}
-                        onChange={(event) => {
-                          setTokenMint(event.target.value);
-                          setApproved(false);
-                        }}
+                    <div className="online-token-field">
+                      <span>Coin token</span>
+                      <button
+                        type="button"
+                        className="online-token-picker"
+                        aria-label={
+                          selectedToken
+                            ? `Change wager coin, ${selectedToken.name} selected`
+                            : 'Choose wager coin'
+                        }
+                        aria-haspopup="dialog"
+                        aria-expanded={choosingToken}
+                        disabled={online.pending || caps?.token !== true}
+                        onClick={() => setChoosingToken(true)}
                       >
-                        {caps?.tokens?.map((token) => (
-                          <option key={token.mint} value={token.mint}>
-                            {token.symbol} · {token.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                        {selectedCoin ? (
+                          <CoinAvatar coin={selectedCoin} size={34} />
+                        ) : (
+                          <Pokeball size={30} />
+                        )}
+                        <span>
+                          <strong>{selectedToken?.name || 'Choose a coin'}</strong>
+                          <small>
+                            {selectedToken
+                              ? '$' + selectedToken.symbol
+                              : 'Search name, ticker or contract'}
+                          </small>
+                        </span>
+                        <Icon name="Search" size={20} />
+                      </button>
+                    </div>
                   )}
                   <label>
                     Your stake{' '}
@@ -1119,6 +1152,19 @@ export function OnlineBattle({ online }: { online: ReturnType<typeof useOnlineBa
                     </p>
                   )}
                 </div>
+              )}
+              {choosingToken && caps?.token === true && (
+                <SearchDialog
+                  coins={wagerCoins}
+                  selectedCoinCa={tokenMint}
+                  onClose={() => setChoosingToken(false)}
+                  onSelectCoin={(coin) => {
+                    if (!caps.tokens?.some((token) => token.mint === coin.ca)) return;
+                    if (coin.ca !== tokenMint) setAmount('');
+                    setTokenMint(coin.ca);
+                    setApproved(false);
+                  }}
+                />
               )}
               <div className="online-visibility-toggle" aria-label="Room visibility">
                 <button

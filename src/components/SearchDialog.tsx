@@ -15,9 +15,22 @@ import {
   type PublicTrainer,
 } from '../services/trainers';
 
-type SearchEntry = { kind: 'coin'; coin: Coin } | { kind: 'trainer'; trainer: PublicTrainer };
+export type SearchCoin = Pick<Coin, 'id' | 'name' | 'ticker' | 'ca'> &
+  Partial<Pick<Coin, 'image' | 'color' | 'mode' | 'main' | 'volume' | 'holders'>>;
+type SearchEntry = { kind: 'coin'; coin: SearchCoin } | { kind: 'trainer'; trainer: PublicTrainer };
 
-export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () => void }) {
+export function SearchDialog({
+  coins,
+  onClose,
+  onSelectCoin,
+  selectedCoinCa,
+}: {
+  coins: SearchCoin[];
+  onClose: () => void;
+  onSelectCoin?: (coin: SearchCoin) => void;
+  selectedCoinCa?: string;
+}) {
+  const pickingCoin = Boolean(onSelectCoin);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [closing, setClosing] = useState(false);
@@ -50,7 +63,8 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
           coin.ca.includes(query.trim()),
       )
     : [...coins].sort(
-        (a, b) => Number(Boolean(b.main)) - Number(Boolean(a.main)) || b.volume - a.volume,
+        (a, b) =>
+          Number(Boolean(b.main)) - Number(Boolean(a.main)) || (b.volume || 0) - (a.volume || 0),
       );
   const coinPage = useListWindow(matches, term, term ? 8 : 5);
   const coinResults = coinPage.items;
@@ -61,6 +75,11 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
 
   useEffect(() => {
     setTrainerError('');
+    if (pickingCoin) {
+      setTrainers([]);
+      setTrainerLoading(false);
+      return;
+    }
     if (trainerDirectory.mode === 'demo') {
       setTrainers(searchDemoTrainers(query, own));
       setTrainerLoading(false);
@@ -93,7 +112,7 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, own]);
+  }, [query, own, pickingCoin]);
 
   function dismiss(afterClose?: () => void) {
     if (closeTimer.current !== undefined || closing) return;
@@ -109,6 +128,10 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
   }
 
   function select(result: SearchEntry) {
+    if (result.kind === 'coin' && onSelectCoin) {
+      dismiss(() => onSelectCoin(result.coin));
+      return;
+    }
     dismiss(() =>
       navigate(
         result.kind === 'coin'
@@ -200,8 +223,12 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
         <div className="coin-search-screen">
           <header className="coin-search-heading">
             <div>
-              <h2 id={`${id}-title`}>Search Kanto</h2>
-              <p id={`${id}-description`}>Find a coin or visit another trainer.</p>
+              <h2 id={`${id}-title`}>{pickingCoin ? 'Choose your wager coin' : 'Search Kanto'}</h2>
+              <p id={`${id}-description`}>
+                {pickingCoin
+                  ? 'Find a coin available for token battles.'
+                  : 'Find a coin or visit another trainer.'}
+              </p>
             </div>
             <Pokeball size={32} />
           </header>
@@ -223,13 +250,21 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
               ref={input}
               id={`${id}-input`}
               type="search"
-              aria-label="Search coins or trainers by name, ticker, contract or wallet address"
+              aria-label={
+                pickingCoin
+                  ? 'Search wager coins by name, ticker or contract address'
+                  : 'Search coins or trainers by name, ticker, contract or wallet address'
+              }
               role="combobox"
               aria-autocomplete="list"
               aria-expanded="true"
               aria-controls={`${id}-results`}
               aria-activedescendant={results[active] ? `${id}-result-${active}` : undefined}
-              placeholder="Name, $ticker, contract or wallet address"
+              placeholder={
+                pickingCoin
+                  ? 'Name, $ticker or contract address'
+                  : 'Name, $ticker, contract or wallet address'
+              }
               value={query}
               autoComplete="off"
               autoCapitalize="off"
@@ -272,20 +307,24 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
             )}
           </div>
           <div className="coin-search-results-heading">
-            <span>{term ? 'Search results' : 'Explore Kanto'}</span>
+            <span>
+              {term ? 'Search results' : pickingCoin ? 'Available coins' : 'Explore Kanto'}
+            </span>
             <small aria-live="polite">
               {trainerLoading
                 ? 'Finding trainers…'
                 : term
                   ? `${matches.length + trainers.length} found`
-                  : 'Coins & trainers'}
+                  : pickingCoin
+                    ? `${matches.length} available`
+                    : 'Coins & trainers'}
             </small>
           </div>
           <div
             className="coin-search-results"
             id={`${id}-results`}
             role="listbox"
-            aria-label="Coins and trainers"
+            aria-label={pickingCoin ? 'Available wager coins' : 'Coins and trainers'}
           >
             {coinResults.length > 0 && (
               <div className="search-result-group" role="presentation">
@@ -313,15 +352,30 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
                   <strong>{coin.name}</strong>
                   <small>
                     ${coin.ticker}
-                    <span>{coin.mode === 'Mixed' ? 'Eggs + packs' : coin.mode}</span>
+                    <span>
+                      {pickingCoin
+                        ? coin.ca.slice(0, 5) + '…' + coin.ca.slice(-5)
+                        : coin.mode === 'Mixed'
+                          ? 'Eggs + packs'
+                          : coin.mode}
+                    </span>
                   </small>
                 </span>
                 <span className="coin-search-result-detail">
-                  <strong>{compact(coin.holders)}</strong>
-                  <small>holders</small>
+                  {pickingCoin ? (
+                    <small>{selectedCoinCa === coin.ca ? 'Selected' : 'Select coin'}</small>
+                  ) : (
+                    <>
+                      <strong>{compact(coin.holders || 0)}</strong>
+                      <small>holders</small>
+                    </>
+                  )}
                 </span>
                 <span className="coin-search-result-arrow">
-                  <Icon name="ArrowRight" size={18} />
+                  <Icon
+                    name={pickingCoin && selectedCoinCa === coin.ca ? 'Check' : 'ArrowRight'}
+                    size={18}
+                  />
                 </span>
               </button>
             ))}
@@ -392,9 +446,11 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
                 <Pokeball size={48} />
                 <h3>{trainerLoading ? 'Looking for a trainer…' : 'No matches found'}</h3>
                 <p>
-                  {trainerDirectory.mode === 'demo'
-                    ? 'Try a coin, your wallet, or a sample trainer such as Leaf. The demo directory only includes these profiles.'
-                    : 'Try a different name, ticker, contract address or registered trainer wallet.'}
+                  {pickingCoin
+                    ? 'Try another name, ticker or contract address. Only supported wager coins appear here.'
+                    : trainerDirectory.mode === 'demo'
+                      ? 'Try a coin, your wallet, or a sample trainer such as Leaf. The demo directory only includes these profiles.'
+                      : 'Try a different name, ticker, contract address or registered trainer wallet.'}
                 </p>
                 <button
                   onClick={() => {
@@ -403,7 +459,7 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
                     input.current?.focus();
                   }}
                 >
-                  Explore coins & trainers
+                  {pickingCoin ? 'Show available coins' : 'Explore coins & trainers'}
                 </button>
               </div>
             )}
@@ -416,7 +472,7 @@ export function SearchDialog({ coins, onClose }: { coins: Coin[]; onClose: () =>
             <kbd>↓</kbd> Browse
           </span>
           <span>
-            <kbd>↵</kbd> Open result
+            <kbd>↵</kbd> {pickingCoin ? 'Select coin' : 'Open result'}
           </span>
           <span>
             <kbd>esc</kbd> Close

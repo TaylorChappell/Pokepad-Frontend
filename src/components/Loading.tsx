@@ -55,6 +55,7 @@ export function watchPageReadiness(root: HTMLElement, onReady: () => void) {
     HTMLElement,
     { src: string; status: 'loading' | 'ready' | 'error'; image: HTMLImageElement }
   >();
+  const decodedSources = new Set<string>();
   const inView = (el: Element) => {
     const r = el.getBoundingClientRect();
     return (
@@ -68,6 +69,7 @@ export function watchPageReadiness(root: HTMLElement, onReady: () => void) {
     );
   };
   const marker = (el: HTMLElement, status: string) => {
+    el.dataset.mediaState = status;
     const target =
       el.closest<HTMLElement>(
         '.pokemon-art,.coin-avatar,.trainer-avatar,.trainer-banner,.egg-art',
@@ -86,15 +88,21 @@ export function watchPageReadiness(root: HTMLElement, onReady: () => void) {
       const previous = images.get(img);
       if (previous?.src === src) continue;
       previous?.cleanup();
-      const entry = { src, status: 'loading' as 'loading' | 'ready' | 'error', cleanup: () => {} };
+      const ready = img.complete && img.naturalWidth > 0 && decodedSources.has(src);
+      const entry = {
+        src,
+        status: (ready ? 'ready' : 'loading') as 'loading' | 'ready' | 'error',
+        cleanup: () => {},
+      };
       images.set(img, entry);
-      marker(img, 'loading');
+      marker(img, entry.status);
       const finish = async () => {
         try {
           if (!img.naturalWidth) throw Error('Image unavailable');
           if (img.decode) await img.decode();
           if (stopped || images.get(img) !== entry) return;
           entry.status = 'ready';
+          decodedSources.add(src);
           marker(img, 'ready');
         } catch {
           if (stopped || images.get(img) !== entry) return;
@@ -115,21 +123,27 @@ export function watchPageReadiness(root: HTMLElement, onReady: () => void) {
         img.removeEventListener('load', finish);
         img.removeEventListener('error', failed);
       };
-      if (img.complete) void finish();
+      if (img.complete && !ready) void finish();
     }
     for (const el of root.querySelectorAll<HTMLElement>('[style*="background-image"]')) {
       if (!inView(el)) continue;
       const src = el.style.backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1];
       if (!src || backgrounds.get(el)?.src === src) continue;
       const image = new Image(),
-        entry = { src, status: 'loading' as 'loading' | 'ready' | 'error', image };
+        entry = {
+          src,
+          status: (decodedSources.has(src) ? 'ready' : 'loading') as 'loading' | 'ready' | 'error',
+          image,
+        };
       backgrounds.set(el, entry);
-      marker(el, 'loading');
+      marker(el, entry.status);
+      if (entry.status === 'ready') continue;
       image.onload = async () => {
         try {
           if (image.decode) await image.decode();
           if (stopped || backgrounds.get(el) !== entry) return;
           entry.status = 'ready';
+          decodedSources.add(src);
           marker(el, 'ready');
         } catch {
           if (stopped || backgrounds.get(el) !== entry) return;

@@ -459,7 +459,13 @@ export function ModeBadge({ mode }: { mode: RewardMode }) {
     </span>
   );
 }
-export function CoinAvatar({ coin, size = 38 }: { coin: Coin; size?: number }) {
+export function CoinAvatar({
+  coin,
+  size = 38,
+}: {
+  coin: Pick<Coin, 'name' | 'ticker'> & Partial<Pick<Coin, 'color' | 'image'>>;
+  size?: number;
+}) {
   return (
     <span className="coin-avatar" style={{ background: coin.color, width: size, height: size }}>
       {coin.image ? (

@@ -11,6 +11,7 @@
     <link rel="icon" type="image/png" href="./assets/brand/kanto-emblem.png" />
     <title>Kanto · Pokémon Launchpad</title>
     <link rel="preload" as="image" href="./assets/brand/kanto-emblem.png" />
+    <link rel="preload" as="image" href="./assets/brand/kanto-lockup.png" />
     <style>
       body {
         margin: 0;
@@ -46,6 +47,15 @@
         width: 152px;
         height: 152px;
         object-fit: contain;
+      }
+      .boot-emblem,
+      .boot-wordmark {
+        opacity: 0;
+        transition: opacity 160ms ease;
+      }
+      .boot-emblem[data-boot-ready='true'],
+      .boot-wordmark[data-boot-ready='true'] {
+        opacity: 1;
       }
       .boot-brand {
         margin: 16px 0 12px;
@@ -119,6 +129,26 @@
     <script>
       (() => {
         const screen = document.getElementById('boot-screen');
+        // The loading screen itself must never expose an undecoded/broken image box.
+        const revealArtwork = (element, image) => {
+          const reveal = async () => {
+            try {
+              if (!image.naturalWidth) return;
+              if (image.decode) await image.decode();
+              if (element.isConnected) element.dataset.bootReady = 'true';
+            } catch {
+              /* Keep the loading message visible if artwork is unavailable. */
+            }
+          };
+          image.addEventListener('load', reveal, { once: true });
+          if (image.complete) void reveal();
+        };
+        const emblem = screen.querySelector('.boot-emblem');
+        revealArtwork(emblem, emblem);
+        const wordmark = screen.querySelector('.boot-wordmark');
+        const wordmarkImage = new Image();
+        revealArtwork(wordmark, wordmarkImage);
+        wordmarkImage.src = wordmark.querySelector('image').getAttribute('href');
         screen.dataset.startedAt = String(performance.now());
         const showRetry = (failed) => {
           if (!screen.isConnected || screen.dataset.dismissing) return;

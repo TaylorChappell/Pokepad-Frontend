@@ -75,6 +75,16 @@ test('boot waits for images, decoding, fonts and route data; later images use sk
     later.dispatchEvent(new dom.window.Event('load'));
     await wait();
     assert.equal(later.dataset.mediaState, 'ready');
+    const cached = dom.window.document.createElement('img');
+    cached.src = later.src;
+    Object.defineProperty(cached, 'complete', { value: true });
+    Object.defineProperty(cached, 'naturalWidth', { value: 80 });
+    cached.decode = () => {
+      throw new Error('Previously decoded artwork should not restart loading');
+    };
+    dom.window.document.querySelector('main')!.append(cached);
+    await wait();
+    assert.equal(cached.dataset.mediaState, 'ready', 'cached artwork never flashes a placeholder');
     assert.equal(completions, 1, 'Navigation never restarts boot');
   } finally {
     cleanup();
