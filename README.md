@@ -95,12 +95,16 @@ Optional **public** GitHub Actions repository variables (or `.env.local` values)
 
 | Variable                   | Purpose                                                                                                                                                                     |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_MAIN_TOKEN_MINT`     | Real main coin's Solana mint. Otherwise live mode uses the API coin marked `main`. Demo addresses never become Pump.fun destinations; an unconfigured link displays “Soon”. |
+| `VITE_MAIN_TOKEN_MINT`     | Optional real mint for demo mode only. Ignored in live mode: the Pump.fun link follows the main token saved in Admin → Main token. An unconfigured link displays “Soon”. |
 | `VITE_KANTO_X_URL`         | Official `https://x.com/…` profile. Until configured, the X placeholder opens `https://x.com`.                                                                              |
 | `VITE_LEGAL_OPERATOR`      | Operator's public legal name/details. Blank displays a clear placeholder.                                                                                                   |
 | `VITE_LEGAL_CONTACT_EMAIL` | Public support/privacy contact email. Blank or malformed displays a placeholder.                                                                                            |
 
 Rebuild after changing these values. No private keys, credentials or secrets belong here. The Pump.fun link is built from the mint rather than a user-supplied redirect URL. The copyright notice identifies Kanto; the terms retain third-party owners' rights.
+
+To connect the footer's X button, open this frontend repository's **Settings → Secrets and variables → Actions → Variables → New repository variable**. Set `VITE_KANTO_X_URL` to the full official profile URL, such as `https://x.com/yourhandle`. Then open **Actions → Deploy frontend to GitHub Pages → Run workflow**, select `main`, and run it. This is a public profile link; no X API key or OAuth setup is needed.
+
+For the live Pump.fun button, paste the main coin CA into **Admin → Main token**, check the coin and fee split, and confirm it. Saving refreshes the app's main coin and its footer link. Future visitors receive that choice from the API; no frontend variable or rebuild is needed when the main token changes. A database reset clears the imported coin, so the link shows “Soon” until a main coin is connected again.
 
 ## Project layout
 

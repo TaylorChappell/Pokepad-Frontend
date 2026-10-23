@@ -20,6 +20,20 @@ test('footer uses only a configured or live main mint, never a demo or arbitrary
   }
   assert.equal(mainCoinPumpUrl([{ main: false, ca: mint }], 'live', ''), null);
 });
+test('live Pump link follows the admin selection and ignores stale frontend configuration', () => {
+  const replacement = bs58.encode(Uint8Array.from({ length: 32 }, (_, index) => 255 - index));
+  const coins = [
+    { main: false, ca: mint },
+    { main: true, ca: replacement },
+  ];
+  for (const configured of [mint, 'invalid', '']) {
+    assert.equal(mainCoinPumpUrl(coins, 'live', configured), 'https://pump.fun/coin/' + replacement);
+  }
+  // A database reset or missing main token must not resurrect a build-time link.
+  assert.equal(mainCoinPumpUrl([], 'live', mint), null);
+  assert.equal(mainCoinPumpUrl([{ main: false, ca: mint }], 'live', mint), null);
+  assert.equal(mainCoinPumpUrl([{ main: true, ca: 'invalid' }], 'live', mint), null);
+});
 test('public contact configuration cannot turn footer links into arbitrary schemes or hosts', () => {
   assert.equal(officialXUrl('https://x.com/kanto_example'), 'https://x.com/kanto_example');
   for (const bad of [

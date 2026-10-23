@@ -14,9 +14,10 @@ export function mainCoinPumpUrl(
   mode: 'demo' | 'live',
   configuredMint = siteConfig.mainTokenMint,
 ): string | null {
-  // Demo addresses are illustrations, never destinations for real transactions.
-  const mint =
-    configuredMint.trim() || (mode === 'live' ? coins.find((coin) => coin.main)?.ca : '');
+  // The admin-selected main coin is authoritative in live mode, including after
+  // a reset. A stale build variable must not send players to an old token.
+  // Demo addresses are illustrations; only an explicitly configured mint is used.
+  const mint = (mode === 'live' ? coins.find((coin) => coin.main)?.ca || '' : configuredMint).trim();
   if (!mint || mint.startsWith('PokePad') || /^1+$/.test(mint)) return null;
   try {
     return bs58.decode(mint).length === 32 ? 'https://pump.fun/coin/' + mint : null;
