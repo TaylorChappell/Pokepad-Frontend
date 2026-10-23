@@ -1,7 +1,15 @@
 import type { Profile } from '../types';
 import { apiRequest, ApiError } from './http';
 
-export type AnalyticsEventKind = 'egg' | 'pack' | 'redeem' | 'evolve' | 'launch' | 'other';
+export type AnalyticsEventKind =
+  | 'egg'
+  | 'pack'
+  | 'egg_awarded'
+  | 'pack_awarded'
+  | 'redeem'
+  | 'evolve'
+  | 'launch'
+  | 'other';
 
 export interface AnalyticsEvent {
   id: string;
@@ -28,7 +36,16 @@ export interface PlatformAnalytics {
   events: AnalyticsEvent[];
 }
 
-const kinds = new Set<AnalyticsEventKind>(['egg', 'pack', 'redeem', 'evolve', 'launch', 'other']);
+const kinds = new Set<AnalyticsEventKind>([
+  'egg',
+  'pack',
+  'egg_awarded',
+  'pack_awarded',
+  'redeem',
+  'evolve',
+  'launch',
+  'other',
+]);
 const characters = new Set<Profile['character']>(['red', 'leaf', 'misty', 'brock', 'blue']);
 const object = (value: unknown): Record<string, unknown> | null =>
   value && typeof value === 'object' && !Array.isArray(value)

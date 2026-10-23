@@ -125,3 +125,25 @@ test('leaving Analytics aborts an in-flight backend request', async (context) =>
   await assert.rejects(pending, { name: 'AbortError' });
   assert.equal(requestSignal?.aborted, true);
 });
+
+test('received eggs and packs survive the feed adapter without revealing a Pokémon', () => {
+  const result = parsePlatformAnalytics({
+    ...response(),
+    events: ['egg_awarded', 'pack_awarded'].map((kind) => ({
+      ...event,
+      id: kind,
+      kind,
+      title: 'Received a reward',
+      detail: 'From $KANTO',
+      href: '/coin/kanto',
+      pokemonId: undefined,
+      shiny: false,
+    })),
+  });
+  assert.equal(result.events.length, 2);
+  assert.deepEqual(
+    result.events.map((e) => e.kind),
+    ['egg_awarded', 'pack_awarded'],
+  );
+  assert.ok(result.events.every((e) => e.pokemonId === undefined && e.href === '/coin/kanto'));
+});

@@ -94,6 +94,8 @@ export function accountAnalyticsEvents(state: AppSnapshot): AnalyticsEvent[] {
 
 const filters: { id: 'all' | AnalyticsEventKind; label: string }[] = [
   { id: 'all', label: 'All activity' },
+  { id: 'egg_awarded', label: 'Eggs received' },
+  { id: 'pack_awarded', label: 'Packs received' },
   { id: 'egg', label: 'Hatches' },
   { id: 'pack', label: 'Packs' },
   { id: 'evolve', label: 'Evolutions' },
@@ -101,6 +103,8 @@ const filters: { id: 'all' | AnalyticsEventKind; label: string }[] = [
   { id: 'launch', label: 'Launches' },
 ];
 const eventLabels: Record<AnalyticsEventKind, string> = {
+  egg_awarded: 'Egg received',
+  pack_awarded: 'Pack received',
   egg: 'Hatched',
   pack: 'Pack opened',
   redeem: 'Redeemed',
