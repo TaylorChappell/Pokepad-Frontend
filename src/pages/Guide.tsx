@@ -97,6 +97,7 @@ const topics: GuideTopic[] = [
         title: 'Holding and reward tiers',
         text: [
           'There is no minimum holding time. Once your holding is confirmed, your wallet can receive rewards, even if you have never signed in to Kanto. Awards are saved to that wallet and appear in Rewards when you connect it.',
+          'The wallet that launched a coin does not earn holder eggs, packs or Rare Candy from that coin. Creators can earn from other coins they hold, and still receive their 30% creator fee share.',
           'Funded draws happen in hourly batches. Your balance and holding streak influence your chances and reward tier; an award is not guaranteed every hour. Selling resets the streak. The coin must stay active and have enough reward funds.',
           'Better eggs take longer and make rarer outcomes more likely. Lower-tier rewards can still reveal valuable Pokémon. The tier belongs to the egg or pack, not to the individual Pokémon.',
         ],
@@ -178,7 +179,7 @@ const topics: GuideTopic[] = [
       {
         title: 'Rare Candy and active holdings',
         text: [
-          'Your equipped partner gains Rare Candy from eligible active coin holdings. Inactive coins do not generate progress. Candy that would advance an evolution is granted only with its share of evolution funding reserved.',
+          'Your equipped partner gains Rare Candy from eligible active coins launched by other trainers. Your own coins do not generate Candy. Inactive coins do not generate progress. Candy that would advance an evolution is granted only with its share of evolution funding reserved.',
           'If the reward pool cannot reserve the next Candy increase, progress pauses. Reaching the evolution threshold means its value increase is already covered.',
         ],
       },
@@ -406,7 +407,7 @@ const topics: GuideTopic[] = [
 function liveGuideSection(section: GuideTopic['sections'][number]) {
   const replacements: Record<string, string[]> = {
     'Rare Candy and active holdings': [
-      'Your equipped Pokémon earns Rare Candy from verified holdings in active coins. Selling can reset holding progress; inactive coins do not keep generating candy.',
+      'Your equipped Pokémon earns Rare Candy from verified holdings in active coins launched by other trainers. Your own coins do not generate Candy. Selling can reset holding progress; inactive coins do not keep generating candy.',
       'Each Candy grant is covered by reserved evolution funding, so progress pauses if the next grant cannot be funded. Starters chosen before the main token launches can begin training with any eligible active coin. The first funded Candy grant links that starter to that coin’s reward pool. Until its first evolution, a starter earns Candy only from the coin funding it; afterwards, any eligible active coin counts.',
     ],
     'Complete the launch wizard': [
