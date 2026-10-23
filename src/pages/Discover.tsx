@@ -320,15 +320,17 @@ export function DiscoverPage({ explore = false }: { explore?: boolean }) {
   let coins = state.coins.filter(
     (c) => (mode === 'All' || c.mode === mode) && (!watchOnly || watchlist.ids.includes(c.id)),
   );
-  coins = [...coins].sort((a, b) =>
-    sort === 'Top volume'
+  coins = [...coins].sort((a, b) => {
+    const mainFirst = Number(Boolean(b.main)) - Number(Boolean(a.main));
+    if (mainFirst) return mainFirst;
+    return sort === 'Top volume'
       ? b.volume - a.volume
       : sort === 'Most holders'
         ? b.holders - a.holders
         : sort === 'New pairs'
           ? (b.launchedAt || 0) - (a.launchedAt || 0)
-          : b.change - a.change,
-  );
+          : b.change - a.change;
+  });
   const page = useListWindow(coins, [mode, sort, watchOnly, state.profile.wallet].join(':'));
   return (
     <>
