@@ -3,6 +3,7 @@ import { Component, useEffect, useState, type ReactNode } from 'react';
 import { LoadingCoordinator } from './components/Loading';
 import { WalletGate } from './components/WalletGate';
 import { AppProvider } from './state/AppContext';
+import { WalkingProvider } from './state/WalkingContext';
 import { Layout } from './components/Layout';
 import { TrainerPrompts } from './components/TrainerPrompts';
 import { EmptyState } from './components/UI';
@@ -130,8 +131,10 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AppProvider>
-        <Routes />
-        <LoadingCoordinator />
+        <WalkingProvider>
+          <Routes />
+          <LoadingCoordinator />
+        </WalkingProvider>
       </AppProvider>
     </ErrorBoundary>
   );

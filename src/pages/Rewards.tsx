@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useApp } from '../state/AppContext';
 import { LiveWalkPage } from './LiveWalk';
+import { eggWalkingMeters, walkingDistance } from '../services/walking-controller';
 import { pokemonById } from '../data/pokemon';
 import { rewardPool } from '../data/rewardPools';
-import { WALK_BOOST_MS_PER_KM, rewardBudget } from '../state/model';
+import { rewardBudget } from '../state/model';
 import {
   Button,
   Icon,
@@ -381,7 +382,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
             {current.map((r) => {
               const isReady = r.readyAt <= now,
                 remaining = Math.max(0, r.readyAt - now),
-                km = remaining / WALK_BOOST_MS_PER_KM;
+                distance = walkingDistance(eggWalkingMeters(r.readyAt, now));
               return (
                 <article
                   key={r.id}
@@ -438,7 +439,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                         {!isReady && (
                           <p>
                             <Icon name="Footprints" size={16} />
-                            Walk {km.toFixed(1)} km to finish sooner
+                            Walk {distance} to finish sooner
                           </p>
                         )}
                       </div>
@@ -563,8 +564,7 @@ export function RewardsPage({ initialTab = 'eggs' }: { initialTab?: string }) {
                   <Progress value={progressOf(selected, now)} />
                   {selected.readyAt > now && (
                     <span>
-                      Or walk{' '}
-                      {Math.max(0, (selected.readyAt - now) / WALK_BOOST_MS_PER_KM).toFixed(1)} km
+                      Or walk {walkingDistance(eggWalkingMeters(selected.readyAt, now))}
                       to finish sooner.
                     </span>
                   )}

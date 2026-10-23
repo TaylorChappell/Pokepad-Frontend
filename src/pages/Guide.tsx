@@ -111,8 +111,8 @@ const topics: GuideTopic[] = [
       {
         title: 'Walking helps the timer',
         text: [
-          'The egg screen shows time and walking progress. Walking speeds incubation; it is not required for the timer to finish.',
-          'Walking is available on phones; desktop shows a reminder to use your phone. Demo walking simulates progress. In live mode, allow location access and keep the page visible while the server checks movement. Browser GPS checks reduce abuse but cannot make spoofing impossible.',
+          'Each egg shows its remaining hatch time and how much farther you can walk to finish it now. Every 100 metres of accepted walking takes 12 minutes off all incubating eggs, while their normal timers continue.',
+          'On your phone, tap Enable location & start and allow location access. You can browse any Kanto page while walking. Switching away from Kanto or locking your phone pauses tracking; returning resumes automatically. A manually paused walk stays paused until you resume it. Demo walking only simulates progress.',
         ],
         note: 'An egg being ready does not reveal its Pokémon. The reveal happens when you choose to hatch it.',
       },

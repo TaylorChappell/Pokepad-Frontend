@@ -1,0 +1,408 @@
+.walking-page .walking-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 24px;
+  align-items: start;
+}
+.walking-main {
+  min-width: 0;
+}
+.walk-companion {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: linear-gradient(125deg, #f0f7df, #fffdf4 70%);
+  border: 1px solid #d9e1bf;
+}
+.walk-companion-art {
+  flex: 0 0 145px;
+  display: grid;
+  place-items: center;
+  min-height: 145px;
+}
+.walk-companion-art .pokemon-art {
+  width: 140px;
+  height: 140px;
+}
+.walk-companion h2 {
+  font-size: clamp(18px, 2vw, 26px);
+  line-height: 1.35;
+  margin: 12px 0 10px;
+  color: #354b39;
+}
+.walk-companion p {
+  margin: 0 0 14px;
+  color: #68725d;
+  font-size: 13px;
+  line-height: 1.65;
+  max-width: 45ch;
+}
+.walk-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #657159;
+  font-size: 11px;
+  font-weight: 800;
+}
+.walk-status-label.is-active {
+  color: #37713d;
+}
+.walk-status-label.is-active svg {
+  animation: walk-pulse 2s ease-in-out infinite;
+}
+.walk-rate {
+  display: inline-block;
+  padding: 7px 10px;
+  background: #fffef5;
+  border: 1px solid #e2ddbe;
+  border-radius: 8px;
+  color: #696241;
+  font-size: 11px;
+  font-weight: 750;
+}
+.walk-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 26px 0 14px;
+}
+.walk-section-heading h2,
+.walk-controls h2 {
+  font-size: 17px;
+  margin: 0;
+}
+.walk-section-heading a {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #5b7551;
+  font-weight: 750;
+}
+.walk-egg-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.walk-egg-card {
+  padding: 20px;
+  min-width: 0;
+  background: #fffdf7;
+  border: 1px solid #e2dfcc;
+}
+.walk-egg-card.rare {
+  background: linear-gradient(150deg, #f1f7ff, #fffdf7 55%);
+  border-color: #cbdbe5;
+}
+.walk-egg-card.epic {
+  background: linear-gradient(150deg, #f6effd, #fffdf7 55%);
+  border-color: #ddcee8;
+}
+.walk-egg-top {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.walk-egg-top .egg-art {
+  width: 54px;
+  height: 64px;
+  flex-shrink: 0;
+}
+.walk-egg-tier {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: #4c5d45;
+}
+.rare .walk-egg-tier {
+  color: #38618b;
+}
+.epic .walk-egg-tier {
+  color: #795196;
+}
+.walk-egg-source {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  color: #858471;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.walk-egg-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: 20px 0 10px;
+  color: #657151;
+}
+.walk-egg-time strong {
+  color: #354736;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.walk-egg-time span {
+  font-size: 10px;
+  color: #858471;
+}
+.walk-egg-card .progress-track {
+  height: 7px;
+  margin-bottom: 17px;
+}
+.walk-egg-distance {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #eef3e5;
+  color: #547348;
+}
+.walk-egg-distance strong {
+  display: block;
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+.walk-egg-distance span {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: #6e795f;
+}
+.walk-egg-saved {
+  display: block;
+  font-size: 10px;
+  color: #738266;
+  margin-top: 12px;
+}
+.walk-egg-card.is-ready {
+  border-color: #a7c692;
+}
+.walk-controls {
+  padding: 24px;
+  background: #fffdf7;
+  min-width: 0;
+}
+.walk-distance-total {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 26px 0 20px;
+}
+.walk-distance-total strong {
+  color: #416245;
+  font-size: 36px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.walk-distance-total span {
+  color: #818670;
+  font-size: 12px;
+}
+.walk-saved-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid #e8e5d7;
+  padding: 15px 0 22px;
+  color: #7b806b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.walk-saved-total strong {
+  color: #506347;
+}
+.walk-controls .button {
+  min-height: 44px;
+  font-size: 12px;
+}
+.walk-controls .button.ghost {
+  margin-top: 8px;
+}
+.walk-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #5a7057;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px;
+  background: #f0f4e9;
+  border-radius: 10px;
+  margin-top: 16px;
+}
+.walk-feedback svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.walk-feedback.has-error {
+  background: #fff2de;
+  color: #8b663a;
+}
+.walk-explainer {
+  font-size: 11px;
+  color: #8c8c79;
+  line-height: 1.7;
+  margin: 18px 0 0;
+}
+.walk-empty {
+  padding: 30px;
+  text-align: center;
+  color: #7a806c;
+}
+.walk-empty .egg-art {
+  width: 60px;
+  height: 70px;
+  margin: auto;
+}
+.walk-empty h3 {
+  margin: 15px 0 8px;
+  color: #526548;
+}
+.walk-empty p {
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.walking-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border: 1px solid #d9e2c9;
+  border-radius: 14px;
+  background: #f0f5e7;
+  color: #496643;
+}
+.walking-status a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+  color: inherit;
+}
+.walking-status a > span {
+  min-width: 0;
+  flex: 1;
+}
+.walking-status strong {
+  display: block;
+  font-size: 12px;
+}
+.walking-status small {
+  display: block;
+  color: #74816a;
+  font-size: 11px;
+  margin-top: 3px;
+}
+.walking-status button {
+  padding: 8px 12px;
+  border: 1px solid #c5d3b5;
+  border-radius: 8px;
+  font-size: 11px;
+  background: #fffdf5;
+  color: #4b6644;
+  font-weight: 750;
+  cursor: pointer;
+}
+.walking-status button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+@keyframes walk-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (max-width: 1000px) {
+  .walking-page .walking-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+    gap: 16px;
+  }
+  .walk-companion {
+    gap: 14px;
+    padding: 20px;
+  }
+  .walk-companion-art {
+    flex-basis: 100px;
+  }
+  .walk-companion-art .pokemon-art {
+    width: 100px;
+    height: 100px;
+  }
+  .walk-egg-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 720px) {
+  .walking-page .walking-layout {
+    display: flex;
+    flex-direction: column;
+  }
+  .walking-main,
+  .walk-controls {
+    width: 100%;
+  }
+  .walk-controls {
+    order: -1;
+    padding: 20px;
+  }
+  .walk-distance-total {
+    margin: 16px 0;
+  }
+  .walk-distance-total strong {
+    font-size: 30px;
+  }
+  .walk-companion {
+    padding: 18px;
+  }
+  .walk-companion h2 {
+    font-size: 18px;
+  }
+  .walk-companion-art {
+    flex-basis: 80px;
+  }
+  .walk-companion-art .pokemon-art {
+    width: 84px;
+    height: 84px;
+  }
+  .walk-egg-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .walk-egg-card {
+    padding: 15px;
+  }
+}
+@media (max-width: 480px) {
+  .walk-egg-grid {
+    grid-template-columns: 1fr;
+  }
+  .walk-companion {
+    gap: 10px;
+  }
+  .walk-companion p {
+    font-size: 12px;
+  }
+  .walk-rate {
+    font-size: 10px;
+  }
+  .walking-status {
+    padding: 10px;
+  }
+  .walking-status a {
+    gap: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .walk-status-label.is-active svg {
+    animation: none;
+  }
+}

@@ -1,281 +1,213 @@
-import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../state/AppContext';
-import { apiRequest } from '../services/http';
-import { Button, EggArt, Icon, PageHeading, PokemonArt, Progress } from '../components/UI';
+import { useWalking } from '../state/WalkingContext';
+import {
+  Button,
+  EggArt,
+  Icon,
+  PageHeading,
+  PokemonArt,
+  Progress,
+  CoinAvatar,
+} from '../components/UI';
 import { WalletConnection } from '../components/WalletConnection';
 import { pokemonById } from '../data/pokemon';
 import { duration } from '../utils';
-import type { Reward } from '../types';
-import { isMobileWalkingDevice, postWalkingSample, type WalkSession } from '../services/walking';
-const progressOf = (reward: Reward, now: number) =>
-  Math.max(
-    0,
-    Math.min(
-      100,
-      100 * (1 - Math.max(0, reward.readyAt - now) / Math.max(1, reward.initialDuration)),
-    ),
-  );
+import { isMobileWalkingDevice } from '../services/walking';
+import { eggWalkingMeters, walkingDistance } from '../services/walking-controller';
 
-type Capabilities = {
-  enabled: boolean;
-  mobileOnly: true;
-  minSampleIntervalMs: number;
-  maxDailyMeters: number;
-  maxAccuracyMeters: number;
-};
 export function LiveWalkPage() {
-  const { state, session: account, now, reload } = useApp();
-  const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
-  const [walking, setWalking] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [mustFinish, setMustFinish] = useState(false);
-  const [meters, setMeters] = useState(0);
-  const [message, setMessage] = useState('');
-  const walk = useRef<WalkSession | null>(null);
-  const startRequestId = useRef(crypto.randomUUID());
-  const watcher = useRef<number | null>(null);
-  const inFlight = useRef(false);
-  const lastPosted = useRef(0);
-  const mounted = useRef(true);
+  const { state, session: account, now } = useApp();
+  const walk = useWalking();
   const mobile = isMobileWalkingDevice(navigator);
   const equipped = state.pokemon.find((p) => p.id === state.profile.equippedId);
   const id = equipped?.speciesId || 4;
   const eggs = state.rewards.filter((reward) => reward.kind === 'egg' && !reward.openedAt);
-  function clearWatch() {
-    if (watcher.current !== null) navigator.geolocation?.clearWatch(watcher.current);
-    watcher.current = null;
-  }
-  useEffect(() => {
-    mounted.current = true;
-    const controller = new AbortController();
-    void apiRequest<Capabilities>('/v1/walking/capabilities', { signal: controller.signal })
-      .then(setCapabilities)
-      .catch((e) => {
-        if (!controller.signal.aborted) setMessage(e.message);
-      });
-    const visibility = () => {
-      if (document.hidden) {
-        clearWatch();
-        setWalking(false);
-        setMessage('Walking paused. Keep Kanto visible on your phone while walking.');
-      }
-    };
-    document.addEventListener('visibilitychange', visibility);
-    return () => {
-      mounted.current = false;
-      controller.abort();
-      clearWatch();
-      document.removeEventListener('visibilitychange', visibility);
-    };
-  }, []);
-  async function start() {
-    if (
-      !mobile ||
-      !navigator.geolocation ||
-      !capabilities?.enabled ||
-      busy ||
-      mustFinish ||
-      account.status !== 'authenticated'
-    )
-      return;
-    setBusy(true);
-    setMessage('');
-    try {
-      if (!walk.current)
-        walk.current = await apiRequest<WalkSession>('/v1/walking/start', {
-          method: 'POST',
-          json: {
-            device: {
-              mobile: true,
-              screenWidth: window.screen.width,
-              screenHeight: window.screen.height,
-              geolocation: true,
-            },
-            requestId: startRequestId.current,
-          },
-        });
-      if (!mounted.current) return;
-      setWalking(true);
-      watcher.current = navigator.geolocation.watchPosition(
-        (position) => {
-          if (
-            document.hidden ||
-            inFlight.current ||
-            !walk.current ||
-            Date.now() - lastPosted.current < Math.max(6000, capabilities.minSampleIntervalMs)
-          )
-            return;
-          if (position.coords.accuracy > capabilities.maxAccuracyMeters) {
-            setMessage('GPS is still settling. Move to an open area for a more accurate location.');
-            return;
-          }
-          const current = walk.current;
-          inFlight.current = true;
-          lastPosted.current = Date.now();
-          void postWalkingSample(current, position)
-            .then((result) => {
-              if (!mounted.current) return;
-              setMeters(result.sessionMeters);
-              setMessage(
-                result.accepted
-                  ? 'Location received. Progress is checked by the server.'
-                  : result.reason || 'This sample did not add distance. Keep walking naturally.',
-              );
-              if (result.creditedMeters > 0) void reload();
-            })
-            .catch((e) => {
-              clearWatch();
-              if (mounted.current) {
-                setWalking(false);
-                setMustFinish(true);
-                setMessage(e.message + ' End this session before starting another.');
-              }
-            })
-            .finally(() => {
-              inFlight.current = false;
-            });
-        },
-        (error) => {
-          clearWatch();
-          setWalking(false);
-          setMessage(
-            error.code === 1
-              ? 'Location permission was denied. Enable location for Kanto, then try again.'
-              : 'Your location is unavailable. Check GPS and try again.',
-          );
-        },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
-      );
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Unable to start walking.');
-    } finally {
-      if (mounted.current) setBusy(false);
-    }
-  }
-  async function finish() {
-    if (inFlight.current) {
-      setMessage('Finishing the last location check. Try again in a moment.');
-      return;
-    }
-    clearWatch();
-    setWalking(false);
-    if (!walk.current) return;
-    setBusy(true);
-    try {
-      const result = await apiRequest<{ sessionMeters: number }>(
-        `/v1/walking/${encodeURIComponent(walk.current.sessionId)}/finish`,
-        { method: 'POST', json: { challenge: walk.current.challenge } },
-      );
-      walk.current = null;
-      startRequestId.current = crypto.randomUUID();
-      setMustFinish(false);
-      setMeters(result.sessionMeters);
-      setMessage('Session finished. Your accepted distance has been saved.');
-      await reload();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : 'Could not finish the session. Try again.');
-    } finally {
-      if (mounted.current) setBusy(false);
-    }
-  }
+  const active = walk.phase === 'walking';
+  const busy = ['requesting', 'connecting', 'finishing'].includes(walk.phase);
+  const rate = walk.capabilities?.boostMsPerMeter || 7200;
+  const status = active
+    ? 'Walking active'
+    : walk.phase === 'requesting'
+      ? 'Finding your location'
+      : walk.phase === 'connecting'
+        ? 'Starting your walk'
+        : walk.phase === 'background'
+          ? 'Paused in background'
+          : walk.phase === 'paused'
+            ? 'Walking paused'
+            : 'Your walking partner';
   return (
-    <div className="rewards-v3">
+    <div className="rewards-v3 walking-page">
       <PageHeading title={'Walk with ' + pokemonById(id).name} />
-      <div className="walking-grid">
-        <div className={'walk-v3-showcase panel ' + (walking ? 'is-walking' : '')}>
-          <span className="status-tag green">
-            {walking ? 'Walking session active' : 'Your walking partner'}
-          </span>
-          <div className="walk-v3-partner">
-            <PokemonArt id={id} shiny={equipped?.shiny} />
-          </div>
-          <h2>{pokemonById(id).name}</h2>
-          <p>Walk on your phone to speed up your incubating eggs.</p>
-          <div className="walk-v3-eggs">
-            {eggs.slice(0, 3).map((egg) => (
-              <div key={egg.id}>
-                <EggArt tier={egg.tier} />
-                <strong>{egg.readyAt <= now ? 'Ready!' : duration(egg.readyAt - now)}</strong>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="walking-sidebar">
-          <div className="panel walk-session">
-            <h3>Your walking session</h3>
-            <div className="session-number">
-              {(meters / 1000).toFixed(2)}
-              <span>km accepted</span>
+      <div className="walking-layout">
+        <div className="walking-main">
+          <div className={'walk-companion panel ' + (active ? 'is-walking' : '')}>
+            <div className="walk-companion-art">
+              <PokemonArt id={id} shiny={equipped?.shiny} />
             </div>
-            {!mobile ? (
-              <div className="notice">
-                <Icon name="Info" />
-                Open this page on your phone to walk. Desktop devices cannot start walking sessions.
-              </div>
-            ) : account.status !== 'authenticated' ? (
-              <WalletConnection />
-            ) : (
-              <>
-                <Button
-                  className="full-width"
-                  disabled={
-                    busy ||
-                    mustFinish ||
-                    inFlight.current ||
-                    !capabilities?.enabled ||
-                    !navigator.geolocation
-                  }
-                  onClick={() => (walking ? (clearWatch(), setWalking(false)) : void start())}
-                >
-                  <Icon name={walking ? 'Pause' : 'Play'} />
-                  {busy
-                    ? 'Please wait…'
-                    : walking
-                      ? 'Pause walking'
-                      : walk.current
-                        ? 'Resume walking'
-                        : 'Start walking'}
-                </Button>
-                {walk.current && (
-                  <Button
-                    variant="ghost"
-                    disabled={busy || inFlight.current}
-                    onClick={() => void finish()}
+            <div>
+              <span className={'walk-status-label ' + (active ? 'is-active' : '')}>
+                <Icon name="Footprints" size={16} />
+                {status}
+              </span>
+              <h2>Every step brings a hatch closer.</h2>
+              <p>Walking takes time off all your incubating eggs. Their timers keep ticking too.</p>
+              <span className="walk-rate">100 m walked = {duration(rate * 100)} off each egg</span>
+            </div>
+          </div>
+          <section className="walk-incubator" aria-label="Your egg timers">
+            <div className="walk-section-heading">
+              <h2>Your eggs</h2>
+              <a href="#/rewards">
+                Rewards <Icon name="ArrowRight" size={16} />
+              </a>
+            </div>
+            <div className="walk-egg-grid">
+              {eggs.map((egg) => {
+                const update = walk.eggUpdates[egg.id];
+                const readyAt = Math.min(egg.readyAt, update?.readyAt ?? egg.readyAt);
+                const remaining = Math.max(0, readyAt - now);
+                const saved = Math.max(egg.walkingBoostMs || 0, update?.walkingBoostMs || 0);
+                const coin = state.coins.find((c) => c.id === egg.originCoin);
+                const ready = remaining === 0;
+                return (
+                  <article
+                    className={
+                      'walk-egg-card panel ' + egg.tier.toLowerCase() + (ready ? ' is-ready' : '')
+                    }
+                    key={egg.id}
                   >
-                    End session
-                  </Button>
-                )}
-              </>
+                    <div className="walk-egg-top">
+                      <EggArt tier={egg.tier} />
+                      <div>
+                        <span className="walk-egg-tier">{egg.tier} egg</span>
+                        <span className="walk-egg-source">
+                          {coin && <CoinAvatar coin={coin} size={18} />}
+                          {egg.gift ? 'Kanto gift' : coin ? 'From $' + coin.ticker : 'Your reward'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="walk-egg-time">
+                      <Icon name="Clock" size={18} />
+                      <strong>{ready ? 'Ready to hatch!' : duration(remaining)}</strong>
+                      {!ready && <span>remaining</span>}
+                    </div>
+                    <Progress value={100 * (1 - remaining / Math.max(1, egg.initialDuration))} />
+                    {ready ? (
+                      <a className="button primary full-width" href="#/rewards">
+                        Hatch egg <Icon name="ArrowRight" size={16} />
+                      </a>
+                    ) : (
+                      <div className="walk-egg-distance">
+                        <Icon name="Footprints" size={20} />
+                        <div>
+                          <strong>{walkingDistance(eggWalkingMeters(readyAt, now, rate))}</strong>
+                          <span>more walking to hatch now</span>
+                        </div>
+                      </div>
+                    )}
+                    {saved > 0 && (
+                      <small className="walk-egg-saved">
+                        {duration(saved)} already shaved off by walking
+                      </small>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+            {!eggs.length && (
+              <div className="panel walk-empty">
+                <EggArt tier="Standard" />
+                <h3>No eggs incubating</h3>
+                <p>Your next egg will appear here with its timer and walking distance.</p>
+                <a href="#/rewards" className="button secondary">
+                  View rewards
+                </a>
+              </div>
             )}
-            {capabilities && !capabilities.enabled && (
-              <p>Walking is not currently available. Your eggs still hatch with time.</p>
-            )}
-            {message && (
-              <p className="notice small" role="status">
-                {message}
-              </p>
-            )}
-          </div>
-          <div className="panel walk-eggs">
-            <h3>Egg timers</h3>
-            {eggs.length ? (
-              eggs.map((egg) => (
-                <div key={egg.id}>
-                  <EggArt tier={egg.tier} />
-                  <span>
-                    <strong>{egg.tier} egg</strong>
-                    <small>
-                      {egg.readyAt <= now ? 'Ready to hatch' : duration(egg.readyAt - now)}
-                    </small>
-                    <Progress value={progressOf(egg, now)} />
-                  </span>
-                </div>
-              ))
-            ) : (
-              <p>No eggs incubating right now.</p>
-            )}
-          </div>
+          </section>
         </div>
+        <aside className="panel walk-controls">
+          <h2>Your walk</h2>
+          <div className="walk-distance-total">
+            <strong>{walkingDistance(walk.meters)}</strong>
+            <span>walked this session</span>
+          </div>
+          <div className="walk-saved-total">
+            <Icon name="Clock" size={18} />
+            <span>
+              <strong>{walk.timeSavedMs > 0 ? duration(walk.timeSavedMs) : '0m'}</strong> saved
+              across your eggs
+            </span>
+          </div>
+          {!mobile ? (
+            <div className="walk-feedback">
+              <Icon name="Info" />
+              <span>Open Kanto on your phone to start walking.</span>
+            </div>
+          ) : account.status !== 'authenticated' ? (
+            <WalletConnection />
+          ) : (
+            <>
+              <Button
+                className="full-width"
+                disabled={busy || !walk.capabilities?.enabled}
+                onClick={() => (active ? walk.controller.pause() : void walk.controller.start())}
+              >
+                <Icon
+                  name={active ? 'Pause' : walk.permission !== 'granted' ? 'Compass' : 'Play'}
+                  size={18}
+                />
+                {walk.phase === 'requesting'
+                  ? 'Finding location…'
+                  : walk.phase === 'connecting'
+                    ? 'Starting…'
+                    : walk.phase === 'finishing'
+                      ? 'Finishing…'
+                      : active
+                        ? 'Pause walking'
+                        : walk.permission !== 'granted'
+                          ? 'Enable location & start'
+                          : walk.hasSession
+                            ? 'Resume walking'
+                            : 'Start walking'}
+              </Button>
+              {walk.hasSession && (
+                <Button
+                  variant="ghost"
+                  className="full-width"
+                  disabled={busy}
+                  onClick={() => void walk.controller.finish()}
+                >
+                  End walk
+                </Button>
+              )}
+              {!walk.capabilities && (
+                <Button variant="ghost" onClick={() => void walk.controller.loadCapabilities()}>
+                  Check availability
+                </Button>
+              )}
+            </>
+          )}
+          {walk.message && (
+            <p
+              className={'walk-feedback ' + (walk.phase === 'error' ? 'has-error' : '')}
+              role="status"
+            >
+              <Icon name={walk.phase === 'error' ? 'Info' : 'Compass'} size={18} />
+              <span>{walk.message}</span>
+            </p>
+          )}
+          <p className="walk-explainer">
+            Explore any Kanto page while you walk. Leave the app or lock your phone to pause; return
+            to resume automatically.
+          </p>
+          {walk.dailyMeters >= (walk.capabilities?.maxDailyMeters || Infinity) && (
+            <p className="walk-feedback">
+              Today’s walking boost is complete. Your eggs still hatch with time.
+            </p>
+          )}
+        </aside>
       </div>
     </div>
   );

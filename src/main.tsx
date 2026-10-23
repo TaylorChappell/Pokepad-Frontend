@@ -7,6 +7,7 @@ import './arena-v2.css';
 import './shared-v3.css';
 import './modern-v3.css';
 import './rewards-v3.css';
+import './walking.css';
 import './account-v3.css';
 import './boot-screen.css';
 import './sidebar-fit.css';

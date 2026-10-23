@@ -14,6 +14,8 @@ export type SampleResult = {
   dailyMeters: number;
   nextSeq: number;
   readyEggIds: string[];
+  timeSavedMs?: number;
+  eggUpdates?: { id: string; readyAt: number; walkingBoostMs: number }[];
 };
 export function isMobileWalkingDevice(device: Pick<Navigator, 'userAgent' | 'maxTouchPoints'>) {
   return (
@@ -26,6 +28,7 @@ export async function postWalkingSample(
   session: WalkSession,
   position: Pick<GeolocationPosition, 'coords' | 'timestamp'>,
   request: typeof apiRequest = apiRequest,
+  resume = false,
 ) {
   const json = {
     challenge: session.challenge,
@@ -34,6 +37,7 @@ export async function postWalkingSample(
     longitude: position.coords.longitude,
     accuracy: position.coords.accuracy,
     timestamp: position.timestamp,
+    ...(resume ? { resume: true } : {}),
   };
   const send = () =>
     request<SampleResult>(`/v1/walking/${encodeURIComponent(session.sessionId)}/samples`, {

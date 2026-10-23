@@ -10,6 +10,7 @@ import { WalletConnection } from './WalletConnection';
 import { BackendStatus } from './BackendStatus';
 import { SiteFooter } from './SiteFooter';
 import { BattleResumeNotice } from './BattleResumeNotice';
+import { WalkingStatus } from './WalkingStatus';
 const nav: { path: string; label: string; icon: IconName; group?: string }[] = [
   { path: '/discover', label: 'Discover', icon: 'Compass' },
   { path: '/create', label: 'Create Coin', icon: 'Plus' },
@@ -286,6 +287,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
       <main id="main-content" tabIndex={-1} className="main-content">
         {mode === 'live' && <BackendStatus />}
         <BattleResumeNotice path={path} />
+        <WalkingStatus path={path} />
         <div className="page-content">{children}</div>
         <SiteFooter />
       </main>

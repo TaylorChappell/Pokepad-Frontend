@@ -121,6 +121,7 @@ export interface Reward {
   readyAt: number;
   initialDuration: number;
   walkedKm: number;
+  walkingBoostMs?: number;
   openedAt?: number;
   outcomeSpeciesId?: number;
   shiny?: boolean;
